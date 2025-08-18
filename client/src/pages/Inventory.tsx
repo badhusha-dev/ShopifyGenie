@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopNav from "../components/TopNav";
 import PermissionGate from '../components/PermissionGate';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Product {
   id: string;
@@ -14,12 +15,23 @@ interface Product {
 }
 
 const Inventory = () => {
+  const { token } = useAuth();
   const [showLowStock, setShowLowStock] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const { data: products, refetch } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+    queryFn: async () => {
+      const response = await fetch('/api/products', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch products');
+      return response.json();
+    },
+    enabled: !!token,
   });
 
   const createProductMutation = useMutation({
@@ -40,6 +52,12 @@ const Inventory = () => {
       refetch();
     },
   });
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    await apiRequest("DELETE", `/api/products/${id}`);
+    refetch();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

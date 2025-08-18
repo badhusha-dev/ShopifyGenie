@@ -51,8 +51,8 @@ const AppContent = () => {
   }
 
   return (
-    <RoleProvider>
-      <PermissionProvider>
+    <PermissionProvider>
+      <RoleProvider>
         <div className="d-flex">
           <Sidebar />
           <div className="main-content flex-grow-1">
@@ -75,8 +75,8 @@ const AppContent = () => {
             </Switch>
           </div>
         </div>
-      </PermissionProvider>
-    </RoleProvider>
+      </RoleProvider>
+    </PermissionProvider>
   );
 };
 

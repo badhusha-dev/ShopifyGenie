@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema } from "@shared/schema";
 import { shopify, saveShopSession, getShopSession } from "./shopify";
-import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, requireSuperAdmin, type AuthRequest } from "./auth";
+import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, requireSuperAdmin, requirePermission, type AuthRequest } from "./auth";
 import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
