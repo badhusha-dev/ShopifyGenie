@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TopNav from "../components/TopNav";
 import { apiRequest } from "../lib/queryClient";
 
@@ -13,6 +13,7 @@ interface Subscription {
   frequency: string;
   nextDelivery: string;
   createdAt: string;
+  autoRenew?: boolean;
 }
 
 interface Customer {
@@ -31,6 +32,15 @@ const Subscriptions = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "paused" | "cancelled">("all");
+  const [formData, setFormData] = useState({
+    customerId: "",
+    productId: "",
+    status: "active",
+    frequency: "monthly",
+    nextDelivery: new Date().toISOString().split('T')[0],
+    autoRenew: false,
+    product: "" // Added for the product input field
+  });
 
   const { data: subscriptions, refetch } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -49,6 +59,15 @@ const Subscriptions = () => {
     onSuccess: () => {
       setShowModal(false);
       setEditingSubscription(null);
+      setFormData({ // Reset form data after successful submission
+        customerId: "",
+        productId: "",
+        status: "active",
+        frequency: "monthly",
+        nextDelivery: new Date().toISOString().split('T')[0],
+        autoRenew: false,
+        product: ""
+      });
       refetch();
     },
   });
@@ -59,30 +78,73 @@ const Subscriptions = () => {
     onSuccess: () => {
       setShowModal(false);
       setEditingSubscription(null);
+      setFormData({ // Reset form data after successful submission
+        customerId: "",
+        productId: "",
+        status: "active",
+        frequency: "monthly",
+        nextDelivery: new Date().toISOString().split('T')[0],
+        autoRenew: false,
+        product: ""
+      });
       refetch();
     },
   });
 
+  useEffect(() => {
+    if (editingSubscription) {
+      setFormData({
+        customerId: editingSubscription.customerId || "",
+        productId: editingSubscription.productId || "",
+        status: editingSubscription.status || "active",
+        frequency: editingSubscription.frequency || "monthly",
+        nextDelivery: editingSubscription.nextDelivery ? new Date(editingSubscription.nextDelivery).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        autoRenew: editingSubscription.autoRenew || false,
+        product: editingSubscription.productName || "" // Set product name to formData
+      });
+    } else {
+      setFormData({ // Reset form data when closing the modal or adding new
+        customerId: "",
+        productId: "",
+        status: "active",
+        frequency: "monthly",
+        nextDelivery: new Date().toISOString().split('T')[0],
+        autoRenew: false,
+        product: ""
+      });
+    }
+  }, [editingSubscription]);
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const subscriptionData = {
-      customerId: formData.get("customerId"),
-      productId: formData.get("productId"),
-      status: formData.get("status"),
-      frequency: formData.get("frequency"),
-      nextDelivery: formData.get("nextDelivery"),
+    const payload = {
+      customerId: formData.customerId,
+      productId: formData.productId,
+      status: formData.status,
+      frequency: formData.frequency,
+      nextDelivery: formData.nextDelivery,
+      autoRenew: formData.autoRenew,
     };
 
     if (editingSubscription) {
-      updateSubscriptionMutation.mutate({ id: editingSubscription.id, data: subscriptionData });
+      updateSubscriptionMutation.mutate({ id: editingSubscription.id, data: payload });
     } else {
-      createSubscriptionMutation.mutate(subscriptionData);
+      createSubscriptionMutation.mutate(payload);
     }
   };
 
   const openAddModal = () => {
     setEditingSubscription(null);
+    setFormData({ // Reset form data when opening the add modal
+      customerId: "",
+      productId: "",
+      status: "active",
+      frequency: "monthly",
+      nextDelivery: new Date().toISOString().split('T')[0],
+      autoRenew: false,
+      product: ""
+    });
     setShowModal(true);
   };
 
@@ -321,13 +383,14 @@ const Subscriptions = () => {
                   <div className="modal-body">
                     <div className="mb-3">
                       <label className="form-label">Customer *</label>
-                      <select
-                        name="customerId"
-                        className="form-select"
-                        defaultValue={editingSubscription?.customerId || ""}
+                      <select 
+                        className="form-select" 
+                        name="customerId" 
+                        value={formData.customerId}
+                        onChange={(e) => setFormData({...formData, customerId: e.target.value})}
                         required
                       >
-                        <option value="">Select customer...</option>
+                        <option value="" disabled>Select Customer</option>
                         {customers?.map((customer) => (
                           <option key={customer.id} value={customer.id}>
                             {customer.name} ({customer.email})
@@ -340,7 +403,8 @@ const Subscriptions = () => {
                       <select
                         name="productId"
                         className="form-select"
-                        defaultValue={editingSubscription?.productId || ""}
+                        value={formData.productId}
+                        onChange={(e) => setFormData({...formData, productId: e.target.value})}
                         required
                       >
                         <option value="">Select product...</option>
@@ -355,10 +419,11 @@ const Subscriptions = () => {
                       <div className="col-md-6">
                         <div className="mb-3">
                           <label className="form-label">Frequency *</label>
-                          <select
-                            name="frequency"
-                            className="form-select"
-                            defaultValue={editingSubscription?.frequency || ""}
+                          <select 
+                            className="form-select" 
+                            name="frequency" 
+                            value={formData.frequency}
+                            onChange={(e) => setFormData({...formData, frequency: e.target.value})}
                             required
                           >
                             <option value="">Select frequency...</option>
@@ -372,10 +437,12 @@ const Subscriptions = () => {
                       <div className="col-md-6">
                         <div className="mb-3">
                           <label className="form-label">Status</label>
-                          <select
-                            name="status"
-                            className="form-select"
-                            defaultValue={editingSubscription?.status || "active"}
+                          <select 
+                            className="form-select" 
+                            name="status" 
+                            value={formData.status}
+                            onChange={(e) => setFormData({...formData, status: e.target.value})}
+                            required
                           >
                             <option value="active">Active</option>
                             <option value="paused">Paused</option>
@@ -388,14 +455,24 @@ const Subscriptions = () => {
                       <label className="form-label">Next Delivery Date *</label>
                       <input
                         type="date"
-                        name="nextDelivery"
                         className="form-control"
-                        defaultValue={editingSubscription?.nextDelivery ? 
-                          new Date(editingSubscription.nextDelivery).toISOString().split('T')[0] : 
-                          new Date().toISOString().split('T')[0]
-                        }
+                        name="nextDelivery"
+                        value={formData.nextDelivery}
+                        onChange={(e) => setFormData({...formData, nextDelivery: e.target.value})}
                         required
                       />
+                    </div>
+                    <div className="mb-3 form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        name="autoRenew"
+                        checked={formData.autoRenew}
+                        onChange={(e) => setFormData({...formData, autoRenew: e.target.checked})}
+                      />
+                      <label className="form-check-label" htmlFor="autoRenew">
+                        Auto-Renew
+                      </label>
                     </div>
                   </div>
                   <div className="modal-footer">

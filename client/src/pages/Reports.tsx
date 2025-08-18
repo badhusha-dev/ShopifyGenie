@@ -389,7 +389,7 @@ const Reports = () => {
                   </div>
                   <div className="mb-3">
                     <div className="d-flex justify-content-between">
-                      <span>New Customers (< $10)</span>
+                      <span>New Customers (&lt; $10)</span>
                       <span>{customers?.filter(c => parseFloat(c.totalSpent || "0") < 10).length || 0}</span>
                     </div>
                     <div className="progress">
