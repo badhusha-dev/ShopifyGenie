@@ -9,7 +9,26 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default('customer'), // superadmin, admin, staff, customer
+  permissions: text("permissions"), // JSON string of permissions
   shopDomain: text("shop_domain"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const permissions = pgTable("permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(), // e.g., "inventory:view"
+  category: text("category").notNull(), // e.g., "inventory", "orders"
+  operation: text("operation").notNull(), // e.g., "view", "create", "edit", "delete"
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  role: text("role").notNull(), // superadmin, admin, staff, customer
+  permissionName: text("permission_name").notNull(),
+  granted: boolean("granted").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -180,6 +199,17 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   lastUpdated: true,
@@ -248,6 +278,12 @@ export const insertStockMovementSchema = createInsertSchema(stockMovements).omit
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+export type Permission = typeof permissions.$inferSelect;
+
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type RolePermission = typeof rolePermissions.$inferSelect;
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;

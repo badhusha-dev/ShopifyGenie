@@ -12,6 +12,7 @@ export interface User {
   email: string;
   password?: string;
   role: 'superadmin' | 'admin' | 'staff' | 'customer';
+  permissions?: string; // JSON string of permissions
   shopDomain?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -103,3 +104,59 @@ export const requireSuperAdmin = requireRole(['superadmin']);
 
 // Customer access middleware
 export const requireCustomer = requireRole(['admin', 'staff', 'customer']);
+
+// Permission-based middleware
+export const requirePermission = (permission: string) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Super Admin has all permissions
+    if (req.user.role === 'superadmin') {
+      return next();
+    }
+
+    const { storage } = await import('./storage');
+    const hasPermission = await storage.checkUserPermission(req.user.role, permission);
+    
+    if (!hasPermission) {
+      return res.status(403).json({ 
+        error: `Access denied. Required permission: ${permission}` 
+      });
+    }
+
+    next();
+  };
+};
+
+// Combined role and permission check
+export const requireRoleAndPermission = (roles: string[], permission: string) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: `Access denied. Required roles: ${roles.join(', ')}` 
+      });
+    }
+
+    // Super Admin bypasses permission checks
+    if (req.user.role === 'superadmin') {
+      return next();
+    }
+
+    const { storage } = await import('./storage');
+    const hasPermission = await storage.checkUserPermission(req.user.role, permission);
+    
+    if (!hasPermission) {
+      return res.status(403).json({ 
+        error: `Access denied. Required permission: ${permission}` 
+      });
+    }
+
+    next();
+  };
+};

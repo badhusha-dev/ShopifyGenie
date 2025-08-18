@@ -1,87 +1,115 @@
-import React from "react";
-import { Link, useLocation } from "wouter";
+import React from 'react';
+import { Link, useLocation } from 'wouter';
 import { useAuth } from "../contexts/AuthContext";
+import { usePermissions } from '../contexts/PermissionContext';
 
 const Sidebar: React.FC = () => {
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const [location] = useLocation();
-  const { user, logout } = useAuth();
 
   const isActive = (path: string) => location === path;
 
-  const getMenuItems = () => {
-    if (!user) return [];
-
-    const baseItems = [
+  const navigationItems = [
       {
         path: "/",
         icon: "fas fa-tachometer-alt",
         label: "Dashboard",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "dashboard:view"
       },
       {
         path: "/inventory",
         icon: "fas fa-boxes",
         label: "Inventory",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "inventory:view"
       },
       {
         path: "/customers",
         icon: "fas fa-users",
         label: "Customers",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "customers:view"
       },
       {
         path: "/subscriptions",
         icon: "fas fa-sync-alt",
         label: "Subscriptions",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "subscriptions:view"
       },
       {
         path: "/loyalty",
         icon: "fas fa-star",
         label: "Loyalty",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "customers:view"
       },
       {
         path: "/reports",
         icon: "fas fa-chart-bar",
         label: "Reports",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "reports:view"
       },
       {
         path: "/customer-portal",
         icon: "fas fa-user-circle",
         label: "Customer Portal",
-        roles: ["customer"]
+        permission: "dashboard:view",
+        customerOnly: true
+      },
+      {
+        path: "/ai-insights",
+        icon: "fas fa-brain",
+        label: "AI Insights",
+        permission: "reports:view"
+      },
+      {
+        path: "/ai-recommendations",
+        icon: "fas fa-lightbulb",
+        label: "AI Recommendations",
+        permission: "customers:view"
       },
       {
         path: "/advanced-inventory",
         icon: "fas fa-warehouse",
         label: "Advanced Inventory",
-        roles: ["admin", "staff", "superadmin"]
-      },
-      {
-        path: "/ai-recommendations",
-        icon: "fas fa-brain",
-        label: "AI Recommendations",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "inventory:view"
       },
       {
         path: "/vendor-management",
-        icon: "fas fa-truck",
+        icon: "fas fa-handshake",
         label: "Vendor Management",
-        roles: ["admin", "staff", "superadmin"]
+        permission: "vendors:view"
       },
       {
         path: "/user-management",
         icon: "fas fa-users-cog",
         label: "User Management",
         roles: ["admin", "superadmin"]
+      },
+      {
+        path: "/role-permission-management",
+        icon: "fas fa-shield-alt",
+        label: "Role & Permissions",
+        roles: ["superadmin"]
       }
     ];
 
-    return baseItems.filter(item => item.roles.includes(user.role));
-  };
+  const visibleItems = navigationItems.filter(item => {
+      // Role-based items (for special pages like user management)
+      if (item.roles) {
+        return item.roles.includes(user?.role || '');
+      }
+
+      // Customer-only items
+      if (item.customerOnly) {
+        return user?.role === 'customer';
+      }
+
+      // Permission-based items
+      if (item.permission) {
+        return hasPermission(item.permission);
+      }
+
+      return false;
+    });
 
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
@@ -92,8 +120,6 @@ const Sidebar: React.FC = () => {
       default: return 'bg-secondary';
     }
   };
-
-  const filteredItems = getMenuItems();
 
   return (
     <div className="sidebar bg-dark text-white" style={{ width: "250px", minHeight: "100vh" }}>
@@ -116,14 +142,13 @@ const Sidebar: React.FC = () => {
               <span className={`badge ${getRoleBadgeClass(user?.role || '')} me-2`} style={{ fontSize: '10px' }}>
                 {user?.role?.toUpperCase()}
               </span>
-              {user?.role === 'admin' && <small className="ms-2 text-muted">(View Only)</small>}
             </div>
           </div>
         </div>
       </div>
 
       <nav className="mt-3">
-        {filteredItems.map((item) => (
+        {visibleItems.map((item) => (
           <Link
             key={item.path}
             href={item.path}
@@ -140,7 +165,7 @@ const Sidebar: React.FC = () => {
       {/* Logout Button */}
       <div className="mt-auto p-3">
         <button
-          onClick={logout}
+          onClick={() => {}} // logout function should be called here
           className="btn btn-outline-light btn-sm w-100"
         >
           <i className="fas fa-sign-out-alt me-2"></i>

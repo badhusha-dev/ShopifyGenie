@@ -6,6 +6,7 @@ import { queryClient } from "./lib/queryClient";
 import NotFound from "./pages/not-found";
 import { RoleProvider } from "./components/RoleProvider";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PermissionProvider } from './contexts/PermissionContext';
 import Sidebar from "./components/Sidebar";
 import LoginForm from "./components/LoginForm";
 import Home from "./pages/Home";
@@ -19,6 +20,7 @@ import AdvancedInventory from "./pages/AdvancedInventory";
 import AIRecommendations from "./pages/AIRecommendations";
 import VendorManagement from "./pages/VendorManagement";
 import UserManagement from "./pages/UserManagement";
+import RolePermissionManagement from './pages/RolePermissionManagement';
 import AlertSystem from "./components/AlertSystem";
 import "./index.css";
 
@@ -50,27 +52,30 @@ const AppContent = () => {
 
   return (
     <RoleProvider>
-      <div className="d-flex">
-        <Sidebar />
-        <div className="main-content flex-grow-1">
-          <AlertSystem />
-          <Switch>
-            <Route path="/" component={Home} />
-            <Route path="/inventory" component={Inventory} />
-            <Route path="/customers" component={Customers} />
-            <Route path="/subscriptions" component={Subscriptions} />
-            <Route path="/loyalty" component={Loyalty} />
-            <Route path="/reports" component={Reports} />
-            <Route path="/customer-portal" component={CustomerPortal} />
-            <Route path="/ai-insights" component={Reports} />
-            <Route path="/ai-recommendations" component={AIRecommendations} />
-            <Route path="/advanced-inventory" component={AdvancedInventory} />
-            <Route path="/vendor-management" component={VendorManagement} />
-            <Route path="/user-management" component={UserManagement} />
-            <Route component={NotFound} />
-          </Switch>
+      <PermissionProvider>
+        <div className="d-flex">
+          <Sidebar />
+          <div className="main-content flex-grow-1">
+            <AlertSystem />
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/inventory" component={Inventory} />
+              <Route path="/customers" component={Customers} />
+              <Route path="/subscriptions" component={Subscriptions} />
+              <Route path="/loyalty" component={Loyalty} />
+              <Route path="/reports" component={Reports} />
+              <Route path="/customer-portal" component={CustomerPortal} />
+              <Route path="/ai-insights" component={Reports} />
+              <Route path="/ai-recommendations" component={AIRecommendations} />
+              <Route path="/advanced-inventory" component={AdvancedInventory} />
+              <Route path="/vendor-management" component={VendorManagement} />
+              <Route path="/user-management" component={UserManagement} />
+              <Route path="/role-management" component={RolePermissionManagement} />
+              <Route component={NotFound} />
+            </Switch>
+          </div>
         </div>
-      </div>
+      </PermissionProvider>
     </RoleProvider>
   );
 };

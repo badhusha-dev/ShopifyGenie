@@ -1,8 +1,7 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopNav from "../components/TopNav";
-import InventoryTable from "../components/InventoryTable";
-import { apiRequest } from "../lib/queryClient";
+import PermissionGate from '../components/PermissionGate';
 
 interface Product {
   id: string;
@@ -119,22 +118,19 @@ const Inventory = () => {
         </div>
 
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <div className="form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="lowStockFilter"
-              checked={showLowStock}
-              onChange={(e) => setShowLowStock(e.target.checked)}
-            />
-            <label className="form-check-label" htmlFor="lowStockFilter">
-              Show only low stock items
-            </label>
+          <div>
+            <h4>Inventory Management</h4>
+            <p className="text-muted mb-0">Manage your product inventory and stock levels</p>
           </div>
-          <button className="btn btn-primary" onClick={openAddModal}>
-            <i className="fas fa-plus me-2"></i>
-            Add Product
-          </button>
+          <PermissionGate permission="inventory:create">
+            <button
+              className="btn btn-primary"
+              onClick={openAddModal}
+            >
+              <i className="fas fa-plus me-2"></i>
+              Add Product
+            </button>
+          </PermissionGate>
         </div>
 
         {/* Products Table */}
@@ -187,19 +183,23 @@ const Inventory = () => {
                         </span>
                       </td>
                       <td>
-                        <div className="btn-group btn-group-sm">
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => openEditModal(product)}
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button className="btn btn-outline-success">
-                            <i className="fas fa-plus"></i>
-                          </button>
-                          <button className="btn btn-outline-info">
-                            <i className="fas fa-chart-line"></i>
-                          </button>
+                        <div className="btn-group">
+                          <PermissionGate permission="inventory:edit">
+                            <button
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => openEditModal(product)}
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          </PermissionGate>
+                          <PermissionGate permission="inventory:delete">
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => handleDelete(product.id)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </PermissionGate>
                         </div>
                       </td>
                     </tr>

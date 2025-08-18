@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Products/Inventory routes
-  app.get("/api/products", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+  app.get("/api/products", authenticateToken, requirePermission('inventory:view'), async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const products = await storage.getProducts(shopDomain);
@@ -335,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products", async (req, res) => {
+  app.post("/api/products", authenticateToken, requirePermission('inventory:create'), async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);
       const product = await storage.createProduct(validatedData);
@@ -345,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/products/:id", async (req, res) => {
+  app.put("/api/products/:id", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
     try {
       const { id } = req.params;
       const product = await storage.updateProduct(id, req.body);
@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
-  app.get("/api/customers", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+  app.get("/api/customers", authenticateToken, requirePermission('customers:view'), async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const customers = await storage.getCustomers(shopDomain);
@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/customers", async (req, res) => {
+  app.post("/api/customers", authenticateToken, requirePermission('customers:create'), async (req, res) => {
     try {
       const validatedData = insertCustomerSchema.parse(req.body);
       const customer = await storage.createCustomer(validatedData);
@@ -419,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/customers/:id", async (req, res) => {
+  app.put("/api/customers/:id", authenticateToken, requirePermission('customers:edit'), async (req, res) => {
     try {
       const { id } = req.params;
       const customer = await storage.updateCustomer(id, req.body);
@@ -1163,6 +1163,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate business insights" });
+    }
+  });
+
+  // Permission Management Routes (Super Admin only)
+  app.get("/api/permissions", authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch permissions" });
+    }
+  });
+
+  app.get("/api/role-permissions/:role", authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+      const { role } = req.params;
+      const rolePermissions = await storage.getRolePermissions(role);
+      const userPermissions = await storage.getUserPermissions(role);
+      res.json({
+        role,
+        permissions: userPermissions,
+        details: rolePermissions
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch role permissions" });
+    }
+  });
+
+  app.put("/api/role-permissions/:role", authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+      const { role } = req.params;
+      const { permissions } = req.body;
+
+      // Prevent modifying superadmin permissions
+      if (role === 'superadmin') {
+        return res.status(403).json({ error: "Cannot modify Super Admin permissions" });
+      }
+
+      if (!permissions || typeof permissions !== 'object') {
+        return res.status(400).json({ error: "Invalid permissions data" });
+      }
+
+      await storage.updateRolePermissions(role, permissions);
+      res.json({ message: "Role permissions updated successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update role permissions" });
+    }
+  });
+
+  app.get("/api/user-permissions", authenticateToken, async (req, res) => {
+    try {
+      const user = (req as AuthRequest).user!;
+      const permissions = await storage.getUserPermissions(user.role);
+      res.json({
+        role: user.role,
+        permissions
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user permissions" });
     }
   });
 

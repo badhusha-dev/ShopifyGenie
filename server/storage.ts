@@ -152,6 +152,7 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.seedData();
+    this.seedPermissions();
   }
 
   private async seedData() {
@@ -282,6 +283,121 @@ export class MemStorage implements IStorage {
 
     this.subscriptions.set(subscription1.id, subscription1);
     this.subscriptions.set(subscription2.id, subscription2);
+  }
+
+  private async seedPermissions() {
+    // Define all available permissions
+    const permissionsList = [
+      // Dashboard
+      { name: 'dashboard:view', category: 'dashboard', operation: 'view', description: 'View dashboard' },
+      
+      // Inventory
+      { name: 'inventory:view', category: 'inventory', operation: 'view', description: 'View inventory' },
+      { name: 'inventory:create', category: 'inventory', operation: 'create', description: 'Create inventory items' },
+      { name: 'inventory:edit', category: 'inventory', operation: 'edit', description: 'Edit inventory items' },
+      { name: 'inventory:delete', category: 'inventory', operation: 'delete', description: 'Delete inventory items' },
+      
+      // Orders
+      { name: 'orders:view', category: 'orders', operation: 'view', description: 'View orders' },
+      { name: 'orders:create', category: 'orders', operation: 'create', description: 'Create orders' },
+      { name: 'orders:edit', category: 'orders', operation: 'edit', description: 'Edit orders' },
+      { name: 'orders:delete', category: 'orders', operation: 'delete', description: 'Delete orders' },
+      
+      // Customers
+      { name: 'customers:view', category: 'customers', operation: 'view', description: 'View customers' },
+      { name: 'customers:create', category: 'customers', operation: 'create', description: 'Create customers' },
+      { name: 'customers:edit', category: 'customers', operation: 'edit', description: 'Edit customers' },
+      { name: 'customers:delete', category: 'customers', operation: 'delete', description: 'Delete customers' },
+      
+      // Reports
+      { name: 'reports:view', category: 'reports', operation: 'view', description: 'View reports' },
+      { name: 'reports:export', category: 'reports', operation: 'export', description: 'Export reports' },
+      
+      // Users
+      { name: 'users:view', category: 'users', operation: 'view', description: 'View users' },
+      { name: 'users:create', category: 'users', operation: 'create', description: 'Create users' },
+      { name: 'users:edit', category: 'users', operation: 'edit', description: 'Edit users' },
+      { name: 'users:delete', category: 'users', operation: 'delete', description: 'Delete users' },
+      
+      // Vendors
+      { name: 'vendors:view', category: 'vendors', operation: 'view', description: 'View vendors' },
+      { name: 'vendors:create', category: 'vendors', operation: 'create', description: 'Create vendors' },
+      { name: 'vendors:edit', category: 'vendors', operation: 'edit', description: 'Edit vendors' },
+      { name: 'vendors:delete', category: 'vendors', operation: 'delete', description: 'Delete vendors' },
+      
+      // Subscriptions
+      { name: 'subscriptions:view', category: 'subscriptions', operation: 'view', description: 'View subscriptions' },
+      { name: 'subscriptions:create', category: 'subscriptions', operation: 'create', description: 'Create subscriptions' },
+      { name: 'subscriptions:edit', category: 'subscriptions', operation: 'edit', description: 'Edit subscriptions' },
+      { name: 'subscriptions:delete', category: 'subscriptions', operation: 'delete', description: 'Delete subscriptions' },
+    ];
+
+    this.permissions = permissionsList.map(p => ({
+      id: randomUUID(),
+      ...p,
+      createdAt: new Date()
+    }));
+
+    // Set default permissions for each role
+    const defaultPermissions = {
+      superadmin: {}, // Super admin gets all permissions automatically
+      admin: {
+        'dashboard:view': true,
+        'inventory:view': true,
+        'inventory:create': true,
+        'inventory:edit': true,
+        'inventory:delete': true,
+        'orders:view': true,
+        'orders:create': true,
+        'orders:edit': true,
+        'orders:delete': true,
+        'customers:view': true,
+        'customers:create': true,
+        'customers:edit': true,
+        'customers:delete': true,
+        'reports:view': true,
+        'reports:export': true,
+        'users:view': true,
+        'vendors:view': true,
+        'vendors:create': true,
+        'vendors:edit': true,
+        'vendors:delete': true,
+        'subscriptions:view': true,
+        'subscriptions:create': true,
+        'subscriptions:edit': true,
+        'subscriptions:delete': true,
+      },
+      staff: {
+        'dashboard:view': true,
+        'inventory:view': true,
+        'inventory:edit': true,
+        'orders:view': true,
+        'orders:edit': true,
+        'customers:view': true,
+        'customers:edit': true,
+        'reports:view': true,
+        'vendors:view': true,
+        'subscriptions:view': true,
+        'subscriptions:edit': true,
+      },
+      customer: {
+        'dashboard:view': true,
+      }
+    };
+
+    // Initialize role permissions
+    Object.entries(defaultPermissions).forEach(([role, permissions]) => {
+      Object.entries(permissions).forEach(([permissionName, granted]) => {
+        this.rolePermissions.push({
+          id: randomUUID(),
+          role,
+          permissionName,
+          granted,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      });
+    });
   }
 
   // User Management Methods
@@ -1020,6 +1136,57 @@ export class MemStorage implements IStorage {
     return vendorAnalytics;
   }
 
+
+  // Permission Management
+  private permissions: any[] = [];
+  private rolePermissions: any[] = [];
+
+  // Permission Management Methods
+  async getPermissions(): Promise<any[]> {
+    return this.permissions;
+  }
+
+  async getRolePermissions(role: string): Promise<any[]> {
+    return this.rolePermissions.filter(rp => rp.role === role);
+  }
+
+  async updateRolePermissions(role: string, permissions: Record<string, boolean>): Promise<void> {
+    // Remove existing permissions for this role
+    this.rolePermissions = this.rolePermissions.filter(rp => rp.role !== role);
+    
+    // Add new permissions
+    Object.entries(permissions).forEach(([permissionName, granted]) => {
+      this.rolePermissions.push({
+        id: randomUUID(),
+        role,
+        permissionName,
+        granted,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    });
+  }
+
+  async checkUserPermission(role: string, permissionName: string): Promise<boolean> {
+    if (role === 'superadmin') return true; // Super admin has all permissions
+    
+    const rolePermission = this.rolePermissions.find(
+      rp => rp.role === role && rp.permissionName === permissionName
+    );
+    
+    return rolePermission ? rolePermission.granted : false;
+  }
+
+  async getUserPermissions(role: string): Promise<Record<string, boolean>> {
+    const userRolePermissions = this.rolePermissions.filter(rp => rp.role === role);
+    const permissionsObj: Record<string, boolean> = {};
+    
+    userRolePermissions.forEach(rp => {
+      permissionsObj[rp.permissionName] = rp.granted;
+    });
+    
+    return permissionsObj;
+  }
 
   // Role-based access helpers
   async getUserRole(userId: string): Promise<'superadmin' | 'admin' | 'staff' | 'customer'> {
