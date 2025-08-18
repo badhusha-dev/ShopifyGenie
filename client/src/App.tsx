@@ -14,6 +14,7 @@ import CustomerPortal from "@/pages/CustomerPortal";
 import Sidebar from "./components/Sidebar";
 import { RoleProvider } from "./components/RoleProvider";
 import AlertSystem from "./components/AlertSystem";
+import { lazy } from "react";
 
 function Router() {
   return (
@@ -29,7 +30,8 @@ function Router() {
             <Route path="/subscriptions" component={Subscriptions} />
             <Route path="/customers" component={Customers} />
             <Route path="/reports" component={Reports} />
-            <Route path="/portal" component={CustomerPortal} />
+            <Route path="/customer-portal" component={CustomerPortal} />
+            <Route path="/ai-recommendations" component={lazy(() => import("./pages/AIRecommendations"))} />
             <Route component={NotFound} />
           </Switch>
         </div>

@@ -72,65 +72,129 @@ const Home = () => {
               </div>
             </div>
 
-            <div className="card mt-3">
-              <div className="card-header">
-                <h6 className="mb-0">
-                  <i className="fab fa-shopify me-2"></i>
-                  Shopify Integration
-                </h6>
-              </div>
-              <div className="card-body">
-                <div className="alert alert-info" role="alert">
-                  <small>
-                    <strong>Setup Required:</strong> Configure your Shopify API keys in environment variables to enable real-time synchronization with your Shopify store.
-                  </small>
-                </div>
-                <div className="mb-3">
-                  <button 
-                    className="btn btn-success btn-sm w-100 mb-2"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/shopify/sync', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ shop: 'demo-shop.myshopify.com' })
-                        });
-                        const result = await response.json();
-                        if (response.ok) {
-                          alert(`Sync completed! Products: ${result.synced?.products || 0}, Customers: ${result.synced?.customers || 0}, Orders: ${result.synced?.orders || 0}`);
-                          window.location.reload();
-                        } else {
-                          alert(`Sync failed: ${result.error}`);
-                        }
-                      } catch (error) {
-                        alert('Sync failed: Please configure Shopify API keys');
-                      }
-                    }}
-                  >
-                    <i className="fas fa-sync me-1"></i>
-                    Sync with Shopify
-                  </button>
-                  <a 
-                    href="/auth?shop=demo-shop.myshopify.com" 
-                    className="btn btn-outline-primary btn-sm w-100"
-                    target="_blank"
-                  >
-                    <i className="fas fa-link me-1"></i>
-                    Connect Shopify Store
-                  </a>
-                </div>
-                <small className="text-muted">
-                  Real-time sync requires API configuration
-                </small>
-              </div>
-            </div>
-
             {/* Role Demo */}
             <div className="mt-3">
               <RoleSwitcher />
             </div>
           </div>
         </div>
+
+        {/* AI Insights & Abandoned Carts */}
+        <div className="row mb-4">
+          <div className="col-md-6">
+            <div className="card">
+              <div className="card-header bg-primary text-white">
+                <h6 className="mb-0">
+                  <i className="fas fa-brain me-2"></i>
+                  AI Sales Forecast
+                </h6>
+              </div>
+              <div className="card-body">
+                <div className="row text-center">
+                  <div className="col-6">
+                    <h4 className="text-primary">$12,450</h4>
+                    <small className="text-muted">Next 7 Days</small>
+                  </div>
+                  <div className="col-6">
+                    <h4 className="text-success">$35,200</h4>
+                    <small className="text-muted">Next 30 Days</small>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span className="small">Confidence Level</span>
+                    <span className="badge bg-success">87%</span>
+                  </div>
+                  <div className="progress" style={{ height: '6px' }}>
+                    <div className="progress-bar bg-success" style={{ width: '87%' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-6">
+            <div className="card">
+              <div className="card-header bg-warning text-dark">
+                <h6 className="mb-0">
+                  <i className="fas fa-shopping-cart me-2"></i>
+                  Abandoned Carts Recovery
+                </h6>
+              </div>
+              <div className="card-body">
+                <div className="row text-center">
+                  <div className="col-4">
+                    <h5 className="text-warning">23</h5>
+                    <small className="text-muted">Active Carts</small>
+                  </div>
+                  <div className="col-4">
+                    <h5 className="text-success">$2,340</h5>
+                    <small className="text-muted">Potential Revenue</small>
+                  </div>
+                  <div className="col-4">
+                    <h5 className="text-info">34%</h5>
+                    <small className="text-muted">Recovery Rate</small>
+                  </div>
+                </div>
+                <button className="btn btn-warning btn-sm w-100 mt-3">
+                  <i className="fas fa-envelope me-2"></i>
+                  Send Recovery Emails
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Loyalty Tiers Overview */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-header">
+                <h6 className="mb-0">
+                  <i className="fas fa-medal me-2"></i>
+                  Loyalty Tier Distribution
+                </h6>
+              </div>
+              <div className="card-body">
+                <div className="row">
+                  <div className="col-md-3 text-center">
+                    <div className="p-3 border rounded mb-3" style={{ borderColor: '#CD7F32' }}>
+                      <i className="fas fa-medal fa-2x mb-2" style={{ color: '#CD7F32' }}></i>
+                      <h5>Bronze</h5>
+                      <h3 className="text-muted">45</h3>
+                      <small>0-999 points</small>
+                    </div>
+                  </div>
+                  <div className="col-md-3 text-center">
+                    <div className="p-3 border rounded mb-3" style={{ borderColor: '#C0C0C0' }}>
+                      <i className="fas fa-award fa-2x mb-2" style={{ color: '#C0C0C0' }}></i>
+                      <h5>Silver</h5>
+                      <h3 className="text-muted">23</h3>
+                      <small>1000-2499 points</small>
+                    </div>
+                  </div>
+                  <div className="col-md-3 text-center">
+                    <div className="p-3 border rounded mb-3" style={{ borderColor: '#FFD700' }}>
+                      <i className="fas fa-crown fa-2x mb-2" style={{ color: '#FFD700' }}></i>
+                      <h5>Gold</h5>
+                      <h3 className="text-muted">12</h3>
+                      <small>2500-4999 points</small>
+                    </div>
+                  </div>
+                  <div className="col-md-3 text-center">
+                    <div className="p-3 border rounded mb-3" style={{ borderColor: '#E5E4E2' }}>
+                      <i className="fas fa-gem fa-2x mb-2" style={{ color: '#E5E4E2' }}></i>
+                      <h5>Platinum</h5>
+                      <h3 className="text-muted">7</h3>
+                      <small>5000+ points</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* Customer Dashboard Section */}
         <div className="row mb-4">
@@ -195,6 +259,65 @@ const Home = () => {
             </div>
           </div>
         </div>
+
+        {/* Shopify Integration */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card mt-3">
+              <div className="card-header">
+                <h6 className="mb-0">
+                  <i className="fab fa-shopify me-2"></i>
+                  Shopify Integration
+                </h6>
+              </div>
+              <div className="card-body">
+                <div className="alert alert-info" role="alert">
+                  <small>
+                    <strong>Setup Required:</strong> Configure your Shopify API keys in environment variables to enable real-time synchronization with your Shopify store.
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <button 
+                    className="btn btn-success btn-sm w-100 mb-2"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/shopify/sync', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ shop: 'demo-shop.myshopify.com' })
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                          alert(`Sync completed! Products: ${result.synced?.products || 0}, Customers: ${result.synced?.customers || 0}, Orders: ${result.synced?.orders || 0}`);
+                          window.location.reload();
+                        } else {
+                          alert(`Sync failed: ${result.error}`);
+                        }
+                      } catch (error) {
+                        alert('Sync failed: Please configure Shopify API keys');
+                      }
+                    }}
+                  >
+                    <i className="fas fa-sync me-1"></i>
+                    Sync with Shopify
+                  </button>
+                  <a 
+                    href="/auth?shop=demo-shop.myshopify.com" 
+                    className="btn btn-outline-primary btn-sm w-100"
+                    target="_blank"
+                  >
+                    <i className="fas fa-link me-1"></i>
+                    Connect Shopify Store
+                  </a>
+                </div>
+                <small className="text-muted">
+                  Real-time sync requires API configuration
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* Webhook Status & System Health */}
         <div className="row">

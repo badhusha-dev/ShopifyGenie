@@ -541,6 +541,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Recommendations
+  app.get("/api/ai/recommendations/:customerId", async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 5;
+      
+      const { aiRecommendations } = await import("./ai-recommendations");
+      const recommendations = await aiRecommendations.generateRecommendations(customerId, limit);
+      
+      res.json(recommendations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate recommendations" });
+    }
+  });
+
+  // Abandoned Cart Management
+  app.post("/api/abandoned-cart/track", async (req, res) => {
+    try {
+      const { customerId, items } = req.body;
+      
+      const { abandonedCartService } = await import("./abandoned-cart");
+      const cart = await abandonedCartService.trackAbandonedCart(customerId, items);
+      
+      res.json(cart);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to track abandoned cart" });
+    }
+  });
+
+  app.get("/api/abandoned-cart/stats", async (req, res) => {
+    try {
+      const { abandonedCartService } = await import("./abandoned-cart");
+      const stats = await abandonedCartService.getRecoveryStats();
+      
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get cart stats" });
+    }
+  });
+
+  app.post("/api/abandoned-cart/send-recovery/:cartId", async (req, res) => {
+    try {
+      const { cartId } = req.params;
+      const { attempt } = req.body;
+      
+      const { abandonedCartService } = await import("./abandoned-cart");
+      const result = await abandonedCartService.sendRecoveryEmail(cartId, attempt);
+      
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send recovery email" });
+    }
+  });
+
+  // Loyalty Tiers
+  app.get("/api/loyalty/tiers", async (req, res) => {
+    try {
+      const { loyaltyTiers } = await import("./loyalty-tiers");
+      const tiers = loyaltyTiers.getAllTiers();
+      
+      res.json(tiers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch loyalty tiers" });
+    }
+  });
+
+  app.get("/api/loyalty/customer-tier/:customerId", async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      
+      const { loyaltyTiers } = await import("./loyalty-tiers");
+      const tierInfo = await loyaltyTiers.getCustomerTierInfo(customerId);
+      
+      res.json(tierInfo);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch customer tier info" });
+    }
+  });
+
+  app.get("/api/loyalty/tier-distribution", async (req, res) => {
+    try {
+      const { loyaltyTiers } = await import("./loyalty-tiers");
+      const distribution = await loyaltyTiers.getTierDistribution();
+      
+      res.json(distribution);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tier distribution" });
+    }
+  });
+
+  // AI Sales Forecasting
+  app.get("/api/ai/sales-forecast", async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      
+      // Simple AI forecasting based on historical data
+      const orders = await storage.getOrders();
+      const recentOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        const daysAgo = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24);
+        return daysAgo <= 30;
+      });
+
+      const totalRevenue = recentOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+      const avgDailyRevenue = totalRevenue / 30;
+      
+      // Apply growth trend and seasonal factors
+      const growthRate = 1.05; // 5% growth
+      const seasonalMultiplier = 1.1; // 10% seasonal boost
+      
+      const forecastRevenue = avgDailyRevenue * days * growthRate * seasonalMultiplier;
+      const confidence = Math.min(85 + (recentOrders.length / 10), 95);
+
+      res.json({
+        forecast: Math.round(forecastRevenue),
+        confidence: Math.round(confidence),
+        dailyAverage: Math.round(avgDailyRevenue),
+        historicalOrders: recentOrders.length,
+        trends: {
+          growth: '+5%',
+          seasonal: '+10%',
+          overall: 'positive'
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate sales forecast" });
+    }
+  });
+
   // Role-based access endpoints
   app.get("/api/user/role/:userId", async (req, res) => {
     try {

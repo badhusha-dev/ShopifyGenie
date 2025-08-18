@@ -11,6 +11,7 @@ const Sidebar = () => {
     { path: "/customers", label: "Customers", icon: "fas fa-users" },
     { path: "/reports", label: "Reports", icon: "fas fa-chart-bar" },
     { path: "/portal", label: "Customer Portal", icon: "fas fa-user-circle" },
+    { path: "/ai-recommendations", label: "AI Insights", icon: "fas fa-robot" }, // Added AI Insights
   ];
 
   return (
