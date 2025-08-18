@@ -334,7 +334,7 @@ const Reports = () => {
                 <div className="card-body">
                   <div className="mb-3">
                     <div className="d-flex justify-content-between">
-                      <span>High Value (>$500)</span>
+                      <span>High Value (&gt;$500)</span>
                       <span className="badge bg-success">{customers?.filter(c => parseFloat(c.totalSpent || '0') > 500).length || 0}</span>
                     </div>
                     <div className="progress mt-1" style={{ height: '8px' }}>
