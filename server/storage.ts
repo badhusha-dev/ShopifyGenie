@@ -12,8 +12,12 @@ import { ShopifyService, type ShopifyProduct, type ShopifyCustomer, type Shopify
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | null>;
+  getUserByEmail(email: string): Promise<User | null>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getUsers(shopDomain?: string): Promise<User[]>;
+  checkUserPermission(role: string, permission: string): Promise<boolean>;
 
   // Products - now with Shopify integration
   getProducts(shopDomain?: string): Promise<Product[]>;
@@ -166,6 +170,7 @@ export class MemStorage implements IStorage {
         email: 'superadmin@shopifyapp.com',
         password: await AuthService.hashPassword('superadmin123'),
         role: 'superadmin',
+        permissions: null,
         shopDomain: 'demo-store.myshopify.com',
       };
       await this.createUser(superAdminUser);
@@ -175,6 +180,7 @@ export class MemStorage implements IStorage {
         email: 'admin@shopifyapp.com',
         password: await AuthService.hashPassword('admin123'),
         role: 'admin',
+        permissions: null,
         shopDomain: 'demo-store.myshopify.com',
       };
       await this.createUser(adminUser);
@@ -184,6 +190,7 @@ export class MemStorage implements IStorage {
         email: 'staff@shopifyapp.com',
         password: await AuthService.hashPassword('staff123'),
         role: 'staff',
+        permissions: null,
         shopDomain: 'demo-store.myshopify.com',
       };
       await this.createUser(staffUser);
@@ -193,6 +200,8 @@ export class MemStorage implements IStorage {
         email: 'customer@example.com',
         password: await AuthService.hashPassword('customer123'),
         role: 'customer',
+        permissions: null,
+        shopDomain: null,
       };
       await this.createUser(customerUser);
     }
@@ -401,12 +410,14 @@ export class MemStorage implements IStorage {
   }
 
   // User Management Methods
-  async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+  async createUser(userData: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = {
       id,
       ...userData,
       role: userData.role || 'customer',
+      permissions: userData.permissions || null,
+      shopDomain: userData.shopDomain || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -419,15 +430,34 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    for (const user of this.users.values()) {
-      if (user.email === email) {
-        return user;
-      }
-    }
-    return null;
+    return Array.from(this.users.values()).find(user => user.email === email) || null;
   }
 
-  async getUsers(shopDomain?: string): Promise<Omit<User, 'password'>[]> {
+  async getUsers(shopDomain?: string): Promise<User[]> {
+    const users = Array.from(this.users.values());
+    if (shopDomain) {
+      return users.filter(user => user.shopDomain === shopDomain);
+    }
+    return users;
+  }
+
+  async checkUserPermission(role: string, permission: string): Promise<boolean> {
+    // Super admin has all permissions
+    if (role === 'superadmin') {
+      return true;
+    }
+    
+    // For now, return basic role-based permissions
+    const rolePermissions: Record<string, string[]> = {
+      admin: ['inventory:view', 'inventory:create', 'inventory:edit', 'customers:view', 'customers:edit', 'reports:view', 'subscriptions:view', 'dashboard:view'],
+      staff: ['inventory:view', 'customers:view', 'reports:view', 'dashboard:view'],
+      customer: ['dashboard:view']
+    };
+    
+    return rolePermissions[role]?.includes(permission) || false;
+  }
+
+  async getUsersWithoutPassword(shopDomain?: string): Promise<Omit<User, 'password'>[]> {
     let filteredUsers = Array.from(this.users.values());
     if (shopDomain) {
       filteredUsers = filteredUsers.filter(user => user.shopDomain === shopDomain);
@@ -474,7 +504,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    return Array.from(this.users.values()).find(user => user.email === username);
   }
 
   // Product methods - now with Shopify integration
@@ -537,8 +567,14 @@ export class MemStorage implements IStorage {
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const id = randomUUID();
     const product: Product = { 
-      ...insertProduct, 
-      id, 
+      id,
+      name: insertProduct.name,
+      shopifyId: insertProduct.shopifyId || null,
+      sku: insertProduct.sku || null,
+      stock: insertProduct.stock || 0,
+      price: insertProduct.price || null,
+      category: insertProduct.category || null,
+      imageUrl: insertProduct.imageUrl || null,
       lastUpdated: new Date() 
     };
     this.products.set(id, product);
@@ -622,8 +658,12 @@ export class MemStorage implements IStorage {
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
     const id = randomUUID();
     const customer: Customer = { 
-      ...insertCustomer, 
-      id, 
+      id,
+      name: insertCustomer.name,
+      email: insertCustomer.email,
+      shopifyId: insertCustomer.shopifyId || null,
+      loyaltyPoints: insertCustomer.loyaltyPoints || 0,
+      totalSpent: insertCustomer.totalSpent || null,
       createdAt: new Date() 
     };
     this.customers.set(id, customer);
@@ -698,8 +738,12 @@ export class MemStorage implements IStorage {
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
     const id = randomUUID();
     const order: Order = { 
-      ...insertOrder, 
-      id, 
+      id,
+      shopifyId: insertOrder.shopifyId || null,
+      customerId: insertOrder.customerId || null,
+      total: insertOrder.total,
+      pointsEarned: insertOrder.pointsEarned || 0,
+      status: insertOrder.status,
       createdAt: new Date() 
     };
     this.orders.set(id, order);
@@ -722,8 +766,12 @@ export class MemStorage implements IStorage {
   async createSubscription(insertSubscription: InsertSubscription): Promise<Subscription> {
     const id = randomUUID();
     const subscription: Subscription = { 
-      ...insertSubscription, 
-      id, 
+      id,
+      customerId: insertSubscription.customerId || null,
+      productId: insertSubscription.productId || null,
+      status: insertSubscription.status || 'active',
+      frequency: insertSubscription.frequency,
+      nextDelivery: insertSubscription.nextDelivery || null,
       createdAt: new Date() 
     };
     this.subscriptions.set(id, subscription);
@@ -751,8 +799,11 @@ export class MemStorage implements IStorage {
   async createLoyaltyTransaction(insertTransaction: InsertLoyaltyTransaction): Promise<LoyaltyTransaction> {
     const id = randomUUID();
     const transaction: LoyaltyTransaction = { 
-      ...insertTransaction, 
-      id, 
+      id,
+      customerId: insertTransaction.customerId || null,
+      orderId: insertTransaction.orderId || null,
+      points: insertTransaction.points,
+      type: insertTransaction.type,
       createdAt: new Date() 
     };
     this.loyaltyTransactions.set(id, transaction);

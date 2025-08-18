@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePermissions } from '../contexts/PermissionContext';
 
 const Sidebar: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { hasPermission } = usePermissions();
   const [location] = useLocation();
 
@@ -165,7 +165,7 @@ const Sidebar: React.FC = () => {
       {/* Logout Button */}
       <div className="mt-auto p-3">
         <button
-          onClick={() => {}} // logout function should be called here
+          onClick={logout}
           className="btn btn-outline-light btn-sm w-100"
         >
           <i className="fas fa-sign-out-alt me-2"></i>
