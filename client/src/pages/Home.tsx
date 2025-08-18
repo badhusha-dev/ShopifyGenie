@@ -69,6 +69,59 @@ const Home = () => {
                 </button>
               </div>
             </div>
+
+            <div className="card mt-3">
+              <div className="card-header">
+                <h6 className="mb-0">
+                  <i className="fab fa-shopify me-2"></i>
+                  Shopify Integration
+                </h6>
+              </div>
+              <div className="card-body">
+                <div className="alert alert-info" role="alert">
+                  <small>
+                    <strong>Setup Required:</strong> Configure your Shopify API keys in environment variables to enable real-time synchronization with your Shopify store.
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <button 
+                    className="btn btn-success btn-sm w-100 mb-2"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/shopify/sync', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ shop: 'demo-shop.myshopify.com' })
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                          alert(`Sync completed! Products: ${result.synced?.products || 0}, Customers: ${result.synced?.customers || 0}, Orders: ${result.synced?.orders || 0}`);
+                          window.location.reload();
+                        } else {
+                          alert(`Sync failed: ${result.error}`);
+                        }
+                      } catch (error) {
+                        alert('Sync failed: Please configure Shopify API keys');
+                      }
+                    }}
+                  >
+                    <i className="fas fa-sync me-1"></i>
+                    Sync with Shopify
+                  </button>
+                  <a 
+                    href="/auth?shop=demo-shop.myshopify.com" 
+                    className="btn btn-outline-primary btn-sm w-100"
+                    target="_blank"
+                  >
+                    <i className="fas fa-link me-1"></i>
+                    Connect Shopify Store
+                  </a>
+                </div>
+                <small className="text-muted">
+                  Real-time sync requires API configuration
+                </small>
+              </div>
+            </div>
           </div>
         </div>
 

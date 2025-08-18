@@ -2,12 +2,69 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema } from "@shared/schema";
+import { shopify, saveShopSession, getShopSession } from "./shopify";
+import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Shopify OAuth Routes
+  app.get("/auth", async (req, res) => {
+    if (!shopify) {
+      return res.status(500).json({ error: "Shopify integration not configured" });
+    }
+
+    try {
+      const shop = req.query.shop as string;
+      if (!shop) {
+        return res.status(400).json({ error: "Shop parameter required" });
+      }
+
+      const authRoute = shopify.auth.begin({
+        shop,
+        callbackPath: '/auth/callback',
+        isOnline: false,
+        rawRequest: req,
+        rawResponse: res,
+      });
+
+      res.redirect(authRoute);
+    } catch (error) {
+      console.error('OAuth initiation error:', error);
+      res.status(500).json({ error: "OAuth initiation failed" });
+    }
+  });
+
+  app.get("/auth/callback", async (req, res) => {
+    if (!shopify) {
+      return res.status(500).json({ error: "Shopify integration not configured" });
+    }
+
+    try {
+      const callbackResult = await shopify.auth.callback({
+        rawRequest: req,
+        rawResponse: res,
+      });
+
+      const { session } = callbackResult;
+      if (session && session.accessToken) {
+        saveShopSession(session.shop, session.accessToken);
+        console.log(`Shop ${session.shop} authenticated successfully`);
+        
+        // Redirect to main app
+        res.redirect('/');
+      } else {
+        res.status(400).json({ error: "Authentication failed" });
+      }
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.status(500).json({ error: "Authentication callback failed" });
+    }
+  });
+
   // Dashboard stats
   app.get("/api/stats", async (req, res) => {
     try {
-      const stats = await storage.getStats();
+      const shopDomain = req.query.shop as string;
+      const stats = await storage.getStats(shopDomain);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch stats" });
@@ -17,7 +74,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products/Inventory routes
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getProducts();
+      const shopDomain = req.query.shop as string;
+      const products = await storage.getProducts(shopDomain);
       res.json(products);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch products" });
@@ -27,7 +85,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/low-stock", async (req, res) => {
     try {
       const threshold = req.query.threshold ? parseInt(req.query.threshold as string) : 10;
-      const products = await storage.getLowStockProducts(threshold);
+      const shopDomain = req.query.shop as string;
+      const products = await storage.getLowStockProducts(threshold, shopDomain);
       res.json(products);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch low stock products" });
@@ -60,18 +119,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Shopify sync endpoint
   app.post("/api/shopify/sync", async (req, res) => {
     try {
-      // TODO: Implement actual Shopify API sync
-      // For now, simulate sync success
-      res.json({ message: "Shopify sync completed successfully", synced: 5 });
+      const shopDomain = req.body.shop as string;
+      if (!shopDomain) {
+        return res.status(400).json({ error: "Shop domain required" });
+      }
+
+      // Sync products, customers, and orders from Shopify
+      const products = await storage.syncProductsFromShopify(shopDomain);
+      const customers = await storage.syncCustomersFromShopify(shopDomain);
+      const orders = await storage.syncOrdersFromShopify(shopDomain);
+
+      res.json({ 
+        message: "Shopify sync completed successfully", 
+        synced: {
+          products: products.length,
+          customers: customers.length,
+          orders: orders.length
+        }
+      });
     } catch (error) {
-      res.status(500).json({ error: "Shopify sync failed" });
+      console.error('Shopify sync error:', error);
+      res.status(500).json({ error: "Shopify sync failed: " + (error as Error).message });
     }
   });
 
   // Customer routes
   app.get("/api/customers", async (req, res) => {
     try {
-      const customers = await storage.getCustomers();
+      const shopDomain = req.query.shop as string;
+      const customers = await storage.getCustomers(shopDomain);
       res.json(customers);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch customers" });
@@ -117,7 +193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Order routes
   app.get("/api/orders", async (req, res) => {
     try {
-      const orders = await storage.getOrders();
+      const shopDomain = req.query.shop as string;
+      const orders = await storage.getOrders(shopDomain);
       res.json(orders);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch orders" });
@@ -276,6 +353,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Webhook processing error:", error);
       res.status(500).json({ error: "Failed to process webhook" });
+    }
+  });
+
+  // Shopify Webhook Routes
+  app.post("/webhooks/orders/create", async (req, res) => {
+    try {
+      const hmacHeader = req.get("X-Shopify-Hmac-Sha256");
+      const body = req.body;
+      const shopDomain = req.get("X-Shopify-Shop-Domain");
+
+      // Verify webhook authenticity (in production, use proper webhook verification)
+      if (!hmacHeader || !shopDomain) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Process new order
+      const order = body;
+      console.log(`New order received from ${shopDomain}:`, order.id);
+
+      // Find or create customer
+      let customer;
+      if (order.customer && order.customer.id) {
+        customer = await storage.getCustomerByShopifyId(order.customer.id.toString());
+        if (!customer && order.email) {
+          customer = await storage.getCustomerByEmail(order.email);
+        }
+        
+        if (!customer) {
+          customer = await storage.createCustomer({
+            shopifyId: order.customer.id.toString(),
+            name: `${order.customer.first_name} ${order.customer.last_name}`.trim(),
+            email: order.email,
+            loyaltyPoints: 0,
+            totalSpent: order.customer.total_spent || order.total_price
+          });
+        }
+      }
+
+      // Create order and award loyalty points
+      const pointsEarned = Math.floor(parseFloat(order.total_price));
+      const newOrder = await storage.createOrder({
+        shopifyId: order.id.toString(),
+        customerId: customer?.id || null,
+        total: order.total_price,
+        pointsEarned,
+        status: order.financial_status
+      });
+
+      // Award loyalty points to customer
+      if (customer) {
+        await storage.updateCustomer(customer.id, {
+          loyaltyPoints: customer.loyaltyPoints + pointsEarned,
+          totalSpent: parseFloat(customer.totalSpent) + parseFloat(order.total_price)
+        });
+
+        // Create loyalty transaction
+        await storage.createLoyaltyTransaction({
+          customerId: customer.id,
+          points: pointsEarned,
+          type: "earned",
+          description: `Points earned from order #${order.order_number}`
+        });
+      }
+
+      res.json({ received: true, orderId: newOrder.id });
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({ error: "Webhook processing failed" });
     }
   });
 
