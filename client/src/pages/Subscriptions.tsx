@@ -244,11 +244,13 @@ const Subscriptions = () => {
                           <div>
                             {nextDeliveryDate.toLocaleDateString()}
                             {isOverdue && (
-                              <br />
-                              <small className="text-danger">
-                                <i className="fas fa-exclamation-triangle me-1"></i>
-                                Overdue
-                              </small>
+                              <>
+                                <br />
+                                <small className="text-danger">
+                                  <i className="fas fa-exclamation-triangle me-1"></i>
+                                  Overdue
+                                </small>
+                              </>
                             )}
                           </div>
                         </td>
