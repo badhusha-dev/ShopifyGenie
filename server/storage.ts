@@ -154,7 +154,38 @@ export class MemStorage implements IStorage {
     this.seedData();
   }
 
-  private seedData() {
+  private async seedData() {
+    // Initialize sample users if empty
+    if (this.users.size === 0) {
+      const { AuthService } = await import('./auth');
+
+      const adminUser: InsertUser = {
+        name: 'Admin User',
+        email: 'admin@shopifyapp.com',
+        password: await AuthService.hashPassword('admin123'),
+        role: 'admin',
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(adminUser);
+
+      const staffUser: InsertUser = {
+        name: 'Staff Member',
+        email: 'staff@shopifyapp.com',
+        password: await AuthService.hashPassword('staff123'),
+        role: 'staff',
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(staffUser);
+
+      const customerUser: InsertUser = {
+        name: 'Demo Customer',
+        email: 'customer@example.com',
+        password: await AuthService.hashPassword('customer123'),
+        role: 'customer',
+      };
+      await this.createUser(customerUser);
+    }
+
     // Seed some initial data for demo
     const customer1: Customer = {
       id: randomUUID(),
@@ -243,20 +274,73 @@ export class MemStorage implements IStorage {
     this.subscriptions.set(subscription2.id, subscription2);
   }
 
-  // User methods
+  // User Management Methods
+  async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+    const id = randomUUID();
+    const user: User = {
+      id,
+      ...userData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.users.set(id, user);
+    return user;
+  }
+
+  async getUserById(id: string): Promise<User | null> {
+    return this.users.get(id) || null;
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    for (const user of this.users.values()) {
+      if (user.email === email) {
+        return user;
+      }
+    }
+    return null;
+  }
+
+  async getUsers(shopDomain?: string): Promise<Omit<User, 'password'>[]> {
+    let filteredUsers = Array.from(this.users.values());
+    if (shopDomain) {
+      filteredUsers = filteredUsers.filter(user => user.shopDomain === shopDomain);
+    }
+    return filteredUsers.map(({ password, ...user }) => user);
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+    const user = this.users.get(id);
+    if (!user) return null;
+
+    const updatedUser = {
+      ...user,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.users.set(id, updatedUser);
+
+    const { password, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword as User;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    return this.users.delete(id);
+  }
+
+  async getUsersByRole(role: string): Promise<Omit<User, 'password'>[]> {
+    return Array.from(this.users.values())
+      .filter(user => user.role === role)
+      .map(({ password, ...user }) => user);
+  }
+
+
+  // User methods (original implementation, now using Map)
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(user => user.username === username);
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
   }
 
   // Product methods - now with Shopify integration
@@ -921,8 +1005,7 @@ export class MemStorage implements IStorage {
 
   // Role-based access helpers
   async getUserRole(userId: string): Promise<'admin' | 'staff' | 'customer'> {
-    // Mock role assignment based on user ID patterns for demo
-    const user = await this.getUser(userId);
+    const user = await this.getUserById(userId);
     if (!user) return 'customer'; // Default to customer if user not found
 
     if (user.role) return user.role as 'admin' | 'staff' | 'customer';

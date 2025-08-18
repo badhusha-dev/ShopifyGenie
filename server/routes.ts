@@ -3,9 +3,175 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema } from "@shared/schema";
 import { shopify, saveShopSession, getShopSession } from "./shopify";
+import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, type AuthRequest } from "./auth";
 import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication Routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const isValidPassword = await AuthService.validatePassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const { password: _, ...userWithoutPassword } = user;
+      const token = AuthService.generateToken(userWithoutPassword);
+      
+      res.json({ 
+        user: userWithoutPassword, 
+        token,
+        message: "Login successful" 
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { name, email, password, role = 'customer' } = req.body;
+      
+      if (!name || !email || !password) {
+        return res.status(400).json({ error: "Name, email, and password required" });
+      }
+      
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ error: "User already exists with this email" });
+      }
+      
+      const hashedPassword = await AuthService.hashPassword(password);
+      const user = await storage.createUser({
+        name,
+        email,
+        password: hashedPassword,
+        role: role as 'admin' | 'staff' | 'customer'
+      });
+      
+      const { password: _, ...userWithoutPassword } = user;
+      const token = AuthService.generateToken(userWithoutPassword);
+      
+      res.status(201).json({ 
+        user: userWithoutPassword, 
+        token,
+        message: "Registration successful" 
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ error: "Registration failed" });
+    }
+  });
+
+  app.get("/api/auth/me", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { password, ...userWithoutPassword } = req.user!;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get user info" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ message: "Logged out successfully" });
+  });
+
+  // User Management Routes (Admin only)
+  app.get("/api/users", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const shopDomain = req.query.shop as string;
+      const users = await storage.getUsers(shopDomain);
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/users", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { name, email, password, role } = req.body;
+      
+      if (!name || !email || !password || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+      
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ error: "User already exists with this email" });
+      }
+      
+      const hashedPassword = await AuthService.hashPassword(password);
+      const user = await storage.createUser({
+        name,
+        email,
+        password: hashedPassword,
+        role: role as 'admin' | 'staff' | 'customer',
+        shopDomain: (req as AuthRequest).user?.shopDomain
+      });
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error('Create user error:', error);
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
+  app.put("/api/users/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, email, role, password } = req.body;
+      
+      const updates: any = { name, email, role };
+      if (password) {
+        updates.password = await AuthService.hashPassword(password);
+      }
+      
+      const user = await storage.updateUser(id, updates);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error('Update user error:', error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/users/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent admin from deleting themselves
+      if (id === (req as AuthRequest).user?.id) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+      
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
   // Shopify OAuth Routes
   app.get("/auth", async (req, res) => {
     if (!shopify) {
@@ -61,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats
-  app.get("/api/stats", async (req, res) => {
+  app.get("/api/stats", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const stats = await storage.getStats(shopDomain);
@@ -72,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced analytics endpoints
-  app.get("/api/analytics/sales-trends", async (req, res) => {
+  app.get("/api/analytics/sales-trends", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const trends = await storage.getSalesTrends();
       res.json(trends);
@@ -81,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/analytics/top-products", async (req, res) => {
+  app.get("/api/analytics/top-products", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const topProducts = await storage.getTopProducts();
       res.json(topProducts);
@@ -130,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Products/Inventory routes
-  app.get("/api/products", async (req, res) => {
+  app.get("/api/products", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const products = await storage.getProducts(shopDomain);
@@ -202,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
-  app.get("/api/customers", async (req, res) => {
+  app.get("/api/customers", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const customers = await storage.getCustomers(shopDomain);

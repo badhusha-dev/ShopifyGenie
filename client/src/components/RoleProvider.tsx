@@ -1,10 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { createContext, useContext } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RoleContextType {
   userRole: 'admin' | 'staff' | 'customer' | null;
   userId: string;
-  setUserId: (id: string) => void;
   hasAccess: (requiredRole: 'admin' | 'staff' | 'customer') => boolean;
   isLoading: boolean;
 }
@@ -24,15 +23,10 @@ interface RoleProviderProps {
 }
 
 export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
-  const [userId, setUserId] = useState('admin'); // Mock user ID - in real app would come from auth
-
-  const { data: roleData, isLoading } = useQuery({
-    queryKey: ['/api/user/role', userId],
-    enabled: !!userId,
-  });
+  const { user, isLoading } = useAuth();
 
   const hasAccess = (requiredRole: 'admin' | 'staff' | 'customer') => {
-    const userRole = roleData?.role;
+    const userRole = user?.role;
     if (!userRole) return false;
 
     const hierarchy = { admin: 3, staff: 2, customer: 1 };
@@ -40,9 +34,8 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
   };
 
   const value: RoleContextType = {
-    userRole: roleData?.role || null,
-    userId,
-    setUserId,
+    userRole: user?.role || null,
+    userId: user?.id || '',
     hasAccess,
     isLoading,
   };
