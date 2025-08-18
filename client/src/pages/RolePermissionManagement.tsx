@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../contexts/PermissionContext';
-import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Shield, Users, Settings } from 'lucide-react';
 
 interface Permission {
   id: string;
@@ -25,25 +17,26 @@ interface RolePermissions {
 const RolePermissionManagement: React.FC = () => {
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
-  const { toast } = useToast();
   
   const [selectedRole, setSelectedRole] = useState<string>('admin');
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Check if user has permission to view this screen
   if (user?.role !== 'superadmin') {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Shield className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-            <p className="text-gray-600">Only Super Administrators can access the Role & Permission Management screen.</p>
-          </CardContent>
-        </Card>
+      <div className="container-fluid p-4">
+        <div className="card">
+          <div className="card-body text-center p-5">
+            <i className="fas fa-shield-alt fa-4x text-muted mb-4"></i>
+            <h2 className="h3 mb-3">Access Denied</h2>
+            <p className="text-muted">Only Super Administrators can access the Role & Permission Management screen.</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -75,11 +68,8 @@ const RolePermissionManagement: React.FC = () => {
       setPermissions(data);
     } catch (error) {
       console.error('Error fetching permissions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch permissions. Please try again.",
-        variant: "destructive",
-      });
+      setErrorMessage('Failed to fetch permissions. Please try again.');
+      setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setLoading(false);
     }
@@ -102,11 +92,8 @@ const RolePermissionManagement: React.FC = () => {
       setRolePermissions(data.permissions);
     } catch (error) {
       console.error('Error fetching role permissions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch role permissions. Please try again.",
-        variant: "destructive",
-      });
+      setErrorMessage('Failed to fetch role permissions. Please try again.');
+      setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setLoading(false);
     }
@@ -135,17 +122,12 @@ const RolePermissionManagement: React.FC = () => {
         throw new Error('Failed to update role permissions');
       }
 
-      toast({
-        title: "Success",
-        description: `Permissions for ${selectedRole} role updated successfully.`,
-      });
+      setSuccessMessage(`Permissions for ${selectedRole} role updated successfully.`);
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (error) {
       console.error('Error updating role permissions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update role permissions. Please try again.",
-        variant: "destructive",
-      });
+      setErrorMessage('Failed to update role permissions. Please try again.');
+      setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setSaving(false);
     }
@@ -153,11 +135,11 @@ const RolePermissionManagement: React.FC = () => {
 
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
-      case 'superadmin': return 'bg-yellow-500 text-yellow-900';
-      case 'admin': return 'bg-blue-500 text-blue-900';
-      case 'staff': return 'bg-green-500 text-green-900';
-      case 'customer': return 'bg-gray-500 text-gray-900';
-      default: return 'bg-gray-500 text-gray-900';
+      case 'superadmin': return 'bg-warning text-dark';
+      case 'admin': return 'bg-primary';
+      case 'staff': return 'bg-success';
+      case 'customer': return 'bg-secondary';
+      default: return 'bg-secondary';
     }
   };
 
@@ -172,74 +154,98 @@ const RolePermissionManagement: React.FC = () => {
   const operations = ['view', 'create', 'edit', 'delete', 'export'];
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Role & Permission Management</h1>
-        <p className="text-gray-600">
+    <div className="container-fluid p-4">
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="alert alert-success alert-dismissible fade show" role="alert">
+          <i className="fas fa-check-circle me-2"></i>
+          {successMessage}
+          <button type="button" className="btn-close" onClick={() => setSuccessMessage('')}></button>
+        </div>
+      )}
+      
+      {errorMessage && (
+        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+          <i className="fas fa-exclamation-circle me-2"></i>
+          {errorMessage}
+          <button type="button" className="btn-close" onClick={() => setErrorMessage('')}></button>
+        </div>
+      )}
+
+      <div className="mb-4">
+        <h1 className="h2 fw-bold mb-2">Role & Permission Management</h1>
+        <p className="text-muted">
           Manage permissions for different user roles. Super Admin permissions cannot be modified.
         </p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <div className="card mb-4">
+        <div className="card-header">
+          <div className="d-flex justify-content-between align-items-center">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+              <h5 className="card-title mb-1">
+                <i className="fas fa-users me-2"></i>
                 Role Selection
-              </CardTitle>
-              <CardDescription>
+              </h5>
+              <p className="card-text text-muted mb-0">
                 Select a role to view and modify its permissions
-              </CardDescription>
+              </p>
             </div>
-            <Badge className={getRoleBadgeClass(selectedRole)}>
+            <span className={`badge ${getRoleBadgeClass(selectedRole)}`}>
               {selectedRole.toUpperCase()}
-            </Badge>
+            </span>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4">
-            <Label htmlFor="role-select">Role:</Label>
-            <Select value={selectedRole} onValueChange={setSelectedRole}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="staff">Staff</SelectItem>
-                <SelectItem value="customer">Customer</SelectItem>
-              </SelectContent>
-            </Select>
+        </div>
+        <div className="card-body">
+          <div className="row align-items-center">
+            <div className="col-auto">
+              <label htmlFor="role-select" className="form-label">Role:</label>
+            </div>
+            <div className="col-auto">
+              <select 
+                id="role-select"
+                className="form-select" 
+                value={selectedRole} 
+                onChange={(e) => setSelectedRole(e.target.value)}
+                style={{ width: '200px' }}
+              >
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {loading ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Loading permissions...</p>
-          </CardContent>
-        </Card>
+        <div className="card">
+          <div className="card-body text-center p-5">
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mb-0">Loading permissions...</p>
+          </div>
+        </div>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
+        <div className="card">
+          <div className="card-header">
+            <h5 className="card-title mb-1">
+              <i className="fas fa-shield-alt me-2"></i>
               Permission Matrix
-            </CardTitle>
-            <CardDescription>
+            </h5>
+            <p className="card-text text-muted mb-0">
               Check/uncheck permissions for the selected role
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-semibold">Module</th>
+            </p>
+          </div>
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead className="table-light">
+                  <tr>
+                    <th scope="col" className="fw-semibold">Module</th>
                     {operations.map(operation => (
-                      <th key={operation} className="text-center p-3 font-semibold capitalize">
+                      <th key={operation} scope="col" className="text-center fw-semibold text-capitalize">
                         {operation}
                       </th>
                     ))}
@@ -247,8 +253,8 @@ const RolePermissionManagement: React.FC = () => {
                 </thead>
                 <tbody>
                   {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
-                    <tr key={category} className="border-b hover:bg-gray-50">
-                      <td className="p-3 font-medium capitalize">
+                    <tr key={category}>
+                      <td className="fw-medium text-capitalize">
                         {category}
                       </td>
                       {operations.map(operation => {
@@ -257,17 +263,21 @@ const RolePermissionManagement: React.FC = () => {
                         const isChecked = permissionName ? rolePermissions[permissionName] || false : false;
                         
                         return (
-                          <td key={operation} className="text-center p-3">
+                          <td key={operation} className="text-center">
                             {permission ? (
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={(checked) => 
-                                  handlePermissionChange(permissionName!, !!checked)
-                                }
-                                title={permission.description}
-                              />
+                              <div className="form-check d-flex justify-content-center">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => 
+                                    handlePermissionChange(permissionName!, e.target.checked)
+                                  }
+                                  title={permission.description}
+                                />
+                              </div>
                             ) : (
-                              <span className="text-gray-300">—</span>
+                              <span className="text-muted">—</span>
                             )}
                           </td>
                         );
@@ -278,56 +288,65 @@ const RolePermissionManagement: React.FC = () => {
               </table>
             </div>
 
-            <div className="flex justify-end mt-6">
-              <Button 
+            <div className="d-flex justify-content-end mt-4">
+              <button 
+                type="button"
+                className="btn btn-primary px-4"
                 onClick={handleSave} 
                 disabled={saving}
-                className="px-6"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span className="spinner-border spinner-border-sm me-2" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </span>
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Settings className="h-4 w-4 mr-2" />
+                    <i className="fas fa-save me-2"></i>
                     Save Permissions
                   </>
                 )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Role Descriptions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <Badge className="bg-yellow-500 text-yellow-900 mb-2">SUPER ADMIN</Badge>
-              <p className="text-sm text-gray-600">
-                Full system access. Cannot be modified. Can manage all users and permissions.
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <Badge className="bg-blue-500 text-blue-900 mb-2">ADMIN</Badge>
-              <p className="text-sm text-gray-600">
-                High-level access to most features. Can manage inventory, orders, customers, and view reports.
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <Badge className="bg-green-500 text-green-900 mb-2">STAFF</Badge>
-              <p className="text-sm text-gray-600">
-                Limited access for day-to-day operations. Can view and edit basic inventory and customer data.
-              </p>
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      <div className="card mt-4">
+        <div className="card-header">
+          <h5 className="card-title mb-0">Role Descriptions</h5>
+        </div>
+        <div className="card-body">
+          <div className="row">
+            <div className="col-md-4 mb-3">
+              <div className="p-3 border rounded">
+                <span className="badge bg-warning text-dark mb-2">SUPER ADMIN</span>
+                <p className="small text-muted mb-0">
+                  Full system access. Cannot be modified. Can manage all users and permissions.
+                </p>
+              </div>
+            </div>
+            <div className="col-md-4 mb-3">
+              <div className="p-3 border rounded">
+                <span className="badge bg-primary mb-2">ADMIN</span>
+                <p className="small text-muted mb-0">
+                  High-level access to most features. Can manage inventory, orders, customers, and view reports.
+                </p>
+              </div>
+            </div>
+            <div className="col-md-4 mb-3">
+              <div className="p-3 border rounded">
+                <span className="badge bg-success mb-2">STAFF</span>
+                <p className="small text-muted mb-0">
+                  Limited access for day-to-day operations. Can view and edit basic inventory and customer data.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
