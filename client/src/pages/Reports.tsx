@@ -1,10 +1,25 @@
 import TopNav from "../components/TopNav";
 import { useQuery } from "@tanstack/react-query";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 const Reports = () => {
   const { data: stats } = useQuery({
     queryKey: ["/api/stats"],
   });
+
+  const { data: salesTrends } = useQuery({
+    queryKey: ["/api/analytics/sales-trends"],
+  });
+
+  const { data: topProducts } = useQuery({
+    queryKey: ["/api/analytics/top-products"],
+  });
+
+  const { data: loyaltyData } = useQuery({
+    queryKey: ["/api/analytics/loyalty-points"],
+  });
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
   return (
     <>
@@ -61,11 +76,27 @@ const Reports = () => {
                 <h6 className="mb-0">Sales Trend</h6>
               </div>
               <div className="card-body">
-                <div className="text-center py-5">
-                  <i className="fas fa-chart-line fa-3x text-muted mb-3"></i>
-                  <h5 className="text-muted">Sales Chart Coming Soon</h5>
-                  <p className="text-muted">Integration with charting library needed</p>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={salesTrends || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                      formatter={(value: any) => [`$${value.toFixed(2)}`, 'Sales']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="sales" 
+                      stroke="#8884d8" 
+                      strokeWidth={3}
+                      dot={{ fill: '#8884d8' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
@@ -75,10 +106,19 @@ const Reports = () => {
                 <h6 className="mb-0">Top Products</h6>
               </div>
               <div className="card-body">
-                <div className="text-center py-4">
-                  <i className="fas fa-trophy fa-2x text-muted mb-3"></i>
-                  <p className="text-muted">No sales data available yet</p>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topProducts || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis />
+                    <Tooltip formatter={(value: any) => [value, 'Units Sold']} />
+                    <Bar dataKey="sold" fill="#8884d8">
+                      {topProducts?.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

@@ -10,6 +10,7 @@ const Sidebar = () => {
     { path: "/subscriptions", label: "Subscriptions", icon: "fas fa-sync-alt" },
     { path: "/customers", label: "Customers", icon: "fas fa-users" },
     { path: "/reports", label: "Reports", icon: "fas fa-chart-bar" },
+    { path: "/portal", label: "Customer Portal", icon: "fas fa-user-circle" },
   ];
 
   return (

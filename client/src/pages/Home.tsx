@@ -3,6 +3,8 @@ import Dashboard from "../components/Dashboard";
 import InventoryTable from "../components/InventoryTable";
 import CustomerTable from "../components/CustomerTable";
 import SubscriptionList from "../components/SubscriptionList";
+import RoleSwitcher from "../components/RoleSwitcher";
+import RoleBasedAccess from "../components/RoleBasedAccess";
 import { useQuery } from "@tanstack/react-query";
 
 const Home = () => {
@@ -121,6 +123,11 @@ const Home = () => {
                   Real-time sync requires API configuration
                 </small>
               </div>
+            </div>
+
+            {/* Role Demo */}
+            <div className="mt-3">
+              <RoleSwitcher />
             </div>
           </div>
         </div>

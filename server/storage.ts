@@ -485,6 +485,119 @@ export class MemStorage implements IStorage {
       avgOrderValue: orders.length > 0 ? totalSales / orders.length : 0,
     };
   }
+
+  // Enhanced analytics for charts and reports
+  async getSalesTrends() {
+    const orders = await this.getOrders();
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date.toISOString().split('T')[0];
+    });
+
+    return last7Days.map(date => {
+      const dayOrders = orders.filter(order => 
+        order.createdAt.toISOString().split('T')[0] === date
+      );
+      const sales = dayOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+      
+      return {
+        date,
+        sales: Math.round(sales * 100) / 100,
+        orders: dayOrders.length
+      };
+    });
+  }
+
+  async getTopProducts() {
+    const products = await this.getProducts();
+    return products
+      .sort((a, b) => b.sold - a.sold)
+      .slice(0, 5)
+      .map(p => ({
+        name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
+        sold: p.sold || 0,
+        revenue: (p.sold || 0) * parseFloat(p.price)
+      }));
+  }
+
+  async getLoyaltyPointsAnalytics() {
+    const transactions = await this.getLoyaltyTransactions();
+    const earned = transactions.filter(t => t.type === 'earned').reduce((sum, t) => sum + t.points, 0);
+    const redeemed = transactions.filter(t => t.type === 'redeemed').reduce((sum, t) => sum + Math.abs(t.points), 0);
+    
+    return {
+      earned,
+      redeemed,
+      available: earned - redeemed
+    };
+  }
+
+  // Stock forecasting
+  async getStockForecast() {
+    const products = await this.getProducts();
+    const orders = await this.getOrders();
+    
+    return products.map(product => {
+      // Calculate average daily sales over last 30 days
+      const productSales = orders
+        .filter(order => order.createdAt >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+        .reduce((sum, order) => sum + (product.sold || 0) / 30, 0);
+      
+      const dailySales = Math.max(productSales, 0.1); // Prevent division by zero
+      const daysLeft = product.stock / dailySales;
+      
+      return {
+        id: product.id,
+        name: product.name,
+        stock: product.stock,
+        dailySales: Math.round(dailySales * 100) / 100,
+        daysLeft: Math.round(daysLeft),
+        status: daysLeft < 7 ? 'critical' : daysLeft < 14 ? 'warning' : 'good'
+      };
+    });
+  }
+
+  // Role-based access helpers
+  async getUserRole(userId: string): Promise<'admin' | 'staff' | 'customer'> {
+    // Mock role assignment based on user ID patterns for demo
+    if (userId === 'admin' || userId.includes('admin')) return 'admin';
+    if (userId === 'staff' || userId.includes('staff')) return 'staff';
+    return 'customer';
+  }
+
+  async getAlertsForUser(role: 'admin' | 'staff' | 'customer') {
+    const alerts = [];
+    
+    if (role === 'admin' || role === 'staff') {
+      const lowStock = await this.getLowStockProducts();
+      if (lowStock.length > 0) {
+        alerts.push({
+          type: 'warning',
+          message: `${lowStock.length} products are low in stock`,
+          action: 'View Inventory'
+        });
+      }
+      
+      const subscriptions = await this.getSubscriptions();
+      const expiring = subscriptions.filter(s => {
+        const endDate = new Date(s.endDate);
+        const now = new Date();
+        const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return daysLeft <= 7 && s.status === 'active';
+      });
+      
+      if (expiring.length > 0) {
+        alerts.push({
+          type: 'info',
+          message: `${expiring.length} subscriptions expire within 7 days`,
+          action: 'View Subscriptions'
+        });
+      }
+    }
+    
+    return alerts;
+  }
 }
 
 export const storage = new MemStorage();
