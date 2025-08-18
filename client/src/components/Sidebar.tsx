@@ -10,8 +10,11 @@ const Sidebar = () => {
     { path: "/subscriptions", label: "Subscriptions", icon: "fas fa-sync-alt" },
     { path: "/customers", label: "Customers", icon: "fas fa-users" },
     { path: "/reports", label: "Reports", icon: "fas fa-chart-bar" },
-    { path: "/portal", label: "Customer Portal", icon: "fas fa-user-circle" },
-    { path: "/ai-recommendations", label: "AI Insights", icon: "fas fa-robot" }, // Added AI Insights
+    { path: "/customer-portal", label: "Customer Portal", icon: "fas fa-user-circle" },
+    { path: "/ai-insights", label: "AI Insights", icon: "fas fa-brain" },
+    { path: "/ai-recommendations", label: "AI Recommendations", icon: "fas fa-robot" },
+    { path: "/advanced-inventory", label: "Advanced Inventory", icon: "fas fa-warehouse" },
+    { path: "/vendor-management", label: "Vendor Management", icon: "fas fa-truck" },
   ];
 
   return (
@@ -21,7 +24,7 @@ const Sidebar = () => {
           <i className="fas fa-cube me-2"></i>
           ShopifyApp
         </h4>
-        <small className="text-white-50">Inventory & Loyalty</small>
+        <small className="text-white-50">Business Management</small>
       </div>
       <ul className="nav flex-column">
         {navigationItems.map((item) => (
@@ -35,24 +38,6 @@ const Sidebar = () => {
             </Link>
           </li>
         ))}
-          <li>
-            <Link href="/ai-recommendations" className="nav-link">
-              <i className="fas fa-robot me-2"></i>
-              AI Recommendations
-            </Link>
-          </li>
-          <li>
-            <Link href="/advanced-inventory" className="nav-link">
-              <i className="fas fa-warehouse me-2"></i>
-              Advanced Inventory
-            </Link>
-          </li>
-          <li>
-            <Link href="/vendor-management" className="nav-link">
-              <i className="fas fa-truck me-2"></i>
-              Vendor Management
-            </Link>
-          </li>
       </ul>
     </nav>
   );

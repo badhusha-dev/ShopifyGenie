@@ -11,10 +11,12 @@ import Subscriptions from "@/pages/Subscriptions";
 import Customers from "@/pages/Customers";
 import Reports from "@/pages/Reports";
 import CustomerPortal from "@/pages/CustomerPortal";
+import AIRecommendations from "@/pages/AIRecommendations";
+import AdvancedInventory from "@/pages/AdvancedInventory";
+import VendorManagement from "@/pages/VendorManagement";
 import Sidebar from "./components/Sidebar";
 import { RoleProvider } from "./components/RoleProvider";
 import AlertSystem from "./components/AlertSystem";
-import { lazy } from "react";
 
 function Router() {
   return (
@@ -31,9 +33,10 @@ function Router() {
             <Route path="/customers" component={Customers} />
             <Route path="/reports" component={Reports} />
             <Route path="/customer-portal" component={CustomerPortal} />
-            <Route path="/ai-recommendations" component={lazy(() => import("./pages/AIRecommendations"))} />
-            <Route path="/advanced-inventory" component={lazy(() => import("./pages/AdvancedInventory"))} />
-            <Route path="/vendor-management" component={lazy(() => import("./pages/VendorManagement"))} />
+            <Route path="/ai-insights" component={Reports} />
+            <Route path="/ai-recommendations" component={AIRecommendations} />
+            <Route path="/advanced-inventory" component={AdvancedInventory} />
+            <Route path="/vendor-management" component={VendorManagement} />
             <Route component={NotFound} />
           </Switch>
         </div>

@@ -84,8 +84,8 @@ const Reports = () => {
 
   return (
     <>
-      <TopNav 
-        title="AI Business Insights" 
+      <TopNav
+        title="AI Business Insights"
         subtitle="Intelligent analytics powered by machine learning for data-driven business decisions"
       />
 
@@ -95,7 +95,7 @@ const Reports = () => {
           <div className="card-body">
             <h5 className="mb-3">AI-Powered Business Intelligence Dashboard</h5>
             <p className="mb-3">
-              Our advanced AI engine analyzes your business data in real-time to provide actionable insights, 
+              Our advanced AI engine analyzes your business data in real-time to provide actionable insights,
               predictive analytics, and automated recommendations that drive growth and optimize operations.
             </p>
 
@@ -131,7 +131,7 @@ const Reports = () => {
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center">
                   <h6 className="mb-0">Analytics Period</h6>
-                  <select 
+                  <select
                     className="form-select w-auto"
                     value={timeRange}
                     onChange={(e) => setTimeRange(e.target.value)}
@@ -191,7 +191,7 @@ const Reports = () => {
                     <div className="mt-3">
                       <div className="alert alert-success" role="alert">
                         <i className="fas fa-lightbulb me-2"></i>
-                        <strong>AI Insight:</strong> Your business shows strong growth momentum with healthy customer retention. 
+                        <strong>AI Insight:</strong> Your business shows strong growth momentum with healthy customer retention.
                         Focus on increasing average order value through upselling to maximize revenue.
                       </div>
                     </div>
@@ -411,7 +411,7 @@ const Reports = () => {
                         {customers?.slice(0, 5).map(customer => {
                           const lastOrder = orders?.filter(o => o.customerId === customer.id)
                             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-                          const daysSinceLastOrder = lastOrder 
+                          const daysSinceLastOrder = lastOrder
                             ? Math.floor((Date.now() - new Date(lastOrder.createdAt).getTime()) / (1000 * 60 * 60 * 24))
                             : 999;
 
