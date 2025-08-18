@@ -1,22 +1,53 @@
+import { useState } from "react";
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
-import Inventory from "@/pages/Inventory";
-import Loyalty from "@/pages/Loyalty";
-import Subscriptions from "@/pages/Subscriptions";
-import Customers from "@/pages/Customers";
-import Reports from "@/pages/Reports";
-import CustomerPortal from "@/pages/CustomerPortal";
-import Sidebar from "./components/Sidebar";
+import { queryClient } from "./lib/queryClient";
+import NotFound from "./pages/not-found";
 import { RoleProvider } from "./components/RoleProvider";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Sidebar from "./components/Sidebar";
+import LoginForm from "./components/LoginForm";
+import Home from "./pages/Home";
+import Inventory from "./pages/Inventory";
+import Customers from "./pages/Customers";
+import Subscriptions from "./pages/Subscriptions";
+import Loyalty from "./pages/Loyalty";
+import Reports from "./pages/Reports";
+import CustomerPortal from "./pages/CustomerPortal";
+import AdvancedInventory from "./pages/AdvancedInventory";
+import AIRecommendations from "./pages/AIRecommendations";
+import VendorManagement from "./pages/VendorManagement";
+import UserManagement from "./pages/UserManagement";
 import AlertSystem from "./components/AlertSystem";
-import { lazy } from "react";
+import "./index.css";
 
-function Router() {
+const AppContent = () => {
+  const { user, isLoading } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="text-muted">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LoginForm
+        onToggleMode={() => setShowRegister(!showRegister)}
+        showRegister={showRegister}
+      />
+    );
+  }
+
   return (
     <RoleProvider>
       <div className="d-flex">
@@ -26,29 +57,31 @@ function Router() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/inventory" component={Inventory} />
-            <Route path="/loyalty" component={Loyalty} />
-            <Route path="/subscriptions" component={Subscriptions} />
             <Route path="/customers" component={Customers} />
+            <Route path="/subscriptions" component={Subscriptions} />
+            <Route path="/loyalty" component={Loyalty} />
             <Route path="/reports" component={Reports} />
             <Route path="/customer-portal" component={CustomerPortal} />
-            <Route path="/ai-recommendations" component={lazy(() => import("./pages/AIRecommendations"))} />
-            <Route path="/advanced-inventory" component={lazy(() => import("./pages/AdvancedInventory"))} />
-            <Route path="/vendor-management" component={lazy(() => import("./pages/VendorManagement"))} />
+            <Route path="/ai-insights" component={Reports} />
+            <Route path="/ai-recommendations" component={AIRecommendations} />
+            <Route path="/advanced-inventory" component={AdvancedInventory} />
+            <Route path="/vendor-management" component={VendorManagement} />
+            <Route path="/user-management" component={UserManagement} />
             <Route component={NotFound} />
           </Switch>
         </div>
       </div>
     </RoleProvider>
   );
-}
+};
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <AuthProvider>
+        <AppContent />
         <Toaster />
-        <Router />
-      </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

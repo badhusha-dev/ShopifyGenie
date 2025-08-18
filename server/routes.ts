@@ -3,9 +3,193 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema } from "@shared/schema";
 import { shopify, saveShopSession, getShopSession } from "./shopify";
+import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, requireSuperAdmin, type AuthRequest } from "./auth";
 import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication Routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const isValidPassword = await AuthService.validatePassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const { password: _, ...userWithoutPassword } = user;
+      const token = AuthService.generateToken(userWithoutPassword);
+      
+      res.json({ 
+        user: userWithoutPassword, 
+        token,
+        message: "Login successful" 
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { name, email, password, role = 'customer' } = req.body;
+      
+      if (!name || !email || !password) {
+        return res.status(400).json({ error: "Name, email, and password required" });
+      }
+      
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ error: "User already exists with this email" });
+      }
+      
+      const hashedPassword = await AuthService.hashPassword(password);
+      const user = await storage.createUser({
+        name,
+        email,
+        password: hashedPassword,
+        role: role as 'admin' | 'staff' | 'customer'
+      });
+      
+      const { password: _, ...userWithoutPassword } = user;
+      const token = AuthService.generateToken(userWithoutPassword);
+      
+      res.status(201).json({ 
+        user: userWithoutPassword, 
+        token,
+        message: "Registration successful" 
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ error: "Registration failed" });
+    }
+  });
+
+  app.get("/api/auth/me", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { password, ...userWithoutPassword } = req.user!;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get user info" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ message: "Logged out successfully" });
+  });
+
+  // User Management Routes
+  // View users - Admin and Super Admin can view
+  app.get("/api/users", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const shopDomain = req.query.shop as string;
+      const users = await storage.getUsers(shopDomain);
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Create users - Super Admin only
+  app.post("/api/users", authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+      const { name, email, password, role } = req.body;
+      
+      if (!name || !email || !password || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+      
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ error: "User already exists with this email" });
+      }
+      
+      const hashedPassword = await AuthService.hashPassword(password);
+      const user = await storage.createUser({
+        name,
+        email,
+        password: hashedPassword,
+        role: role as 'superadmin' | 'admin' | 'staff' | 'customer',
+        shopDomain: (req as AuthRequest).user?.shopDomain
+      });
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error('Create user error:', error);
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
+  // Update users - Admin and Super Admin can update
+  app.put("/api/users/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, email, role, password } = req.body;
+      const currentUser = (req as AuthRequest).user!;
+      
+      // Only Super Admin can change roles or update other Super Admins
+      const targetUser = await storage.getUserById(id);
+      if (targetUser?.role === 'superadmin' && currentUser.role !== 'superadmin') {
+        return res.status(403).json({ error: "Only Super Admin can modify Super Admin accounts" });
+      }
+      
+      if (role && role !== targetUser?.role && currentUser.role !== 'superadmin') {
+        return res.status(403).json({ error: "Only Super Admin can change user roles" });
+      }
+      
+      const updates: any = { name, email };
+      if (currentUser.role === 'superadmin' && role) {
+        updates.role = role;
+      }
+      if (password) {
+        updates.password = await AuthService.hashPassword(password);
+      }
+      
+      const user = await storage.updateUser(id, updates);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error('Update user error:', error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  // Delete users - Super Admin only
+  app.delete("/api/users/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent deletion of own account
+      if (id === (req as AuthRequest).user?.id) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+      
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ error: error.message || "Failed to delete user" });
+    }
+  });
+
   // Shopify OAuth Routes
   app.get("/auth", async (req, res) => {
     if (!shopify) {
@@ -61,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats
-  app.get("/api/stats", async (req, res) => {
+  app.get("/api/stats", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const stats = await storage.getStats(shopDomain);
@@ -72,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced analytics endpoints
-  app.get("/api/analytics/sales-trends", async (req, res) => {
+  app.get("/api/analytics/sales-trends", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const trends = await storage.getSalesTrends();
       res.json(trends);
@@ -81,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/analytics/top-products", async (req, res) => {
+  app.get("/api/analytics/top-products", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const topProducts = await storage.getTopProducts();
       res.json(topProducts);
@@ -130,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Products/Inventory routes
-  app.get("/api/products", async (req, res) => {
+  app.get("/api/products", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const products = await storage.getProducts(shopDomain);
@@ -202,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
-  app.get("/api/customers", async (req, res) => {
+  app.get("/api/customers", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
       const customers = await storage.getCustomers(shopDomain);
@@ -642,6 +826,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/inventory/batches", async (req, res) => {
+    try {
+      const batches = await storage.getInventoryBatches();
+      res.json(batches);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get inventory batches" });
+    }
+  });
+
+  app.post("/api/inventory/batches", async (req, res) => {
+    try {
+      const batch = await storage.createInventoryBatch(req.body);
+      res.status(201).json(batch);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create inventory batch" });
+    }
+  });
+
   app.get("/api/inventory/expiring-stock", async (req, res) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
@@ -888,6 +1090,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate sales forecast" });
+    }
+  });
+
+  // AI Business Insights
+  app.get("/api/ai/business-insights", async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      
+      const orders = await storage.getOrders();
+      const customers = await storage.getCustomers();
+      const products = await storage.getProducts();
+      
+      // Calculate business health score
+      const recentOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        const daysAgo = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24);
+        return daysAgo <= days;
+      });
+      
+      const totalRevenue = recentOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+      const avgOrderValue = recentOrders.length ? totalRevenue / recentOrders.length : 0;
+      
+      // Customer metrics
+      const customerOrderCounts = recentOrders.reduce((acc, order) => {
+        if (order.customerId) {
+          acc[order.customerId] = (acc[order.customerId] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const repeatCustomers = Object.values(customerOrderCounts).filter(count => count > 1).length;
+      const repeatRate = customers.length ? (repeatCustomers / customers.length) * 100 : 0;
+      
+      // Product metrics
+      const lowStockProducts = products.filter(p => p.stock < 10).length;
+      const stockHealthScore = products.length ? ((products.length - lowStockProducts) / products.length) * 100 : 100;
+      
+      // Calculate overall health score (weighted average)
+      const healthScore = Math.round(
+        (stockHealthScore * 0.3) + 
+        (Math.min(repeatRate * 2, 100) * 0.3) + 
+        (Math.min(avgOrderValue / 50 * 100, 100) * 0.4)
+      );
+      
+      res.json({
+        healthScore,
+        metrics: {
+          totalRevenue,
+          avgOrderValue,
+          repeatRate,
+          stockHealthScore,
+          lowStockCount: lowStockProducts
+        },
+        insights: [
+          {
+            type: 'success',
+            message: `Strong ${repeatRate.toFixed(1)}% repeat customer rate indicates good customer satisfaction`,
+            action: 'Continue current customer retention strategies'
+          },
+          {
+            type: stockHealthScore < 80 ? 'warning' : 'info',
+            message: `${lowStockProducts} products running low on inventory`,
+            action: 'Review inventory levels and reorder critical items'
+          },
+          {
+            type: avgOrderValue > 50 ? 'success' : 'warning',
+            message: `Average order value of $${avgOrderValue.toFixed(2)} ${avgOrderValue > 50 ? 'exceeds' : 'below'} industry average`,
+            action: avgOrderValue > 50 ? 'Maintain upselling strategies' : 'Implement cross-selling and bundling'
+          }
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate business insights" });
     }
   });
 

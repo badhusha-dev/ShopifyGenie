@@ -3,7 +3,7 @@ import { useRole } from './RoleProvider';
 
 interface RoleBasedAccessProps {
   children: React.ReactNode;
-  requiredRole: 'admin' | 'staff' | 'customer';
+  requiredRole: 'superadmin' | 'admin' | 'staff' | 'customer';
   fallback?: React.ReactNode;
 }
 

@@ -57,33 +57,36 @@ export interface IStorage {
   getWarehouse(id: string): Promise<any | undefined>;
   createWarehouse(warehouse: any): Promise<any>;
   updateWarehouse(id: string, updates: Partial<any>): Promise<any | undefined>;
-
   getInventoryBatches(): Promise<any[]>;
-  getInventoryBatch(id: string): Promise<any | undefined>;
-  createInventoryBatch(batch: any): Promise<any>;
-  updateInventoryBatch(id: string, updates: Partial<any>): Promise<any | undefined>;
+  getInventoryBatch(batchId: string): Promise<any>;
+  createInventoryBatch(batchData: any): Promise<any>;
+  updateInventoryBatch(batchId: string, updates: any): Promise<any>;
   getBatchByProductAndExpiry(productId: string, expiryDate: Date): Promise<any | undefined>;
   getExpiringStock(daysUntilExpiry: number): Promise<any[]>;
-
   getStockAdjustments(): Promise<any[]>;
-  createStockAdjustment(adjustment: any): Promise<any>;
+  createStockAdjustment(adjustmentData: any): Promise<any>;
+  getStockMovements(): Promise<any[]>;
+  createStockMovement(movementData: any): Promise<any>;
   getStockAuditHistory(itemId: string): Promise<any[]>;
 
   // Multi-Vendor Management
   getVendors(): Promise<any[]>;
-  getVendor(id: string): Promise<any | undefined>;
+  getVendor(vendorId: string): Promise<any>;
   createVendor(vendor: any): Promise<any>;
   updateVendor(id: string, updates: Partial<any>): Promise<any | undefined>;
 
   getPurchaseOrders(): Promise<any[]>;
-  getPurchaseOrder(id: string): Promise<any | undefined>;
+  getPurchaseOrder(poId: string): Promise<any>;
+  getPurchaseOrderItems(poId: string): Promise<any[]>;
   createPurchaseOrder(po: any): Promise<any>;
   updatePurchaseOrder(id: string, updates: Partial<any>): Promise<any | undefined>;
+  updatePurchaseOrderItem(itemId: string, updates: any): Promise<any>;
+  createPurchaseOrderItem(itemData: any): Promise<any>;
   getPurchaseOrdersByVendor(vendorId: string): Promise<any[]>;
 
   getVendorPayments(): Promise<any[]>;
   getVendorPayment(id: string): Promise<any | undefined>;
-  createVendorPayment(payment: any): Promise<any>;
+  createVendorPayment(paymentData: any): Promise<any>;
 
   // Analytics
   getStats(shopDomain?: string): Promise<{
@@ -151,7 +154,48 @@ export class MemStorage implements IStorage {
     this.seedData();
   }
 
-  private seedData() {
+  private async seedData() {
+    // Initialize sample users if empty
+    if (this.users.size === 0) {
+      const { AuthService } = await import('./auth');
+
+      // Create Super Admin (highest privilege)
+      const superAdminUser: InsertUser = {
+        name: 'Super Administrator',
+        email: 'superadmin@shopifyapp.com',
+        password: await AuthService.hashPassword('superadmin123'),
+        role: 'superadmin',
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(superAdminUser);
+
+      const adminUser: InsertUser = {
+        name: 'Admin User',
+        email: 'admin@shopifyapp.com',
+        password: await AuthService.hashPassword('admin123'),
+        role: 'admin',
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(adminUser);
+
+      const staffUser: InsertUser = {
+        name: 'Staff Member',
+        email: 'staff@shopifyapp.com',
+        password: await AuthService.hashPassword('staff123'),
+        role: 'staff',
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(staffUser);
+
+      const customerUser: InsertUser = {
+        name: 'Demo Customer',
+        email: 'customer@example.com',
+        password: await AuthService.hashPassword('customer123'),
+        role: 'customer',
+      };
+      await this.createUser(customerUser);
+    }
+
     // Seed some initial data for demo
     const customer1: Customer = {
       id: randomUUID(),
@@ -240,20 +284,81 @@ export class MemStorage implements IStorage {
     this.subscriptions.set(subscription2.id, subscription2);
   }
 
-  // User methods
+  // User Management Methods
+  async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+    const id = randomUUID();
+    const user: User = {
+      id,
+      ...userData,
+      role: userData.role || 'customer',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.users.set(id, user);
+    return user;
+  }
+
+  async getUserById(id: string): Promise<User | null> {
+    return this.users.get(id) || null;
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    for (const user of this.users.values()) {
+      if (user.email === email) {
+        return user;
+      }
+    }
+    return null;
+  }
+
+  async getUsers(shopDomain?: string): Promise<Omit<User, 'password'>[]> {
+    let filteredUsers = Array.from(this.users.values());
+    if (shopDomain) {
+      filteredUsers = filteredUsers.filter(user => user.shopDomain === shopDomain);
+    }
+    return filteredUsers.map(({ password, ...user }) => user);
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+    const user = this.users.get(id);
+    if (!user) return null;
+
+    const updatedUser = {
+      ...user,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.users.set(id, updatedUser);
+
+    const { password, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword as User;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const user = this.users.get(id);
+    
+    // Protect Super Admin from deletion
+    if (user && user.role === 'superadmin' && user.email === 'superadmin@shopifyapp.com') {
+      throw new Error('Cannot delete the default Super Admin user');
+    }
+    
+    return this.users.delete(id);
+  }
+
+  async getUsersByRole(role: string): Promise<Omit<User, 'password'>[]> {
+    return Array.from(this.users.values())
+      .filter(user => user.role === role)
+      .map(({ password, ...user }) => user);
+  }
+
+
+  // User methods (original implementation, now using Map)
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(user => user.username === username);
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
   }
 
   // Product methods - now with Shopify integration
@@ -547,10 +652,14 @@ export class MemStorage implements IStorage {
     return this.warehouses.find(w => w.id === id);
   }
 
-  async createWarehouse(warehouse: any): Promise<any> {
-    const newWarehouse = { ...warehouse, id: randomUUID(), createdAt: new Date() };
-    this.warehouses.push(newWarehouse);
-    return newWarehouse;
+  async createWarehouse(warehouseData: any): Promise<any> {
+    const warehouse = {
+      id: Date.now().toString(),
+      ...warehouseData,
+      createdAt: new Date().toISOString()
+    };
+    this.warehouses.push(warehouse);
+    return warehouse;
   }
 
   async updateWarehouse(id: string, updates: Partial<any>): Promise<any | undefined> {
@@ -565,22 +674,27 @@ export class MemStorage implements IStorage {
     return this.inventoryBatches;
   }
 
-  async getInventoryBatch(id: string): Promise<any | undefined> {
-    return this.inventoryBatches.find(b => b.id === id);
+  async getInventoryBatch(batchId: string): Promise<any> {
+    return this.inventoryBatches.find(batch => batch.id === batchId);
   }
 
-  async createInventoryBatch(batch: any): Promise<any> {
-    const newBatch = { ...batch, id: randomUUID(), createdAt: new Date() };
-    this.inventoryBatches.push(newBatch);
-    return newBatch;
+  async createInventoryBatch(batchData: any): Promise<any> {
+    const batch = {
+      id: Date.now().toString(),
+      ...batchData,
+      createdAt: new Date().toISOString()
+    };
+    this.inventoryBatches.push(batch);
+    return batch;
   }
 
-  async updateInventoryBatch(id: string, updates: Partial<any>): Promise<any | undefined> {
-    const batch = this.inventoryBatches.find(b => b.id === id);
-    if (!batch) return undefined;
-    const updatedBatch = { ...batch, ...updates };
-    this.inventoryBatches = this.inventoryBatches.map(b => b.id === id ? updatedBatch : b);
-    return updatedBatch;
+  async updateInventoryBatch(batchId: string, updates: any): Promise<any> {
+    const index = this.inventoryBatches.findIndex(batch => batch.id === batchId);
+    if (index !== -1) {
+      this.inventoryBatches[index] = { ...this.inventoryBatches[index], ...updates };
+      return this.inventoryBatches[index];
+    }
+    return null;
   }
 
   async getBatchByProductAndExpiry(productId: string, expiryDate: Date): Promise<any | undefined> {
@@ -597,9 +711,13 @@ export class MemStorage implements IStorage {
     return this.stockAdjustments;
   }
 
-  async createStockAdjustment(adjustment: any): Promise<any> {
-    const newAdjustment = { ...adjustment, id: randomUUID(), timestamp: new Date() };
-    this.stockAdjustments.push(newAdjustment);
+  async createStockAdjustment(adjustmentData: any): Promise<any> {
+    const adjustment = {
+      id: Date.now().toString(),
+      ...adjustmentData,
+      createdAt: new Date().toISOString()
+    };
+    this.stockAdjustments.push(adjustment);
     // Add to stock movements for audit history
     this.stockMovements.push({
       id: randomUUID(),
@@ -608,11 +726,25 @@ export class MemStorage implements IStorage {
       quantityChange: adjustment.quantity,
       reason: adjustment.reason,
       adjustedBy: adjustment.adjustedBy,
-      timestamp: newAdjustment.timestamp,
+      timestamp: new Date(),
       batchId: adjustment.batchId,
       warehouseId: adjustment.warehouseId
     });
-    return newAdjustment;
+    return adjustment;
+  }
+
+  async getStockMovements(): Promise<any[]> {
+    return this.stockMovements;
+  }
+
+  async createStockMovement(movementData: any): Promise<any> {
+    const movement = {
+      id: randomUUID(),
+      ...movementData,
+      createdAt: new Date().toISOString()
+    };
+    this.stockMovements.push(movement);
+    return movement;
   }
 
   async getStockAuditHistory(itemId: string): Promise<any[]> {
@@ -624,8 +756,8 @@ export class MemStorage implements IStorage {
     return this.vendors;
   }
 
-  async getVendor(id: string): Promise<any | undefined> {
-    return this.vendors.find(v => v.id === id);
+  async getVendor(vendorId: string): Promise<any> {
+    return this.vendors.find(vendor => vendor.id === vendorId);
   }
 
   async createVendor(vendor: any): Promise<any> {
@@ -646,8 +778,12 @@ export class MemStorage implements IStorage {
     return this.purchaseOrders;
   }
 
-  async getPurchaseOrder(id: string): Promise<any | undefined> {
-    return this.purchaseOrders.find(po => po.id === id);
+  async getPurchaseOrder(poId: string): Promise<any> {
+    return this.purchaseOrders.find(po => po.id === poId);
+  }
+
+  async getPurchaseOrderItems(poId: string): Promise<any[]> {
+    return this.purchaseOrderItems.filter(item => item.purchaseOrderId === poId);
   }
 
   async createPurchaseOrder(po: any): Promise<any> {
@@ -681,7 +817,7 @@ export class MemStorage implements IStorage {
         const totalCostOfPO = this.purchaseOrderItems
           .filter(item => item.purchaseOrderId === id)
           .reduce((sum, item) => sum + parseFloat(item.totalCost), 0);
-        
+
         const newTotalSpent = (parseFloat(vendor.totalSpent) + totalCostOfPO).toFixed(2);
         const newOutstandingDues = (parseFloat(vendor.outstandingDues) + totalCostOfPO).toFixed(2); // Assuming PO cost adds to dues initially
 
@@ -692,6 +828,25 @@ export class MemStorage implements IStorage {
       }
     }
     return updatedPO;
+  }
+
+  async updatePurchaseOrderItem(itemId: string, updates: any): Promise<any> {
+    const index = this.purchaseOrderItems.findIndex(item => item.id === itemId);
+    if (index !== -1) {
+      this.purchaseOrderItems[index] = { ...this.purchaseOrderItems[index], ...updates };
+      return this.purchaseOrderItems[index];
+    }
+    return null;
+  }
+
+  async createPurchaseOrderItem(itemData: any): Promise<any> {
+    const item = {
+      id: Date.now().toString(),
+      ...itemData,
+      createdAt: new Date().toISOString()
+    };
+    this.purchaseOrderItems.push(item);
+    return item;
   }
 
   async getPurchaseOrdersByVendor(vendorId: string): Promise<any[]> {
@@ -706,9 +861,13 @@ export class MemStorage implements IStorage {
     return this.vendorPayments.find(vp => vp.id === id);
   }
 
-  async createVendorPayment(payment: any): Promise<any> {
-    const newPayment = { ...payment, id: randomUUID(), timestamp: new Date() };
-    this.vendorPayments.push(newPayment);
+  async createVendorPayment(paymentData: any): Promise<any> {
+    const payment = {
+      id: Date.now().toString(),
+      ...paymentData,
+      createdAt: new Date().toISOString()
+    };
+    this.vendorPayments.push(payment);
 
     // Update vendor's outstanding dues
     const vendor = await this.getVendor(payment.vendorId);
@@ -716,7 +875,7 @@ export class MemStorage implements IStorage {
       const newOutstandingDues = (parseFloat(vendor.outstandingDues) - parseFloat(payment.amount)).toFixed(2);
       await this.updateVendor(vendor.id, { outstandingDues: newOutstandingDues });
     }
-    
+
     // Potentially update PO status if fully paid
     if (payment.purchaseOrderId) {
       const po = await this.getPurchaseOrder(payment.purchaseOrderId);
@@ -725,7 +884,7 @@ export class MemStorage implements IStorage {
       }
     }
 
-    return newPayment;
+    return payment;
   }
 
 
@@ -811,7 +970,7 @@ export class MemStorage implements IStorage {
       const relevantOrders = orders.filter(order => 
         order.createdAt >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       );
-      
+
       // This logic needs to be more robust - mapping orders to products and their quantities sold.
       // For now, it's a placeholder using a simplified approach.
       const totalQuantitySold = relevantOrders.reduce((sum, order) => {
@@ -819,7 +978,7 @@ export class MemStorage implements IStorage {
         // A real implementation would need to parse order items.
         return sum + (product.sold || 0); // Placeholder for actual quantity sold
       }, 0);
-      
+
       const averageDailySales = totalQuantitySold > 0 ? totalQuantitySold / 30 : 0;
       const dailySales = Math.max(averageDailySales, 0.1); // Prevent division by zero
       const daysLeft = product.stock / dailySales;
@@ -843,7 +1002,7 @@ export class MemStorage implements IStorage {
       const vendorPOs = purchaseOrders.filter(po => po.vendorId === vendor.id);
       const totalPOs = vendorPOs.length;
       const deliveredPOs = vendorPOs.filter(po => po.status === 'Delivered').length;
-      const avgCostPerPO = totalPOs > 0 ? vendor.totalSpent / totalPOs : 0;
+      const avgCostPerPO = totalPOs > 0 ? parseFloat(vendor.totalSpent) / totalPOs : 0;
       const deliveryPerformance = totalPOs > 0 ? (deliveredPOs / totalPOs) * 100 : 0;
 
       return {
@@ -863,14 +1022,14 @@ export class MemStorage implements IStorage {
 
 
   // Role-based access helpers
-  async getUserRole(userId: string): Promise<'admin' | 'staff' | 'customer'> {
-    // Mock role assignment based on user ID patterns for demo
-    const user = await this.getUser(userId);
+  async getUserRole(userId: string): Promise<'superadmin' | 'admin' | 'staff' | 'customer'> {
+    const user = await this.getUserById(userId);
     if (!user) return 'customer'; // Default to customer if user not found
 
-    if (user.role) return user.role as 'admin' | 'staff' | 'customer';
+    if (user.role) return user.role as 'superadmin' | 'admin' | 'staff' | 'customer';
 
     // Fallback for mock roles if not explicitly set
+    if (userId === 'superadmin' || userId.includes('superadmin')) return 'superadmin';
     if (userId === 'admin' || userId.includes('admin')) return 'admin';
     if (userId === 'staff' || userId.includes('staff')) return 'staff';
     return 'customer';
