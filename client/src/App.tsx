@@ -10,24 +10,31 @@ import Loyalty from "@/pages/Loyalty";
 import Subscriptions from "@/pages/Subscriptions";
 import Customers from "@/pages/Customers";
 import Reports from "@/pages/Reports";
+import CustomerPortal from "@/pages/CustomerPortal";
 import Sidebar from "./components/Sidebar";
+import { RoleProvider } from "./components/RoleProvider";
+import AlertSystem from "./components/AlertSystem";
 
 function Router() {
   return (
-    <div className="d-flex">
-      <Sidebar />
-      <div className="main-content flex-grow-1">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/inventory" component={Inventory} />
-          <Route path="/loyalty" component={Loyalty} />
-          <Route path="/subscriptions" component={Subscriptions} />
-          <Route path="/customers" component={Customers} />
-          <Route path="/reports" component={Reports} />
-          <Route component={NotFound} />
-        </Switch>
+    <RoleProvider>
+      <div className="d-flex">
+        <Sidebar />
+        <div className="main-content flex-grow-1">
+          <AlertSystem />
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/inventory" component={Inventory} />
+            <Route path="/loyalty" component={Loyalty} />
+            <Route path="/subscriptions" component={Subscriptions} />
+            <Route path="/customers" component={Customers} />
+            <Route path="/reports" component={Reports} />
+            <Route path="/portal" component={CustomerPortal} />
+            <Route component={NotFound} />
+          </Switch>
+        </div>
       </div>
-    </div>
+    </RoleProvider>
   );
 }
 

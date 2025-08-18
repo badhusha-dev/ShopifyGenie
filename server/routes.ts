@@ -71,6 +71,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced analytics endpoints
+  app.get("/api/analytics/sales-trends", async (req, res) => {
+    try {
+      const trends = await storage.getSalesTrends();
+      res.json(trends);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch sales trends" });
+    }
+  });
+
+  app.get("/api/analytics/top-products", async (req, res) => {
+    try {
+      const topProducts = await storage.getTopProducts();
+      res.json(topProducts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch top products" });
+    }
+  });
+
+  app.get("/api/analytics/loyalty-points", async (req, res) => {
+    try {
+      const loyaltyData = await storage.getLoyaltyPointsAnalytics();
+      res.json(loyaltyData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch loyalty analytics" });
+    }
+  });
+
+  app.get("/api/inventory/forecast", async (req, res) => {
+    try {
+      const forecast = await storage.getStockForecast();
+      res.json(forecast);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch stock forecast" });
+    }
+  });
+
+  // Role-based endpoints
+  app.get("/api/user/role/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const role = await storage.getUserRole(userId);
+      res.json({ role });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user role" });
+    }
+  });
+
+  app.get("/api/alerts/:role", async (req, res) => {
+    try {
+      const { role } = req.params;
+      const alerts = await storage.getAlertsForUser(role as 'admin' | 'staff' | 'customer');
+      res.json(alerts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch alerts" });
+    }
+  });
+
   // Products/Inventory routes
   app.get("/api/products", async (req, res) => {
     try {
@@ -421,6 +479,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Webhook processing error:', error);
       res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  // Customer portal endpoints
+  app.post("/api/customer/redeem-points", async (req, res) => {
+    try {
+      const { customerId, points, description } = req.body;
+      
+      const customer = await storage.getCustomer(customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      
+      if (customer.loyaltyPoints < points) {
+        return res.status(400).json({ error: "Insufficient points" });
+      }
+      
+      // Deduct points from customer
+      await storage.updateCustomer(customerId, {
+        loyaltyPoints: customer.loyaltyPoints - points
+      });
+      
+      // Create redemption transaction
+      await storage.createLoyaltyTransaction({
+        customerId,
+        points: -points,
+        type: "redeemed",
+        description: description || `Redeemed ${points} points for discount`
+      });
+      
+      res.json({ success: true, newBalance: customer.loyaltyPoints - points });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to redeem points" });
+    }
+  });
+
+  app.get("/api/customer/portal/:customerId", async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const customer = await storage.getCustomer(customerId);
+      
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      
+      const orders = await storage.getOrdersByCustomer(customerId);
+      const subscriptions = await storage.getSubscriptionsByCustomer(customerId);
+      const loyaltyTransactions = await storage.getLoyaltyTransactionsByCustomer(customerId);
+      
+      res.json({
+        customer,
+        orders,
+        subscriptions,
+        loyaltyTransactions,
+        totalEarned: loyaltyTransactions.filter(t => t.type === 'earned').reduce((sum, t) => sum + t.points, 0),
+        totalRedeemed: loyaltyTransactions.filter(t => t.type === 'redeemed').reduce((sum, t) => sum + Math.abs(t.points), 0)
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch customer portal data" });
+    }
+  });
+
+  // Role-based access endpoints
+  app.get("/api/user/role/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Mock role mapping - in real app would come from auth/database
+      const roleMap: Record<string, string> = {
+        'admin': 'admin',
+        'staff': 'staff',
+        'customer-demo': 'customer',
+        'customer': 'customer'
+      };
+      
+      const role = roleMap[userId] || 'customer';
+      res.json({ role, userId });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user role" });
+    }
+  });
+
+  // Alert system endpoint
+  app.get("/api/alerts/:role", async (req, res) => {
+    try {
+      const { role } = req.params;
+      const alerts = [];
+      
+      const lowStockProducts = await storage.getLowStockProducts();
+      const subscriptions = await storage.getSubscriptions();
+      const orders = await storage.getOrders();
+      
+      // Stock alerts for admin and staff
+      if (role === 'admin' || role === 'staff') {
+        if (lowStockProducts.length > 0) {
+          alerts.push({
+            type: 'warning',
+            message: `${lowStockProducts.length} products are running low on stock`,
+            action: 'View Inventory'
+          });
+        }
+        
+        // Subscription expiration alerts
+        const expiringSoon = subscriptions.filter(s => {
+          const nextBilling = new Date(s.nextBillingDate);
+          const daysLeft = Math.ceil((nextBilling.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return daysLeft <= 7 && s.status === 'active';
+        });
+        
+        if (expiringSoon.length > 0) {
+          alerts.push({
+            type: 'info',
+            message: `${expiringSoon.length} subscriptions expiring this week`,
+            action: 'Review Subscriptions'
+          });
+        }
+        
+        // New orders for admin
+        if (role === 'admin' && orders.length > 0) {
+          const recentOrders = orders.filter(o => {
+            const orderDate = new Date(o.createdAt);
+            const hoursAgo = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60);
+            return hoursAgo <= 24;
+          });
+          
+          if (recentOrders.length > 0) {
+            alerts.push({
+              type: 'success',
+              message: `${recentOrders.length} new orders in the last 24 hours`,
+              action: 'View Orders'
+            });
+          }
+        }
+      }
+      
+      res.json(alerts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch alerts" });
+    }
+  });
+
+  // Inventory forecast endpoint
+  app.get("/api/inventory/forecast", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      const orders = await storage.getOrders();
+      
+      const forecast = products.map(product => {
+        // Calculate average daily sales from order history
+        const productOrders = orders.filter(order => {
+          // This is simplified - in real app would track order line items
+          return order.createdAt >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
+        });
+        
+        const totalSold = product.sold || 0;
+        const dailySales = totalSold / 30; // Simplified average
+        const daysLeft = dailySales > 0 ? Math.ceil(product.stock / dailySales) : 999;
+        
+        let status = 'good';
+        if (daysLeft < 7) status = 'critical';
+        else if (daysLeft < 14) status = 'warning';
+        
+        return {
+          id: product.id,
+          name: product.name,
+          stock: product.stock,
+          dailySales: Math.round(dailySales * 10) / 10,
+          daysLeft,
+          status
+        };
+      });
+      
+      res.json(forecast);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate forecast" });
     }
   });
 
