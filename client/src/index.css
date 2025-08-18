@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --shopify-green: hsl(146, 100%, 32%);
+  --shopify-dark-green: hsl(146, 100%, 26%);
+  --shopify-light-green: hsl(146, 30%, 94%);
+  --sidebar-width: 280px;
+}
+
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: #F8F9FA;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, #004033 0%, #002E29 100%);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.sidebar .brand {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar .nav-link {
+  color: rgba(255,255,255,0.8);
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: block;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  color: #fff;
+  background-color: rgba(255,255,255,0.1);
+}
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+}
+
+.top-nav {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 1rem 2rem;
+  margin-bottom: 2rem;
+}
+
+.content-wrapper {
+  padding: 0 2rem 2rem 2rem;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: 8px;
+}
+
+.card-header {
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background-color: var(--shopify-green);
+  border-color: var(--shopify-green);
+}
+
+.btn-primary:hover {
+  background-color: var(--shopify-dark-green);
+  border-color: var(--shopify-dark-green);
+}
+
+.badge-low-stock {
+  background-color: #FFC107;
+  color: #000;
+}
+
+.stats-card {
+  background: linear-gradient(135deg, var(--shopify-green), var(--shopify-dark-green));
+  color: white;
+}
+
+.table th {
+  font-weight: 600;
+  color: #495057;
+  border-top: none;
+}
+
+.alert {
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .content-wrapper {
+    padding: 0 1rem 1rem 1rem;
+  }
+}
