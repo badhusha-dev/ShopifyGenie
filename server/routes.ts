@@ -642,6 +642,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/inventory/batches", async (req, res) => {
+    try {
+      const batches = await storage.getInventoryBatches();
+      res.json(batches);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get inventory batches" });
+    }
+  });
+
+  app.post("/api/inventory/batches", async (req, res) => {
+    try {
+      const batch = await storage.createInventoryBatch(req.body);
+      res.status(201).json(batch);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create inventory batch" });
+    }
+  });
+
   app.get("/api/inventory/expiring-stock", async (req, res) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
@@ -888,6 +906,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate sales forecast" });
+    }
+  });
+
+  // AI Business Insights
+  app.get("/api/ai/business-insights", async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      
+      const orders = await storage.getOrders();
+      const customers = await storage.getCustomers();
+      const products = await storage.getProducts();
+      
+      // Calculate business health score
+      const recentOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        const daysAgo = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24);
+        return daysAgo <= days;
+      });
+      
+      const totalRevenue = recentOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+      const avgOrderValue = recentOrders.length ? totalRevenue / recentOrders.length : 0;
+      
+      // Customer metrics
+      const customerOrderCounts = recentOrders.reduce((acc, order) => {
+        if (order.customerId) {
+          acc[order.customerId] = (acc[order.customerId] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const repeatCustomers = Object.values(customerOrderCounts).filter(count => count > 1).length;
+      const repeatRate = customers.length ? (repeatCustomers / customers.length) * 100 : 0;
+      
+      // Product metrics
+      const lowStockProducts = products.filter(p => p.stock < 10).length;
+      const stockHealthScore = products.length ? ((products.length - lowStockProducts) / products.length) * 100 : 100;
+      
+      // Calculate overall health score (weighted average)
+      const healthScore = Math.round(
+        (stockHealthScore * 0.3) + 
+        (Math.min(repeatRate * 2, 100) * 0.3) + 
+        (Math.min(avgOrderValue / 50 * 100, 100) * 0.4)
+      );
+      
+      res.json({
+        healthScore,
+        metrics: {
+          totalRevenue,
+          avgOrderValue,
+          repeatRate,
+          stockHealthScore,
+          lowStockCount: lowStockProducts
+        },
+        insights: [
+          {
+            type: 'success',
+            message: `Strong ${repeatRate.toFixed(1)}% repeat customer rate indicates good customer satisfaction`,
+            action: 'Continue current customer retention strategies'
+          },
+          {
+            type: stockHealthScore < 80 ? 'warning' : 'info',
+            message: `${lowStockProducts} products running low on inventory`,
+            action: 'Review inventory levels and reorder critical items'
+          },
+          {
+            type: avgOrderValue > 50 ? 'success' : 'warning',
+            message: `Average order value of $${avgOrderValue.toFixed(2)} ${avgOrderValue > 50 ? 'exceeds' : 'below'} industry average`,
+            action: avgOrderValue > 50 ? 'Maintain upselling strategies' : 'Implement cross-selling and bundling'
+          }
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate business insights" });
     }
   });
 

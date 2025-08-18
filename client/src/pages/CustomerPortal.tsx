@@ -55,6 +55,11 @@ const CustomerPortal = () => {
     },
   });
 
+  const subscriptionMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("PUT", `/api/subscriptions/${data.id}`, data),
+    onSuccess: () => refetch(),
+  });
+
   const handleRedeemPoints = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -65,6 +70,42 @@ const CustomerPortal = () => {
       customerId,
       points,
       description,
+    });
+  };
+
+  const handleSubscriptionAction = (subscriptionId: string, action: string) => {
+    let status = '';
+    let nextDelivery = '';
+    
+    switch (action) {
+      case 'pause':
+        status = 'paused';
+        break;
+      case 'resume':
+        status = 'active';
+        break;
+      case 'cancel':
+        status = 'cancelled';
+        break;
+      case 'skip':
+        // Calculate next delivery date (add frequency interval)
+        const currentSub = subscriptions.find(s => s.id === subscriptionId);
+        if (currentSub) {
+          const nextDate = new Date(currentSub.nextDelivery);
+          if (currentSub.frequency === 'monthly') {
+            nextDate.setMonth(nextDate.getMonth() + 1);
+          } else if (currentSub.frequency === 'weekly') {
+            nextDate.setDate(nextDate.getDate() + 7);
+          }
+          nextDelivery = nextDate.toISOString();
+        }
+        break;
+    }
+
+    subscriptionMutation.mutate({
+      id: subscriptionId,
+      status: status || undefined,
+      nextDelivery: nextDelivery || undefined,
     });
   };
 
@@ -360,54 +401,88 @@ const CustomerPortal = () => {
 
         {/* Subscriptions Tab */}
         {activeTab === "subscriptions" && (
-          <div className="card">
-            <div className="card-header">
-              <h6 className="mb-0">My Subscriptions</h6>
-            </div>
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Product</th>
-                      <th>Frequency</th>
-                      <th>Next Delivery</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subscriptions.map((subscription) => (
-                      <tr key={subscription.id}>
-                        <td>
-                          <strong>{subscription.productName || "Product"}</strong>
-                        </td>
-                        <td>{subscription.frequency}</td>
-                        <td>{new Date(subscription.nextDelivery).toLocaleDateString()}</td>
-                        <td>
-                          <span className={`badge ${
-                            subscription.status === "active" ? "bg-success" : 
-                            subscription.status === "paused" ? "bg-warning text-dark" : "bg-danger"
-                          }`}>
-                            {subscription.status.toUpperCase()}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="btn-group btn-group-sm">
-                            <button className="btn btn-outline-primary">
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button className="btn btn-outline-warning">
-                              <i className="fas fa-pause"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="row">
+            {subscriptions.length > 0 ? (
+              subscriptions.map((subscription) => (
+                <div key={subscription.id} className="col-md-6 mb-4">
+                  <div className="card">
+                    <div className="card-header d-flex justify-content-between align-items-center">
+                      <h6 className="mb-0">{subscription.productName || "Product Subscription"}</h6>
+                      <span className={`badge ${
+                        subscription.status === "active" ? "bg-success" : 
+                        subscription.status === "paused" ? "bg-warning text-dark" : "bg-danger"
+                      }`}>
+                        {subscription.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="card-body">
+                      <div className="row mb-3">
+                        <div className="col-6">
+                          <small className="text-muted">Frequency</small>
+                          <div className="fw-bold">{subscription.frequency}</div>
+                        </div>
+                        <div className="col-6">
+                          <small className="text-muted">Next Delivery</small>
+                          <div className="fw-bold">{new Date(subscription.nextDelivery).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <small className="text-muted">Started</small>
+                        <div>{new Date(subscription.createdAt).toLocaleDateString()}</div>
+                      </div>
+                      <div className="d-flex gap-2">
+                        {subscription.status === "active" && (
+                          <button 
+                            className="btn btn-sm btn-warning flex-fill"
+                            onClick={() => handleSubscriptionAction(subscription.id, 'pause')}
+                          >
+                            <i className="fas fa-pause me-1"></i>
+                            Pause
+                          </button>
+                        )}
+                        {subscription.status === "paused" && (
+                          <button 
+                            className="btn btn-sm btn-success flex-fill"
+                            onClick={() => handleSubscriptionAction(subscription.id, 'resume')}
+                          >
+                            <i className="fas fa-play me-1"></i>
+                            Resume
+                          </button>
+                        )}
+                        <button 
+                          className="btn btn-sm btn-outline-primary flex-fill"
+                          onClick={() => handleSubscriptionAction(subscription.id, 'skip')}
+                        >
+                          <i className="fas fa-forward me-1"></i>
+                          Skip Next
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-outline-danger flex-fill"
+                          onClick={() => handleSubscriptionAction(subscription.id, 'cancel')}
+                        >
+                          <i className="fas fa-times me-1"></i>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-12">
+                <div className="card">
+                  <div className="card-body text-center py-5">
+                    <i className="fas fa-sync-alt fa-3x text-muted mb-3"></i>
+                    <h5 className="text-muted">No Active Subscriptions</h5>
+                    <p className="text-muted">You don't have any subscriptions yet. Browse our products to set up recurring deliveries.</p>
+                    <button className="btn btn-primary">
+                      <i className="fas fa-shopping-cart me-2"></i>
+                      Browse Products
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
