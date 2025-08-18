@@ -1,0 +1,54 @@
+Build a complete "Role & Permission Management" screen for my ShopifyApp.
+
+🎯 Requirements:
+1. Roles:
+   - Super Admin
+   - Admin
+   - Staff
+   - Customer
+
+2. Permissions (CRUD style for each module):
+   - Inventory: view, create, edit, delete
+   - Orders: view, create, edit, delete
+   - Users: view, create, edit, delete
+   - Reports: view, generate
+   - Settings: view, update
+
+3. Backend (Node.js + Express + MongoDB/Postgres):
+   - Add "permissions" collection/table with list of all available permissions
+   - Add "role_permissions" mapping (role → allowed permissions)
+   - Create APIs (JWT secured):
+     - GET /permissions → list all permissions
+     - GET /role-permissions/:role → fetch permissions for a role
+     - PUT /role-permissions/:role → update permissions for a role (Super Admin only)
+   - Middleware: validate both role and permission before allowing access to protected APIs
+   - Ensure Super Admin always has unrestricted access (cannot be changed)
+
+4. Frontend (React + Boostrap or Next.js):
+   - Create a "Role & Permission Management" page
+   - Display a table with:
+     - Rows = modules (Inventory, Orders, Users, Reports, Settings)
+     - Columns = actions (view, create, edit, delete, generate, update)
+     - Checkbox matrix: checked = permission granted
+   - Dropdown/select at the top: choose a role (Admin, Staff, Customer)
+   - When a role is selected, fetch and display its current permissions
+   - Allow Super Admin to toggle checkboxes and save → updates role permissions via API
+   - Save confirmation with toast/notification
+   - Disable the screen for non-Super Admin users
+   - Role badges for clarity:
+     - Super Admin = Gold
+     - Admin = Blue
+     - Staff = Green
+     - Customer = Gray
+
+5. UX Rules:
+   - Non-authorized roles shouldn’t even see this screen
+   - If a role doesn’t have permission for a module/action, hide/disable that UI element everywhere else in the app
+   - Show "Read Only" badge if Admin views this screen but cannot edit
+
+6. Seed Data:
+   - Default Super Admin: superadmin@shopifyapp.com / superadmin123
+   - Default role permissions:
+     - Admin: All except creating/deleting users
+     - Staff: Inventory + Orders (no delete), view reports
+     - Customer: Only view orders, view settings

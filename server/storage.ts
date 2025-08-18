@@ -19,6 +19,22 @@ export interface IStorage {
   getUsers(shopDomain?: string): Promise<User[]>;
   checkUserPermission(role: string, permission: string): Promise<boolean>;
 
+  // Permissions
+  getAllPermissions(): Promise<any[]>;
+  getRolePermissions(role: string): Promise<Record<string, boolean>>;
+  updateRolePermissions(role: string, permissions: Record<string, boolean>): Promise<void>;
+
+  // Missing methods that are called from routes
+  updateUser(id: string, updates: any): Promise<any>;
+  deleteUser(id: string): Promise<boolean>;
+  getStats(shopDomain?: string): Promise<any>;
+  getSalesTrends(): Promise<any>;
+  getTopProducts(): Promise<any>;
+  getLoyaltyPointsAnalytics(): Promise<any>;
+  getStockForecast(): Promise<any>;
+  getUserRole(userId: string): Promise<string>;
+  getAlertsForUser(role: string): Promise<any[]>;
+
   // Products - now with Shopify integration
   getProducts(shopDomain?: string): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
@@ -409,6 +425,99 @@ export class MemStorage implements IStorage {
     });
   }
 
+  // Missing storage methods implementation
+  async updateUser(id: string, updates: any): Promise<any> {
+    const user = this.users.get(id);
+    if (!user) return null;
+    
+    const updatedUser = { ...user, ...updates, updatedAt: new Date() };
+    this.users.set(id, updatedUser);
+    
+    const { password, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    return this.users.delete(id);
+  }
+
+  async getStats(shopDomain?: string): Promise<any> {
+    const products = Array.from(this.products.values());
+    const customers = Array.from(this.customers.values());
+    const orders = Array.from(this.orders.values());
+    
+    return {
+      totalProducts: products.length,
+      totalCustomers: customers.length,
+      totalOrders: orders.length,
+      totalRevenue: orders.reduce((sum, order) => sum + parseFloat(order.total), 0)
+    };
+  }
+
+  async getSalesTrends(): Promise<any> {
+    // Mock data for now
+    const trends = [];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      trends.push({
+        date: date.toISOString().split('T')[0],
+        sales: Math.floor(Math.random() * 1000) + 100
+      });
+    }
+    return trends;
+  }
+
+  async getTopProducts(): Promise<any> {
+    const products = Array.from(this.products.values());
+    return products.slice(0, 5).map(p => ({
+      ...p,
+      sales: Math.floor(Math.random() * 100) + 10
+    }));
+  }
+
+  async getLoyaltyPointsAnalytics(): Promise<any> {
+    const transactions = Array.from(this.loyaltyTransactions.values());
+    const earned = transactions.filter(t => t.type === 'earned').reduce((sum, t) => sum + t.points, 0);
+    const redeemed = transactions.filter(t => t.type === 'redeemed').reduce((sum, t) => sum + t.points, 0);
+    
+    return {
+      earned,
+      redeemed,
+      available: earned - redeemed
+    };
+  }
+
+  async getStockForecast(): Promise<any> {
+    const products = Array.from(this.products.values());
+    return products.map(p => ({
+      ...p,
+      forecastDays: Math.floor(Math.random() * 30) + 5
+    }));
+  }
+
+  async getUserRole(userId: string): Promise<string> {
+    const user = this.users.get(userId);
+    return user?.role || 'customer';
+  }
+
+  async getAlertsForUser(role: string): Promise<any[]> {
+    // Return role-specific alerts
+    const baseAlerts: any[] = [];
+    
+    if (role === 'admin' || role === 'superadmin') {
+      baseAlerts.push({
+        id: '1',
+        type: 'warning',
+        message: 'Low stock alert for 3 products',
+        timestamp: new Date()
+      });
+    }
+    
+    return baseAlerts;
+  }
+
   // User Management Methods
   async createUser(userData: InsertUser): Promise<User> {
     const id = randomUUID();
@@ -447,14 +556,63 @@ export class MemStorage implements IStorage {
       return true;
     }
     
-    // For now, return basic role-based permissions
-    const rolePermissions: Record<string, string[]> = {
-      admin: ['inventory:view', 'inventory:create', 'inventory:edit', 'customers:view', 'customers:edit', 'reports:view', 'subscriptions:view', 'dashboard:view'],
-      staff: ['inventory:view', 'customers:view', 'reports:view', 'dashboard:view'],
-      customer: ['dashboard:view']
-    };
+    // Check stored role permissions
+    const rolePermission = this.rolePermissions.find(rp => 
+      rp.role === role && rp.permissionName === permission && rp.granted
+    );
     
-    return rolePermissions[role]?.includes(permission) || false;
+    return !!rolePermission;
+  }
+
+  async getAllPermissions(): Promise<any[]> {
+    return this.permissions;
+  }
+
+  async getRolePermissions(role: string): Promise<Record<string, boolean>> {
+    if (role === 'superadmin') {
+      // Super admin gets all permissions
+      const permissions: Record<string, boolean> = {};
+      this.permissions.forEach(p => {
+        permissions[p.name] = true;
+      });
+      return permissions;
+    }
+    
+    const permissions: Record<string, boolean> = {};
+    this.permissions.forEach(p => {
+      permissions[p.name] = false;
+    });
+    
+    this.rolePermissions.forEach(rp => {
+      if (rp.role === role) {
+        permissions[rp.permissionName] = rp.granted;
+      }
+    });
+    
+    return permissions;
+  }
+
+  async updateRolePermissions(role: string, permissions: Record<string, boolean>): Promise<void> {
+    if (role === 'superadmin') {
+      throw new Error('Cannot modify super admin permissions');
+    }
+    
+    // Remove existing permissions for this role
+    this.rolePermissions = this.rolePermissions.filter(rp => rp.role !== role);
+    
+    // Add new permissions
+    Object.entries(permissions).forEach(([permissionName, granted]) => {
+      if (granted) {
+        this.rolePermissions.push({
+          id: randomUUID(),
+          role,
+          permissionName,
+          granted: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    });
   }
 
   async getUsersWithoutPassword(shopDomain?: string): Promise<Omit<User, 'password'>[]> {

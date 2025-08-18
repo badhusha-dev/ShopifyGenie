@@ -1215,13 +1215,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user-permissions", authenticateToken, async (req, res) => {
     try {
       const user = (req as AuthRequest).user!;
-      const permissions = await storage.getUserPermissions(user.role);
+      const permissions = await storage.getRolePermissions(user.role);
       res.json({
         role: user.role,
         permissions
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch user permissions" });
+    }
+  });
+
+  // Permission Management Routes (Super Admin only)
+  app.get("/api/permissions", requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      const permissions = await storage.getAllPermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error('Get permissions error:', error);
+      res.status(500).json({ error: "Failed to fetch permissions" });
+    }
+  });
+
+  app.get("/api/role-permissions/:role", requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { role } = req.params;
+      if (!['admin', 'staff', 'customer'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      const permissions = await storage.getRolePermissions(role);
+      res.json({ role, permissions });
+    } catch (error) {
+      console.error('Get role permissions error:', error);
+      res.status(500).json({ error: "Failed to fetch role permissions" });
+    }
+  });
+
+  app.put("/api/role-permissions/:role", requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { role } = req.params;
+      const { permissions } = req.body;
+      
+      if (!['admin', 'staff', 'customer'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      if (!permissions || typeof permissions !== 'object') {
+        return res.status(400).json({ error: "Invalid permissions data" });
+      }
+      
+      await storage.updateRolePermissions(role, permissions);
+      res.json({ message: "Role permissions updated successfully" });
+    } catch (error) {
+      console.error('Update role permissions error:', error);
+      res.status(500).json({ error: "Failed to update role permissions" });
     }
   });
 

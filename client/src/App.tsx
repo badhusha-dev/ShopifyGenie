@@ -70,7 +70,7 @@ const AppContent = () => {
               <Route path="/advanced-inventory" component={AdvancedInventory} />
               <Route path="/vendor-management" component={VendorManagement} />
               <Route path="/user-management" component={UserManagement} />
-              <Route path="/role-management" component={RolePermissionManagement} />
+              <Route path="/role-permission-management" component={RolePermissionManagement} />
               <Route component={NotFound} />
             </Switch>
           </div>

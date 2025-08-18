@@ -1,8 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import TopNav from '../components/TopNav';
+import { usePermissions } from '../contexts/PermissionContext';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Shield, Users, Settings } from 'lucide-react';
 
 interface Permission {
   id: string;
@@ -13,280 +19,316 @@ interface Permission {
 }
 
 interface RolePermissions {
-  [role: string]: Record<string, boolean>;
+  [key: string]: boolean;
 }
 
 const RolePermissionManagement: React.FC = () => {
-  const { token } = useAuth();
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
+  const { toast } = useToast();
+  
+  const [selectedRole, setSelectedRole] = useState<string>('admin');
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
-  const [hasChanges, setHasChanges] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Check if user has permission to view this screen
+  if (user?.role !== 'superadmin') {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Shield className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+            <p className="text-gray-600">Only Super Administrators can access the Role & Permission Management screen.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const { data: permissions = [], isLoading: permissionsLoading } = useQuery({
-    queryKey: ['/api/permissions'],
-    queryFn: async () => {
+  useEffect(() => {
+    fetchPermissions();
+  }, []);
+
+  useEffect(() => {
+    if (selectedRole) {
+      fetchRolePermissions(selectedRole);
+    }
+  }, [selectedRole]);
+
+  const fetchPermissions = async () => {
+    try {
+      setLoading(true);
       const response = await fetch('/api/permissions', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
       });
-      if (!response.ok) throw new Error('Failed to fetch permissions');
-      return response.json();
-    },
-    enabled: !!token
-  });
 
-  const roles = ['admin', 'staff', 'customer'];
+      if (!response.ok) {
+        throw new Error('Failed to fetch permissions');
+      }
 
-  // Fetch permissions for each role
-  const { isLoading: rolePermissionsLoading } = useQuery({
-    queryKey: ['/api/role-permissions', 'all'],
-    queryFn: async () => {
-      const responses = await Promise.all(
-        roles.map(role =>
-          fetch(`/api/role-permissions/${role}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }).then(res => res.json())
-        )
-      );
-      
-      const rolePermsData: RolePermissions = {};
-      responses.forEach((data, index) => {
-        rolePermsData[roles[index]] = data.permissions || {};
+      const data = await response.json();
+      setPermissions(data);
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch permissions. Please try again.",
+        variant: "destructive",
       });
-      
-      setRolePermissions(rolePermsData);
-      return rolePermsData;
-    },
-    enabled: !!token && permissions.length > 0
-  });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const updateRolePermissionsMutation = useMutation({
-    mutationFn: async ({ role, permissions }: { role: string; permissions: Record<string, boolean> }) => {
+  const fetchRolePermissions = async (role: string) => {
+    try {
+      setLoading(true);
       const response = await fetch(`/api/role-permissions/${role}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch role permissions');
+      }
+
+      const data = await response.json();
+      setRolePermissions(data.permissions);
+    } catch (error) {
+      console.error('Error fetching role permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch role permissions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePermissionChange = (permissionName: string, checked: boolean) => {
+    setRolePermissions(prev => ({
+      ...prev,
+      [permissionName]: checked
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/role-permissions/${selectedRole}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
-        body: JSON.stringify({ permissions })
+        body: JSON.stringify({ permissions: rolePermissions }),
       });
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update permissions');
+        throw new Error('Failed to update role permissions');
       }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/role-permissions'] });
-      setHasChanges(false);
-    }
-  });
 
-  const handlePermissionChange = (role: string, permission: string, granted: boolean) => {
-    setRolePermissions(prev => ({
-      ...prev,
-      [role]: {
-        ...prev[role],
-        [permission]: granted
-      }
-    }));
-    setHasChanges(true);
-  };
-
-  const saveChanges = async () => {
-    for (const role of roles) {
-      if (rolePermissions[role]) {
-        await updateRolePermissionsMutation.mutateAsync({
-          role,
-          permissions: rolePermissions[role]
-        });
-      }
+      toast({
+        title: "Success",
+        description: `Permissions for ${selectedRole} role updated successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating role permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update role permissions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const resetChanges = () => {
-    queryClient.invalidateQueries({ queryKey: ['/api/role-permissions'] });
-    setHasChanges(false);
+  const getRoleBadgeClass = (role: string) => {
+    switch (role) {
+      case 'superadmin': return 'bg-yellow-500 text-yellow-900';
+      case 'admin': return 'bg-blue-500 text-blue-900';
+      case 'staff': return 'bg-green-500 text-green-900';
+      case 'customer': return 'bg-gray-500 text-gray-900';
+      default: return 'bg-gray-500 text-gray-900';
+    }
   };
 
-  // Group permissions by category
-  const permissionsByCategory = permissions.reduce((acc: Record<string, Permission[]>, permission: Permission) => {
+  const groupedPermissions = permissions.reduce((acc, permission) => {
     if (!acc[permission.category]) {
       acc[permission.category] = [];
     }
     acc[permission.category].push(permission);
     return acc;
-  }, {});
+  }, {} as Record<string, Permission[]>);
 
-  const getRoleBadgeClass = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-primary';
-      case 'staff': return 'bg-success';
-      case 'customer': return 'bg-secondary';
-      default: return 'bg-secondary';
-    }
-  };
-
-  if (permissionsLoading || rolePermissionsLoading) {
-    return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+  const operations = ['view', 'create', 'edit', 'delete', 'export'];
 
   return (
-    <>
-      <TopNav 
-        title="Role & Permission Management" 
-        subtitle="Configure role-based access permissions"
-      />
-      
-      <div className="content-wrapper">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h4>Permission Matrix</h4>
-            <p className="text-muted mb-0">
-              Configure which roles have access to specific operations
-            </p>
+    <div className="container mx-auto p-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Role & Permission Management</h1>
+        <p className="text-gray-600">
+          Manage permissions for different user roles. Super Admin permissions cannot be modified.
+        </p>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Role Selection
+              </CardTitle>
+              <CardDescription>
+                Select a role to view and modify its permissions
+              </CardDescription>
+            </div>
+            <Badge className={getRoleBadgeClass(selectedRole)}>
+              {selectedRole.toUpperCase()}
+            </Badge>
           </div>
-          {hasChanges && (
-            <div className="btn-group">
-              <button
-                className="btn btn-outline-secondary"
-                onClick={resetChanges}
-                disabled={updateRolePermissionsMutation.isPending}
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4">
+            <Label htmlFor="role-select">Role:</Label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="customer">Customer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {loading ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading permissions...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Permission Matrix
+            </CardTitle>
+            <CardDescription>
+              Check/uncheck permissions for the selected role
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3 font-semibold">Module</th>
+                    {operations.map(operation => (
+                      <th key={operation} className="text-center p-3 font-semibold capitalize">
+                        {operation}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
+                    <tr key={category} className="border-b hover:bg-gray-50">
+                      <td className="p-3 font-medium capitalize">
+                        {category}
+                      </td>
+                      {operations.map(operation => {
+                        const permission = categoryPermissions.find(p => p.operation === operation);
+                        const permissionName = permission?.name;
+                        const isChecked = permissionName ? rolePermissions[permissionName] || false : false;
+                        
+                        return (
+                          <td key={operation} className="text-center p-3">
+                            {permission ? (
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={(checked) => 
+                                  handlePermissionChange(permissionName!, !!checked)
+                                }
+                                title={permission.description}
+                              />
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <Button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="px-6"
               >
-                <i className="fas fa-undo me-2"></i>
-                Reset
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={saveChanges}
-                disabled={updateRolePermissionsMutation.isPending}
-              >
-                {updateRolePermissionsMutation.isPending ? (
+                {saving ? (
                   <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-save me-2"></i>
-                    Save Changes
+                    <Settings className="h-4 w-4 mr-2" />
+                    Save Permissions
                   </>
                 )}
-              </button>
+              </Button>
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {hasChanges && (
-          <div className="alert alert-warning mb-4">
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            You have unsaved changes. Click "Save Changes" to apply them.
-          </div>
-        )}
-
-        <div className="card">
-          <div className="card-body">
-            {Object.entries(permissionsByCategory).map(([category, categoryPermissions]) => (
-              <div key={category} className="mb-4">
-                <h5 className="text-capitalize mb-3">
-                  <i className={`fas fa-${
-                    category === 'inventory' ? 'boxes' :
-                    category === 'orders' ? 'shopping-cart' :
-                    category === 'customers' ? 'users' :
-                    category === 'reports' ? 'chart-bar' :
-                    category === 'users' ? 'user-cog' :
-                    category === 'vendors' ? 'handshake' :
-                    category === 'subscriptions' ? 'sync' : 'cog'
-                  } me-2`}></i>
-                  {category}
-                </h5>
-                
-                <div className="table-responsive">
-                  <table className="table table-sm">
-                    <thead>
-                      <tr>
-                        <th style={{ width: '40%' }}>Permission</th>
-                        {roles.map(role => (
-                          <th key={role} className="text-center" style={{ width: '20%' }}>
-                            <span className={`badge ${getRoleBadgeClass(role)}`}>
-                              {role.charAt(0).toUpperCase() + role.slice(1)}
-                            </span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {categoryPermissions.map((permission: Permission) => (
-                        <tr key={permission.name}>
-                          <td>
-                            <div>
-                              <strong>{permission.operation.charAt(0).toUpperCase() + permission.operation.slice(1)}</strong>
-                              <div className="text-muted small">{permission.description}</div>
-                            </div>
-                          </td>
-                          {roles.map(role => (
-                            <td key={role} className="text-center">
-                              <div className="form-check d-flex justify-content-center">
-                                <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  checked={rolePermissions[role]?.[permission.name] || false}
-                                  onChange={(e) => handlePermissionChange(role, permission.name, e.target.checked)}
-                                />
-                              </div>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card mt-4">
-          <div className="card-header">
-            <h6 className="mb-0">
-              <i className="fas fa-info-circle me-2"></i>
-              Permission Guidelines
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-4">
-                <h6 className="text-primary">Admin</h6>
-                <p className="small text-muted">
-                  Typically has access to most business operations but cannot manage user roles.
-                </p>
-              </div>
-              <div className="col-md-4">
-                <h6 className="text-success">Staff</h6>
-                <p className="small text-muted">
-                  Limited to day-to-day operations like viewing and editing inventory, orders, and customers.
-                </p>
-              </div>
-              <div className="col-md-4">
-                <h6 className="text-secondary">Customer</h6>
-                <p className="small text-muted">
-                  Minimal access, typically only to their own customer portal and basic dashboard.
-                </p>
-              </div>
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Role Descriptions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg">
+              <Badge className="bg-yellow-500 text-yellow-900 mb-2">SUPER ADMIN</Badge>
+              <p className="text-sm text-gray-600">
+                Full system access. Cannot be modified. Can manage all users and permissions.
+              </p>
             </div>
-            <div className="alert alert-info mt-3 mb-0">
-              <strong>Note:</strong> Super Admin has all permissions automatically and cannot be modified.
-              Changes take effect immediately after saving.
+            <div className="p-4 border rounded-lg">
+              <Badge className="bg-blue-500 text-blue-900 mb-2">ADMIN</Badge>
+              <p className="text-sm text-gray-600">
+                High-level access to most features. Can manage inventory, orders, customers, and view reports.
+              </p>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <Badge className="bg-green-500 text-green-900 mb-2">STAFF</Badge>
+              <p className="text-sm text-gray-600">
+                Limited access for day-to-day operations. Can view and edit basic inventory and customer data.
+              </p>
             </div>
           </div>
-        </div>
-      </div>
-    </>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
