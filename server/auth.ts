@@ -11,7 +11,7 @@ export interface User {
   name: string;
   email: string;
   password?: string;
-  role: 'admin' | 'staff' | 'customer';
+  role: 'superadmin' | 'admin' | 'staff' | 'customer';
   shopDomain?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -97,6 +97,9 @@ export const requireAdmin = requireRole(['admin']);
 
 // Staff or Admin middleware
 export const requireStaffOrAdmin = requireRole(['admin', 'staff']);
+
+// Super Admin only middleware
+export const requireSuperAdmin = requireRole(['superadmin']);
 
 // Customer access middleware
 export const requireCustomer = requireRole(['admin', 'staff', 'customer']);

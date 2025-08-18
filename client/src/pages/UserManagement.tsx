@@ -2,19 +2,21 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { useRole } from '../components/RoleProvider';
 import TopNav from '../components/TopNav';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'staff' | 'customer';
+  role: 'superadmin' | 'admin' | 'staff' | 'customer';
   createdAt: string;
   updatedAt: string;
 }
 
 const UserManagement: React.FC = () => {
   const { token } = useAuth();
+  const { userRole } = useRole();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -22,8 +24,10 @@ const UserManagement: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    role: 'customer' as 'admin' | 'staff' | 'customer'
+    role: 'customer' as 'superadmin' | 'admin' | 'staff' | 'customer'
   });
+
+  const isSuperAdmin = userRole === 'superadmin';
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['/api/users'],
@@ -139,9 +143,10 @@ const UserManagement: React.FC = () => {
 
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-danger';
-      case 'staff': return 'bg-warning';
-      case 'customer': return 'bg-info';
+      case 'superadmin': return 'bg-warning text-dark'; // Gold/yellow
+      case 'admin': return 'bg-primary'; // Blue
+      case 'staff': return 'bg-success'; // Green
+      case 'customer': return 'bg-secondary'; // Gray
       default: return 'bg-secondary';
     }
   };
@@ -158,15 +163,19 @@ const UserManagement: React.FC = () => {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h4>Users</h4>
-            <p className="text-muted mb-0">Manage system users and their roles</p>
+            <p className="text-muted mb-0">
+              {isSuperAdmin ? 'Manage system users and their roles' : 'View system users (read-only access)'}
+            </p>
           </div>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAddModal(true)}
-          >
-            <i className="fas fa-plus me-2"></i>
-            Add User
-          </button>
+          {isSuperAdmin && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowAddModal(true)}
+            >
+              <i className="fas fa-plus me-2"></i>
+              Add User
+            </button>
+          )}
         </div>
 
         {/* Users Table */}
@@ -213,15 +222,21 @@ const UserManagement: React.FC = () => {
                             <button
                               className="btn btn-outline-warning"
                               onClick={() => handleEdit(user)}
+                              disabled={!isSuperAdmin && user.role === 'superadmin'}
+                              title={!isSuperAdmin && user.role === 'superadmin' ? 'Only Super Admin can edit Super Admin accounts' : ''}
                             >
                               <i className="fas fa-edit"></i>
                             </button>
-                            <button
-                              className="btn btn-outline-danger"
-                              onClick={() => handleDelete(user.id)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
+                            {isSuperAdmin && (
+                              <button
+                                className="btn btn-outline-danger"
+                                onClick={() => handleDelete(user.id)}
+                                disabled={user.email === 'superadmin@shopifyapp.com'}
+                                title={user.email === 'superadmin@shopifyapp.com' ? 'Cannot delete default Super Admin' : ''}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -288,6 +303,7 @@ const UserManagement: React.FC = () => {
                         <option value="customer">Customer</option>
                         <option value="staff">Staff</option>
                         <option value="admin">Admin</option>
+                        {isSuperAdmin && <option value="superadmin">Super Admin</option>}
                       </select>
                     </div>
                   </div>

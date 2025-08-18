@@ -16,37 +16,37 @@ const Sidebar: React.FC = () => {
         path: "/",
         icon: "fas fa-tachometer-alt",
         label: "Dashboard",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/inventory",
         icon: "fas fa-boxes",
         label: "Inventory",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/customers",
         icon: "fas fa-users",
         label: "Customers",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/subscriptions",
         icon: "fas fa-sync-alt",
         label: "Subscriptions",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/loyalty",
         icon: "fas fa-star",
         label: "Loyalty",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/reports",
         icon: "fas fa-chart-bar",
         label: "Reports",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/customer-portal",
@@ -58,25 +58,25 @@ const Sidebar: React.FC = () => {
         path: "/advanced-inventory",
         icon: "fas fa-warehouse",
         label: "Advanced Inventory",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/ai-recommendations",
         icon: "fas fa-brain",
         label: "AI Recommendations",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/vendor-management",
         icon: "fas fa-truck",
         label: "Vendor Management",
-        roles: ["admin", "staff"]
+        roles: ["admin", "staff", "superadmin"]
       },
       {
         path: "/user-management",
         icon: "fas fa-users-cog",
         label: "User Management",
-        roles: ["admin"]
+        roles: ["admin", "superadmin"]
       }
     ];
 
@@ -85,8 +85,9 @@ const Sidebar: React.FC = () => {
 
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-danger';
-      case 'staff': return 'bg-warning';
+      case 'superadmin': return 'bg-gold';
+      case 'admin': return 'bg-primary';
+      case 'staff': return 'bg-success';
       case 'customer': return 'bg-info';
       default: return 'bg-secondary';
     }
@@ -115,6 +116,7 @@ const Sidebar: React.FC = () => {
               <span className={`badge ${getRoleBadgeClass(user?.role || '')} me-2`} style={{ fontSize: '10px' }}>
                 {user?.role?.toUpperCase()}
               </span>
+              {user?.role === 'admin' && <small className="ms-2 text-muted">(View Only)</small>}
             </div>
           </div>
         </div>

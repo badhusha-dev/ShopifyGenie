@@ -2,9 +2,9 @@ import React, { createContext, useContext } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface RoleContextType {
-  userRole: 'admin' | 'staff' | 'customer' | null;
+  userRole: 'superadmin' | 'admin' | 'staff' | 'customer' | null;
   userId: string;
-  hasAccess: (requiredRole: 'admin' | 'staff' | 'customer') => boolean;
+  hasAccess: (requiredRole: 'superadmin' | 'admin' | 'staff' | 'customer') => boolean;
   isLoading: boolean;
 }
 
@@ -25,11 +25,11 @@ interface RoleProviderProps {
 export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
 
-  const hasAccess = (requiredRole: 'admin' | 'staff' | 'customer') => {
+  const hasAccess = (requiredRole: 'superadmin' | 'admin' | 'staff' | 'customer') => {
     const userRole = user?.role;
     if (!userRole) return false;
 
-    const hierarchy = { admin: 3, staff: 2, customer: 1 };
+    const hierarchy = { superadmin: 4, admin: 3, staff: 2, customer: 1 };
     return hierarchy[userRole] >= hierarchy[requiredRole];
   };
 

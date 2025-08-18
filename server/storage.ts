@@ -159,6 +159,16 @@ export class MemStorage implements IStorage {
     if (this.users.size === 0) {
       const { AuthService } = await import('./auth');
 
+      // Create Super Admin (highest privilege)
+      const superAdminUser: InsertUser = {
+        name: 'Super Administrator',
+        email: 'superadmin@shopifyapp.com',
+        password: await AuthService.hashPassword('superadmin123'),
+        role: 'superadmin',
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(superAdminUser);
+
       const adminUser: InsertUser = {
         name: 'Admin User',
         email: 'admin@shopifyapp.com',
@@ -280,6 +290,7 @@ export class MemStorage implements IStorage {
     const user: User = {
       id,
       ...userData,
+      role: userData.role || 'customer',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -324,6 +335,13 @@ export class MemStorage implements IStorage {
   }
 
   async deleteUser(id: string): Promise<boolean> {
+    const user = this.users.get(id);
+    
+    // Protect Super Admin from deletion
+    if (user && user.role === 'superadmin' && user.email === 'superadmin@shopifyapp.com') {
+      throw new Error('Cannot delete the default Super Admin user');
+    }
+    
     return this.users.delete(id);
   }
 
@@ -1004,13 +1022,14 @@ export class MemStorage implements IStorage {
 
 
   // Role-based access helpers
-  async getUserRole(userId: string): Promise<'admin' | 'staff' | 'customer'> {
+  async getUserRole(userId: string): Promise<'superadmin' | 'admin' | 'staff' | 'customer'> {
     const user = await this.getUserById(userId);
     if (!user) return 'customer'; // Default to customer if user not found
 
-    if (user.role) return user.role as 'admin' | 'staff' | 'customer';
+    if (user.role) return user.role as 'superadmin' | 'admin' | 'staff' | 'customer';
 
     // Fallback for mock roles if not explicitly set
+    if (userId === 'superadmin' || userId.includes('superadmin')) return 'superadmin';
     if (userId === 'admin' || userId.includes('admin')) return 'admin';
     if (userId === 'staff' || userId.includes('staff')) return 'staff';
     return 'customer';

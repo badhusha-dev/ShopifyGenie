@@ -114,6 +114,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
                   <option value="customer">Customer</option>
                   <option value="staff">Staff</option>
                   <option value="admin">Admin</option>
+                  <option value="superadmin">Super Admin</option>
                 </select>
               </div>
             )}
@@ -151,6 +152,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
               <div className="text-center">
                 <small className="text-muted">Demo Credentials:</small>
                 <div className="mt-1">
+                  <small className="d-block text-warning">Super Admin: superadmin@shopifyapp.com / superadmin123</small>
                   <small className="d-block">Admin: admin@shopifyapp.com / admin123</small>
                   <small className="d-block">Staff: staff@shopifyapp.com / staff123</small>
                   <small className="d-block">Customer: customer@example.com / customer123</small>

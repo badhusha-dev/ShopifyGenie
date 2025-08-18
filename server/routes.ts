@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema } from "@shared/schema";
 import { shopify, saveShopSession, getShopSession } from "./shopify";
-import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, type AuthRequest } from "./auth";
+import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, requireSuperAdmin, type AuthRequest } from "./auth";
 import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -88,7 +88,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Logged out successfully" });
   });
 
-  // User Management Routes (Admin only)
+  // User Management Routes
+  // View users - Admin and Super Admin can view
   app.get("/api/users", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
@@ -99,7 +100,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", authenticateToken, requireAdmin, async (req, res) => {
+  // Create users - Super Admin only
+  app.post("/api/users", authenticateToken, requireSuperAdmin, async (req, res) => {
     try {
       const { name, email, password, role } = req.body;
       
@@ -117,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         password: hashedPassword,
-        role: role as 'admin' | 'staff' | 'customer',
+        role: role as 'superadmin' | 'admin' | 'staff' | 'customer',
         shopDomain: (req as AuthRequest).user?.shopDomain
       });
       
@@ -129,12 +131,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update users - Admin and Super Admin can update
   app.put("/api/users/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const { name, email, role, password } = req.body;
+      const currentUser = (req as AuthRequest).user!;
       
-      const updates: any = { name, email, role };
+      // Only Super Admin can change roles or update other Super Admins
+      const targetUser = await storage.getUserById(id);
+      if (targetUser?.role === 'superadmin' && currentUser.role !== 'superadmin') {
+        return res.status(403).json({ error: "Only Super Admin can modify Super Admin accounts" });
+      }
+      
+      if (role && role !== targetUser?.role && currentUser.role !== 'superadmin') {
+        return res.status(403).json({ error: "Only Super Admin can change user roles" });
+      }
+      
+      const updates: any = { name, email };
+      if (currentUser.role === 'superadmin' && role) {
+        updates.role = role;
+      }
       if (password) {
         updates.password = await AuthService.hashPassword(password);
       }
@@ -151,11 +168,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/users/:id", authenticateToken, requireAdmin, async (req, res) => {
+  // Delete users - Super Admin only
+  app.delete("/api/users/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       
-      // Prevent admin from deleting themselves
+      // Prevent deletion of own account
       if (id === (req as AuthRequest).user?.id) {
         return res.status(400).json({ error: "Cannot delete your own account" });
       }
@@ -168,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       console.error('Delete user error:', error);
-      res.status(500).json({ error: "Failed to delete user" });
+      res.status(500).json({ error: error.message || "Failed to delete user" });
     }
   });
 
