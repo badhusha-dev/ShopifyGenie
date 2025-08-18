@@ -95,8 +95,43 @@ const CustomerPortal = () => {
     <>
       <TopNav 
         title="Customer Portal" 
-        subtitle="View your orders, loyalty points, and manage subscriptions"
+        subtitle="Your personal dashboard to manage orders, track loyalty rewards, and control subscriptions"
       />
+      
+      {/* Feature Explanation */}
+      <div className="content-wrapper">
+        <div className="card mb-4">
+          <div className="card-body">
+            <h5 className="mb-3">Welcome to Your Customer Portal</h5>
+            <p className="mb-3">
+              Your personal dashboard gives you complete control over your shopping experience. 
+              Track your orders, manage loyalty points, and control your subscriptions all in one place.
+            </p>
+            
+            <div className="row">
+              <div className="col-md-6">
+                <h6 className="text-primary mb-2">What You Can Do:</h6>
+                <ul className="list-unstyled">
+                  <li className="mb-2"><i className="fas fa-check text-success me-2"></i>View complete order history with real-time status updates</li>
+                  <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Track and redeem loyalty points for exclusive discounts</li>
+                  <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Manage subscription deliveries and frequencies</li>
+                  <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Monitor your spending patterns and savings</li>
+                </ul>
+              </div>
+              <div className="col-md-6">
+                <ul className="list-unstyled">
+                  <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Access personalized rewards and member-only offers</li>
+                  <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Update delivery preferences and payment methods</li>
+                </ul>
+                <div className="mt-3">
+                  <strong className="text-info">Benefit:</strong>
+                  <p className="mb-0 small">Take full control of your shopping experience with instant access to everything you need, saving time and maximizing your rewards.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="content-wrapper">
         {/* Welcome Header */}
         <div className="card mb-4">

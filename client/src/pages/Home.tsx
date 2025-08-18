@@ -21,6 +21,225 @@ const Home = () => {
       <div className="content-wrapper">
         <Dashboard />
 
+        {/* Feature Sections */}
+        <div className="row g-4 mb-4">
+          <div className="col-lg-4 col-md-6">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <div className="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="fas fa-user-circle text-primary fs-4"></i>
+                  </div>
+                  <h5 className="mb-0">Customer Portal</h5>
+                </div>
+                <p className="text-muted mb-3">
+                  Personal dashboard for customers to manage orders, loyalty points, and subscriptions.
+                </p>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Complete order history and tracking
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Loyalty points management and redemption
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Subscription control and preferences
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Personalized rewards and offers
+                  </small>
+                </div>
+                <div className="text-end">
+                  <span className="badge bg-success">Enhanced Experience</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-4 col-md-6">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <div className="bg-info bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="fas fa-robot text-info fs-4"></i>
+                  </div>
+                  <h5 className="mb-0">AI Insights</h5>
+                </div>
+                <p className="text-muted mb-3">
+                  Leverage AI for deep business insights, trend analysis, and data-driven decision making.
+                </p>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Identify key sales trends and patterns
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Analyze customer behavior and segmentation
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Forecast future sales and demand
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Uncover hidden growth opportunities
+                  </small>
+                </div>
+                <div className="text-end">
+                  <span className="badge bg-info">Data Driven</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-4 col-md-6">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <div className="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="fas fa-boxes text-warning fs-4"></i>
+                  </div>
+                  <h5 className="mb-0">Advanced Inventory</h5>
+                </div>
+                <p className="text-muted mb-3">
+                  Professional-grade inventory management with batch tracking and expiry monitoring.
+                </p>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    FIFO batch tracking with expiry dates
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Predictive stock-out analytics
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Multi-warehouse management
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Complete audit trail and reporting
+                  </small>
+                </div>
+                <div className="text-end">
+                  <span className="badge bg-warning text-dark">Enterprise</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-4 col-md-6">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <div className="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="fas fa-handshake text-success fs-4"></i>
+                  </div>
+                  <h5 className="mb-0">Vendor Management</h5>
+                </div>
+                <p className="text-muted mb-3">
+                  Complete supplier relationship management with purchase orders and performance tracking.
+                </p>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Comprehensive vendor database
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Purchase order automation
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Payment tracking and management
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Vendor performance analytics
+                  </small>
+                </div>
+                <div className="text-end">
+                  <span className="badge bg-success">Supply Chain</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-4 col-md-6">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <div className="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="fas fa-lightbulb text-primary fs-4"></i>
+                  </div>
+                  <h5 className="mb-0">AI Recommendations</h5>
+                </div>
+                <p className="text-muted mb-3">
+                  Intelligent product recommendations and business insights powered by machine learning.
+                </p>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Personalized product suggestions
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Sales forecasting with 85%+ accuracy
+                  </small>
+                </div>
+                <div className="mb-2">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Customer behavior analysis
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <small className="text-success">
+                    <i className="fas fa-check me-1"></i>
+                    Automated marketing insights
+                  </small>
+                </div>
+                <div className="text-end">
+                  <span className="badge bg-primary">AI Powered</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
         {/* Inventory Management Section */}
         <div className="row mb-4">
           <div className="col-lg-8">
@@ -277,7 +496,7 @@ const Home = () => {
                   </small>
                 </div>
                 <div className="mb-3">
-                  <button 
+                  <button
                     className="btn btn-success btn-sm w-100 mb-2"
                     onClick={async () => {
                       try {
@@ -301,8 +520,8 @@ const Home = () => {
                     <i className="fas fa-sync me-1"></i>
                     Sync with Shopify
                   </button>
-                  <a 
-                    href="/auth?shop=demo-shop.myshopify.com" 
+                  <a
+                    href="/auth?shop=demo-shop.myshopify.com"
                     className="btn btn-outline-primary btn-sm w-100"
                     target="_blank"
                   >

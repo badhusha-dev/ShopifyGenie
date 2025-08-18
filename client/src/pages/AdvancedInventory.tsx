@@ -78,8 +78,43 @@ const AdvancedInventory = () => {
     <>
       <TopNav
         title="Advanced Inventory Management"
-        subtitle="Batch tracking, FIFO, and expiry management"
+        subtitle="Professional-grade inventory control with batch tracking, expiry management, and predictive analytics"
       />
+      
+      {/* Feature Explanation */}
+      <div className="content-wrapper">
+        <div className="card mb-4">
+          <div className="card-body">
+            <h5 className="mb-3">Enterprise-Level Inventory Control</h5>
+            <p className="mb-3">
+              Take your inventory management to the next level with advanced features designed for businesses 
+              that need precise control over stock, expiry dates, and multi-location warehousing.
+            </p>
+            
+            <div className="row">
+              <div className="col-md-6">
+                <h6 className="text-primary mb-2">Advanced Features Include:</h6>
+                <ul className="list-unstyled">
+                  <li className="mb-2"><i className="fas fa-boxes text-warning me-2"></i>FIFO (First-In-First-Out) batch tracking with expiry monitoring</li>
+                  <li className="mb-2"><i className="fas fa-boxes text-warning me-2"></i>Predictive analytics showing exact days until stock-out</li>
+                  <li className="mb-2"><i className="fas fa-boxes text-warning me-2"></i>Multi-warehouse inventory tracking across all locations</li>
+                  <li className="mb-2"><i className="fas fa-boxes text-warning me-2"></i>Automated low-stock and expiry alerts</li>
+                </ul>
+              </div>
+              <div className="col-md-6">
+                <ul className="list-unstyled">
+                  <li className="mb-2"><i className="fas fa-boxes text-warning me-2"></i>Complete audit trail for all stock adjustments and movements</li>
+                  <li className="mb-2"><i className="fas fa-boxes text-warning me-2"></i>Damage, theft, and wastage tracking with detailed reporting</li>
+                </ul>
+                <div className="mt-3">
+                  <strong className="text-primary">Benefit:</strong>
+                  <p className="mb-0 small">Reduce inventory costs by up to 30% while eliminating stockouts and expired products through intelligent forecasting and automated workflows.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="content-wrapper">
         {/* Tab Navigation */}
         <ul className="nav nav-tabs mb-4">

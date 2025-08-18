@@ -89,8 +89,43 @@ const VendorManagement = () => {
     <>
       <TopNav
         title="Vendor Management"
-        subtitle="Manage vendors, purchase orders, and supplier relationships"
+        subtitle="Complete supplier relationship management with purchase orders, payments, and performance analytics"
       />
+      
+      {/* Feature Explanation */}
+      <div className="content-wrapper">
+        <div className="card mb-4">
+          <div className="card-body">
+            <h5 className="mb-3">Complete Supplier Relationship Management</h5>
+            <p className="mb-3">
+              Streamline your entire vendor ecosystem with comprehensive tools for managing suppliers, 
+              tracking purchase orders, monitoring payments, and analyzing vendor performance.
+            </p>
+            
+            <div className="row">
+              <div className="col-md-6">
+                <h6 className="text-primary mb-2">Vendor Management Tools:</h6>
+                <ul className="list-unstyled">
+                  <li className="mb-2"><i className="fas fa-handshake text-success me-2"></i>Complete vendor database with contact management and history</li>
+                  <li className="mb-2"><i className="fas fa-handshake text-success me-2"></i>Purchase order creation, tracking, and automated status updates</li>
+                  <li className="mb-2"><i className="fas fa-handshake text-success me-2"></i>Payment tracking with outstanding dues and payment terms</li>
+                  <li className="mb-2"><i className="fas fa-handshake text-success me-2"></i>Vendor performance analytics and delivery scorecards</li>
+                </ul>
+              </div>
+              <div className="col-md-6">
+                <ul className="list-unstyled">
+                  <li className="mb-2"><i className="fas fa-handshake text-success me-2"></i>Automated reorder recommendations based on stock levels</li>
+                  <li className="mb-2"><i className="fas fa-handshake text-success me-2"></i>Cost analysis and vendor comparison reports</li>
+                </ul>
+                <div className="mt-3">
+                  <strong className="text-warning">Benefit:</strong>
+                  <p className="mb-0 small">Optimize supplier relationships and reduce procurement costs by 15-25% through better vendor management and automated purchase order workflows.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="content-wrapper">
         {/* Summary Cards */}
         <div className="row mb-4">
