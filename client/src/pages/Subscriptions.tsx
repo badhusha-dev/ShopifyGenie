@@ -68,16 +68,16 @@ const Subscriptions = () => {
               <div className="card-body">
                 <div className="mb-3">
                   <label className="form-label">Default Frequency</label>
-                  <select className="form-select">
+                  <select className="form-select" defaultValue="monthly">
                     <option value="weekly">Weekly</option>
-                    <option value="monthly" selected>Monthly</option>
+                    <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
                   </select>
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Auto-renewal</label>
                   <div className="form-check">
-                    <input className="form-check-input" type="checkbox" id="autoRenewal" checked />
+                    <input className="form-check-input" type="checkbox" id="autoRenewal" defaultChecked />
                     <label className="form-check-label" htmlFor="autoRenewal">
                       Enable auto-renewal by default
                     </label>
@@ -85,7 +85,7 @@ const Subscriptions = () => {
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Discount for Subscriptions (%)</label>
-                  <input type="number" className="form-control" value="10" />
+                  <input type="number" className="form-control" defaultValue="10" />
                 </div>
                 <button className="btn btn-primary w-100">Update Settings</button>
               </div>

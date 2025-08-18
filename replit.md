@@ -1,6 +1,6 @@
 # Overview
 
-ShopifyApp is a simplified inventory and loyalty management system built as a Shopify integration. The application provides core e-commerce functionality including product inventory tracking, customer loyalty points management, subscription handling, and basic analytics. It serves as a demonstration of modern full-stack development with Shopify API integration, featuring a clean React frontend with Bootstrap styling and an Express.js backend with in-memory storage for demo purposes.
+ShopifyApp is a comprehensive inventory and loyalty management system built as a fully-integrated Shopify App. The application provides complete e-commerce functionality including real-time product synchronization, customer loyalty points management, subscription handling, order processing with webhook support, and advanced analytics. It demonstrates modern full-stack development with complete Shopify API integration, featuring a responsive React frontend with Bootstrap styling and a robust Express.js backend with OAuth 2.0 authentication and webhook processing.
 
 # User Preferences
 

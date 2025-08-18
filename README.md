@@ -62,11 +62,39 @@ Create a `.env` file with the following variables:
 # Shopify App Configuration
 SHOPIFY_API_KEY=your_shopify_api_key_here
 SHOPIFY_API_SECRET=your_shopify_api_secret_here
-SHOPIFY_SCOPES=read_products,write_products,read_orders,write_orders,read_customers,write_customers
-SHOPIFY_APP_URL=your_app_url_here
+SHOPIFY_SCOPES=read_products,write_products,read_orders,write_orders,read_customers,write_customers,read_inventory,write_inventory
+SHOPIFY_APP_URL=https://your-repl-name.replit.app
+SHOPIFY_WEBHOOK_SECRET=your_webhook_secret_here
+
+# Database Configuration (if using PostgreSQL)
+DATABASE_URL=postgresql://username:password@localhost:5432/shopify_app
 
 # Session Configuration
-SESSION_SECRET=your_session_secret_here
+SESSION_SECRET=your_session_secret_here_generate_random_string
 
 # Port Configuration
 PORT=5000
+
+# Environment
+NODE_ENV=development
+```
+
+## Shopify Integration Setup
+
+### 1. Create Shopify Partner Account
+1. Go to [partners.shopify.com](https://partners.shopify.com)
+2. Create a new app
+3. Note down your API key and secret
+
+### 2. Configure OAuth
+- **App URL**: `https://your-repl-name.replit.app`
+- **Allowed redirection URLs**: `https://your-repl-name.replit.app/auth/callback`
+
+### 3. Configure Webhooks
+Set up the following webhooks in your Shopify app:
+- **Orders Create**: `https://your-repl-name.replit.app/webhooks/orders/create`
+
+### 4. Test Integration
+1. Click "Connect Shopify Store" in the dashboard
+2. Authorize your test store
+3. Use "Sync with Shopify" to pull data

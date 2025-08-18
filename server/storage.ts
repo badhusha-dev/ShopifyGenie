@@ -7,6 +7,7 @@ import {
   type LoyaltyTransaction, type InsertLoyaltyTransaction
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { ShopifyService, type ShopifyProduct, type ShopifyCustomer, type ShopifyOrder } from "./shopify";
 
 export interface IStorage {
   // Users
@@ -14,27 +15,30 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
-  // Products
-  getProducts(): Promise<Product[]>;
+  // Products - now with Shopify integration
+  getProducts(shopDomain?: string): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   getProductByShopifyId(shopifyId: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined>;
-  getLowStockProducts(threshold?: number): Promise<Product[]>;
+  getLowStockProducts(threshold?: number, shopDomain?: string): Promise<Product[]>;
+  syncProductsFromShopify(shopDomain: string): Promise<Product[]>;
 
-  // Customers
-  getCustomers(): Promise<Customer[]>;
+  // Customers - now with Shopify integration
+  getCustomers(shopDomain?: string): Promise<Customer[]>;
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByShopifyId(shopifyId: string): Promise<Customer | undefined>;
   getCustomerByEmail(email: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer | undefined>;
+  syncCustomersFromShopify(shopDomain: string): Promise<Customer[]>;
 
-  // Orders
-  getOrders(): Promise<Order[]>;
+  // Orders - now with Shopify integration
+  getOrders(shopDomain?: string): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
   getOrdersByCustomer(customerId: string): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
+  syncOrdersFromShopify(shopDomain: string): Promise<Order[]>;
 
   // Subscriptions
   getSubscriptions(): Promise<Subscription[]>;
@@ -49,7 +53,7 @@ export interface IStorage {
   createLoyaltyTransaction(transaction: InsertLoyaltyTransaction): Promise<LoyaltyTransaction>;
 
   // Analytics
-  getStats(): Promise<{
+  getStats(shopDomain?: string): Promise<{
     totalProducts: number;
     lowStockItems: number;
     totalLoyaltyPoints: number;
@@ -177,9 +181,53 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  // Product methods
-  async getProducts(): Promise<Product[]> {
+  // Product methods - now with Shopify integration
+  async getProducts(shopDomain?: string): Promise<Product[]> {
+    if (shopDomain) {
+      try {
+        const shopifyService = new ShopifyService(shopDomain);
+        const shopifyProducts = await shopifyService.getProducts();
+        
+        // Convert and sync Shopify products with local storage
+        const products: Product[] = [];
+        for (const shopifyProduct of shopifyProducts) {
+          for (const variant of shopifyProduct.variants) {
+            const existingProduct = await this.getProductByShopifyId(variant.id.toString());
+            if (existingProduct) {
+              // Update existing product
+              const updatedProduct = await this.updateProduct(existingProduct.id, {
+                name: `${shopifyProduct.title} - ${variant.title}`,
+                stock: variant.inventory_quantity,
+                price: variant.price,
+                lastUpdated: new Date()
+              });
+              if (updatedProduct) products.push(updatedProduct);
+            } else {
+              // Create new product
+              const newProduct = await this.createProduct({
+                shopifyId: variant.id.toString(),
+                name: `${shopifyProduct.title} - ${variant.title}`,
+                sku: variant.sku || `shopify-${variant.id}`,
+                stock: variant.inventory_quantity,
+                price: variant.price,
+                category: shopifyProduct.product_type || 'General',
+                imageUrl: null
+              });
+              products.push(newProduct);
+            }
+          }
+        }
+        return products;
+      } catch (error) {
+        console.error('Error syncing products from Shopify:', error);
+        return Array.from(this.products.values());
+      }
+    }
     return Array.from(this.products.values());
+  }
+
+  async syncProductsFromShopify(shopDomain: string): Promise<Product[]> {
+    return await this.getProducts(shopDomain);
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -214,13 +262,53 @@ export class MemStorage implements IStorage {
     return updatedProduct;
   }
 
-  async getLowStockProducts(threshold = 10): Promise<Product[]> {
-    return Array.from(this.products.values()).filter(p => p.stock < threshold);
+  async getLowStockProducts(threshold = 10, shopDomain?: string): Promise<Product[]> {
+    const products = shopDomain ? await this.getProducts(shopDomain) : Array.from(this.products.values());
+    return products.filter(p => p.stock < threshold);
   }
 
-  // Customer methods
-  async getCustomers(): Promise<Customer[]> {
+  // Customer methods - now with Shopify integration
+  async getCustomers(shopDomain?: string): Promise<Customer[]> {
+    if (shopDomain) {
+      try {
+        const shopifyService = new ShopifyService(shopDomain);
+        const shopifyCustomers = await shopifyService.getCustomers();
+        
+        // Convert and sync Shopify customers with local storage
+        const customers: Customer[] = [];
+        for (const shopifyCustomer of shopifyCustomers) {
+          const existingCustomer = await this.getCustomerByShopifyId(shopifyCustomer.id.toString());
+          if (existingCustomer) {
+            // Update existing customer
+            const updatedCustomer = await this.updateCustomer(existingCustomer.id, {
+              name: `${shopifyCustomer.first_name} ${shopifyCustomer.last_name}`.trim(),
+              email: shopifyCustomer.email,
+              totalSpent: shopifyCustomer.total_spent
+            });
+            if (updatedCustomer) customers.push(updatedCustomer);
+          } else {
+            // Create new customer
+            const newCustomer = await this.createCustomer({
+              shopifyId: shopifyCustomer.id.toString(),
+              name: `${shopifyCustomer.first_name} ${shopifyCustomer.last_name}`.trim(),
+              email: shopifyCustomer.email,
+              loyaltyPoints: 0,
+              totalSpent: shopifyCustomer.total_spent
+            });
+            customers.push(newCustomer);
+          }
+        }
+        return customers;
+      } catch (error) {
+        console.error('Error syncing customers from Shopify:', error);
+        return Array.from(this.customers.values());
+      }
+    }
     return Array.from(this.customers.values());
+  }
+
+  async syncCustomersFromShopify(shopDomain: string): Promise<Customer[]> {
+    return await this.getCustomers(shopDomain);
   }
 
   async getCustomer(id: string): Promise<Customer | undefined> {
@@ -255,9 +343,52 @@ export class MemStorage implements IStorage {
     return updatedCustomer;
   }
 
-  // Order methods
-  async getOrders(): Promise<Order[]> {
+  // Order methods - now with Shopify integration
+  async getOrders(shopDomain?: string): Promise<Order[]> {
+    if (shopDomain) {
+      try {
+        const shopifyService = new ShopifyService(shopDomain);
+        const shopifyOrders = await shopifyService.getOrders();
+        
+        // Convert and sync Shopify orders with local storage
+        const orders: Order[] = [];
+        for (const shopifyOrder of shopifyOrders) {
+          const existingOrder = await this.getOrderByShopifyId(shopifyOrder.id.toString());
+          if (!existingOrder) {
+            // Find or create customer
+            let customer = await this.getCustomerByShopifyId(shopifyOrder.customer?.id?.toString() || '');
+            if (!customer && shopifyOrder.email) {
+              customer = await this.getCustomerByEmail(shopifyOrder.email);
+            }
+            
+            // Create new order
+            const newOrder = await this.createOrder({
+              shopifyId: shopifyOrder.id.toString(),
+              customerId: customer?.id || null,
+              total: shopifyOrder.total_price,
+              pointsEarned: Math.floor(parseFloat(shopifyOrder.total_price)),
+              status: shopifyOrder.financial_status
+            });
+            orders.push(newOrder);
+          }
+        }
+        // Also include any existing local orders
+        orders.push(...Array.from(this.orders.values()));
+        return orders;
+      } catch (error) {
+        console.error('Error syncing orders from Shopify:', error);
+        return Array.from(this.orders.values());
+      }
+    }
     return Array.from(this.orders.values());
+  }
+
+  async getOrderByShopifyId(shopifyId: string): Promise<Order | undefined> {
+    return Array.from(this.orders.values()).find(o => o.shopifyId === shopifyId);
+  }
+
+  async syncOrdersFromShopify(shopDomain: string): Promise<Order[]> {
+    return await this.getOrders(shopDomain);
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
@@ -333,12 +464,12 @@ export class MemStorage implements IStorage {
   }
 
   // Analytics methods
-  async getStats() {
-    const products = await this.getProducts();
-    const lowStockProducts = await this.getLowStockProducts();
+  async getStats(shopDomain?: string) {
+    const products = await this.getProducts(shopDomain);
+    const lowStockProducts = await this.getLowStockProducts(10, shopDomain);
     const subscriptions = await this.getSubscriptions();
-    const orders = await this.getOrders();
-    const customers = await this.getCustomers();
+    const orders = await this.getOrders(shopDomain);
+    const customers = await this.getCustomers(shopDomain);
 
     const totalSales = orders.reduce((sum, order) => sum + parseFloat(order.total), 0);
     const totalLoyaltyPoints = customers.reduce((sum, customer) => sum + customer.loyaltyPoints, 0);

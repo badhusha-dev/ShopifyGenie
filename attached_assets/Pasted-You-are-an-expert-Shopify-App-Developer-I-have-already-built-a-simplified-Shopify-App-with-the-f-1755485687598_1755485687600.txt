@@ -1,0 +1,60 @@
+You are an expert Shopify App Developer.  
+I have already built a simplified Shopify App with the following:
+- Express.js backend (REST API)
+- React + Bootstrap frontend
+- In-memory/JSON storage with seeded demo data
+- CRUD endpoints for products, customers, orders, subscriptions, loyalty
+- Dashboard with metrics and low-stock alerts
+
+Now, I want to enhance it by connecting to the **real Shopify Admin API** and using **Shopify Webhooks**.
+
+## 🎯 Requirements
+
+1. Shopify Authentication
+   - Implement Shopify OAuth 2.0 flow for merchants to install the app.
+   - Save the shop domain and access token (for now in memory/JSON).
+   - Add `.env` with SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SHOPIFY_SCOPES, APP_URL.
+
+2. Replace Demo Data with Shopify API
+   - Products → Fetch from Shopify (title, variants, inventory_quantity).
+   - Customers → Fetch from Shopify (name, email, tags).
+   - Orders → Fetch from Shopify (order number, total_price, line items).
+   - Subscriptions & Loyalty → still use local storage, but link them to real Shopify customers.
+
+3. Shopify Webhooks
+   - Register webhook for `orders/create` event.
+   - When a new order comes in:
+     - Update inventory in memory.
+     - Add loyalty points for the customer.
+   - Log webhook events for debugging.
+
+4. Backend Updates
+   - Update `/inventory`, `/customers`, `/orders` routes to use Shopify API.
+   - Keep `/subscriptions` and `/loyalty` using local JSON for now.
+   - Create `/webhooks/shopify` endpoint to handle incoming events.
+
+5. Frontend Updates
+   - Inventory Dashboard → Show live product stock from Shopify API.
+   - Customer Dashboard → Show live Shopify customers + loyalty points balance.
+   - Orders Page → Show Shopify orders in a Bootstrap table.
+   - Dashboard Analytics → Calculate total sales and top product from Shopify orders.
+
+6. Example Data Flow
+   - Merchant installs app via OAuth → token saved.
+   - Products fetched from Shopify → shown in Inventory dashboard.
+   - Customer places an order in Shopify → webhook triggers → order added, inventory reduced, loyalty updated.
+   - Dashboard reflects real data instead of seeded demo.
+
+## 🛠️ Technical Details
+- Use `@shopify/shopify-api` npm package for API + OAuth.
+- Use Express middleware for OAuth callback handling.
+- Save shop + access token in JSON for demo.
+- Implement webhook verification (HMAC check with SHOPIFY_API_SECRET).
+- Frontend should call updated backend routes to display live data.
+
+## 📂 Expected Output
+- Updated backend with OAuth, Shopify API integration, and webhook handling.
+- Updated frontend components showing live Shopify data.
+- Example `.env.example` with required Shopify keys.
+- Clear instructions in README.md on how to run with a Shopify development store.
+
