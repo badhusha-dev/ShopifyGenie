@@ -355,7 +355,7 @@ const Reports = () => {
                   </div>
                   <div className="mb-3">
                     <div className="d-flex justify-content-between">
-                      <span>New (<$100)</span>
+                      <span>New (&lt;$100)</span>
                       <span className="badge bg-info">{customers?.filter(c => parseFloat(c.totalSpent || '0') < 100).length || 0}</span>
                     </div>
                     <div className="progress mt-1" style={{ height: '8px' }}>
