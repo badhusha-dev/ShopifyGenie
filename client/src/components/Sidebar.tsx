@@ -35,6 +35,24 @@ const Sidebar = () => {
             </Link>
           </li>
         ))}
+          <li>
+            <Link href="/ai-recommendations" className="nav-link">
+              <i className="fas fa-robot me-2"></i>
+              AI Recommendations
+            </Link>
+          </li>
+          <li>
+            <Link href="/advanced-inventory" className="nav-link">
+              <i className="fas fa-warehouse me-2"></i>
+              Advanced Inventory
+            </Link>
+          </li>
+          <li>
+            <Link href="/vendor-management" className="nav-link">
+              <i className="fas fa-truck me-2"></i>
+              Vendor Management
+            </Link>
+          </li>
       </ul>
     </nav>
   );

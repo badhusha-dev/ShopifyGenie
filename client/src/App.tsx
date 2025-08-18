@@ -32,6 +32,8 @@ function Router() {
             <Route path="/reports" component={Reports} />
             <Route path="/customer-portal" component={CustomerPortal} />
             <Route path="/ai-recommendations" component={lazy(() => import("./pages/AIRecommendations"))} />
+            <Route path="/advanced-inventory" component={lazy(() => import("./pages/AdvancedInventory"))} />
+            <Route path="/vendor-management" component={lazy(() => import("./pages/VendorManagement"))} />
             <Route component={NotFound} />
           </Switch>
         </div>

@@ -52,6 +52,39 @@ export interface IStorage {
   getLoyaltyTransactionsByCustomer(customerId: string): Promise<LoyaltyTransaction[]>;
   createLoyaltyTransaction(transaction: InsertLoyaltyTransaction): Promise<LoyaltyTransaction>;
 
+  // Inventory Management
+  getWarehouses(): Promise<any[]>;
+  getWarehouse(id: string): Promise<any | undefined>;
+  createWarehouse(warehouse: any): Promise<any>;
+  updateWarehouse(id: string, updates: Partial<any>): Promise<any | undefined>;
+
+  getInventoryBatches(): Promise<any[]>;
+  getInventoryBatch(id: string): Promise<any | undefined>;
+  createInventoryBatch(batch: any): Promise<any>;
+  updateInventoryBatch(id: string, updates: Partial<any>): Promise<any | undefined>;
+  getBatchByProductAndExpiry(productId: string, expiryDate: Date): Promise<any | undefined>;
+  getExpiringStock(daysUntilExpiry: number): Promise<any[]>;
+
+  getStockAdjustments(): Promise<any[]>;
+  createStockAdjustment(adjustment: any): Promise<any>;
+  getStockAuditHistory(itemId: string): Promise<any[]>;
+
+  // Multi-Vendor Management
+  getVendors(): Promise<any[]>;
+  getVendor(id: string): Promise<any | undefined>;
+  createVendor(vendor: any): Promise<any>;
+  updateVendor(id: string, updates: Partial<any>): Promise<any | undefined>;
+
+  getPurchaseOrders(): Promise<any[]>;
+  getPurchaseOrder(id: string): Promise<any | undefined>;
+  createPurchaseOrder(po: any): Promise<any>;
+  updatePurchaseOrder(id: string, updates: Partial<any>): Promise<any | undefined>;
+  getPurchaseOrdersByVendor(vendorId: string): Promise<any[]>;
+
+  getVendorPayments(): Promise<any[]>;
+  getVendorPayment(id: string): Promise<any | undefined>;
+  createVendorPayment(payment: any): Promise<any>;
+
   // Analytics
   getStats(shopDomain?: string): Promise<{
     totalProducts: number;
@@ -62,6 +95,11 @@ export interface IStorage {
     totalOrders: number;
     avgOrderValue: number;
   }>;
+  getSalesTrends(): Promise<any[]>;
+  getTopProducts(): Promise<any[]>;
+  getLoyaltyPointsAnalytics(): Promise<any>;
+  getStockForecast(): Promise<any[]>;
+  getVendorAnalytics(): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -71,6 +109,43 @@ export class MemStorage implements IStorage {
   private orders: Map<string, Order> = new Map();
   private subscriptions: Map<string, Subscription> = new Map();
   private loyaltyTransactions: Map<string, LoyaltyTransaction> = new Map();
+
+  // Enhanced Inventory & Vendor Storage
+  private warehouses: any[] = [
+    {
+      id: "warehouse-1",
+      shopDomain: "demo-store.myshopify.com",
+      name: "Main Warehouse",
+      address: "123 Industrial Blvd, City, State 12345",
+      manager: "John Smith",
+      isActive: true,
+      createdAt: new Date()
+    }
+  ];
+
+  private vendors: any[] = [
+    {
+      id: "vendor-1",
+      shopDomain: "demo-store.myshopify.com", 
+      name: "TechSupply Inc.",
+      email: "orders@techsupply.com",
+      phone: "+1-555-0101",
+      address: "456 Supplier Ave, Tech City, TC 67890",
+      contactPerson: "Sarah Johnson",
+      paymentTerms: 30,
+      isActive: true,
+      totalSpent: "15000.00",
+      outstandingDues: "2500.00",
+      createdAt: new Date()
+    }
+  ];
+
+  private inventoryBatches: any[] = [];
+  private stockAdjustments: any[] = [];
+  private purchaseOrders: any[] = [];
+  private purchaseOrderItems: any[] = [];
+  private vendorPayments: any[] = [];
+  private stockMovements: any[] = [];
 
   constructor() {
     this.seedData();
@@ -187,7 +262,7 @@ export class MemStorage implements IStorage {
       try {
         const shopifyService = new ShopifyService(shopDomain);
         const shopifyProducts = await shopifyService.getProducts();
-        
+
         // Convert and sync Shopify products with local storage
         const products: Product[] = [];
         for (const shopifyProduct of shopifyProducts) {
@@ -273,7 +348,7 @@ export class MemStorage implements IStorage {
       try {
         const shopifyService = new ShopifyService(shopDomain);
         const shopifyCustomers = await shopifyService.getCustomers();
-        
+
         // Convert and sync Shopify customers with local storage
         const customers: Customer[] = [];
         for (const shopifyCustomer of shopifyCustomers) {
@@ -349,7 +424,7 @@ export class MemStorage implements IStorage {
       try {
         const shopifyService = new ShopifyService(shopDomain);
         const shopifyOrders = await shopifyService.getOrders();
-        
+
         // Convert and sync Shopify orders with local storage
         const orders: Order[] = [];
         for (const shopifyOrder of shopifyOrders) {
@@ -360,7 +435,7 @@ export class MemStorage implements IStorage {
             if (!customer && shopifyOrder.email) {
               customer = await this.getCustomerByEmail(shopifyOrder.email);
             }
-            
+
             // Create new order
             const newOrder = await this.createOrder({
               shopifyId: shopifyOrder.id.toString(),
@@ -463,6 +538,197 @@ export class MemStorage implements IStorage {
     return transaction;
   }
 
+  // Inventory Management methods
+  async getWarehouses(): Promise<any[]> {
+    return this.warehouses;
+  }
+
+  async getWarehouse(id: string): Promise<any | undefined> {
+    return this.warehouses.find(w => w.id === id);
+  }
+
+  async createWarehouse(warehouse: any): Promise<any> {
+    const newWarehouse = { ...warehouse, id: randomUUID(), createdAt: new Date() };
+    this.warehouses.push(newWarehouse);
+    return newWarehouse;
+  }
+
+  async updateWarehouse(id: string, updates: Partial<any>): Promise<any | undefined> {
+    const warehouse = this.warehouses.find(w => w.id === id);
+    if (!warehouse) return undefined;
+    const updatedWarehouse = { ...warehouse, ...updates };
+    this.warehouses = this.warehouses.map(w => w.id === id ? updatedWarehouse : w);
+    return updatedWarehouse;
+  }
+
+  async getInventoryBatches(): Promise<any[]> {
+    return this.inventoryBatches;
+  }
+
+  async getInventoryBatch(id: string): Promise<any | undefined> {
+    return this.inventoryBatches.find(b => b.id === id);
+  }
+
+  async createInventoryBatch(batch: any): Promise<any> {
+    const newBatch = { ...batch, id: randomUUID(), createdAt: new Date() };
+    this.inventoryBatches.push(newBatch);
+    return newBatch;
+  }
+
+  async updateInventoryBatch(id: string, updates: Partial<any>): Promise<any | undefined> {
+    const batch = this.inventoryBatches.find(b => b.id === id);
+    if (!batch) return undefined;
+    const updatedBatch = { ...batch, ...updates };
+    this.inventoryBatches = this.inventoryBatches.map(b => b.id === id ? updatedBatch : b);
+    return updatedBatch;
+  }
+
+  async getBatchByProductAndExpiry(productId: string, expiryDate: Date): Promise<any | undefined> {
+    return this.inventoryBatches.find(b => b.productId === productId && new Date(b.expiryDate).toDateString() === expiryDate.toDateString());
+  }
+
+  async getExpiringStock(daysUntilExpiry: number): Promise<any[]> {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + daysUntilExpiry);
+    return this.inventoryBatches.filter(b => new Date(b.expiryDate) <= expiryDate);
+  }
+
+  async getStockAdjustments(): Promise<any[]> {
+    return this.stockAdjustments;
+  }
+
+  async createStockAdjustment(adjustment: any): Promise<any> {
+    const newAdjustment = { ...adjustment, id: randomUUID(), timestamp: new Date() };
+    this.stockAdjustments.push(newAdjustment);
+    // Add to stock movements for audit history
+    this.stockMovements.push({
+      id: randomUUID(),
+      itemId: adjustment.productId, // Assuming adjustment is for a product
+      type: adjustment.type, // e.g., 'adjustment'
+      quantityChange: adjustment.quantity,
+      reason: adjustment.reason,
+      adjustedBy: adjustment.adjustedBy,
+      timestamp: newAdjustment.timestamp,
+      batchId: adjustment.batchId,
+      warehouseId: adjustment.warehouseId
+    });
+    return newAdjustment;
+  }
+
+  async getStockAuditHistory(itemId: string): Promise<any[]> {
+    return this.stockMovements.filter(m => m.itemId === itemId).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  // Multi-Vendor Management methods
+  async getVendors(): Promise<any[]> {
+    return this.vendors;
+  }
+
+  async getVendor(id: string): Promise<any | undefined> {
+    return this.vendors.find(v => v.id === id);
+  }
+
+  async createVendor(vendor: any): Promise<any> {
+    const newVendor = { ...vendor, id: randomUUID(), createdAt: new Date(), totalSpent: "0.00", outstandingDues: "0.00" };
+    this.vendors.push(newVendor);
+    return newVendor;
+  }
+
+  async updateVendor(id: string, updates: Partial<any>): Promise<any | undefined> {
+    const vendor = this.vendors.find(v => v.id === id);
+    if (!vendor) return undefined;
+    const updatedVendor = { ...vendor, ...updates };
+    this.vendors = this.vendors.map(v => v.id === id ? updatedVendor : v);
+    return updatedVendor;
+  }
+
+  async getPurchaseOrders(): Promise<any[]> {
+    return this.purchaseOrders;
+  }
+
+  async getPurchaseOrder(id: string): Promise<any | undefined> {
+    return this.purchaseOrders.find(po => po.id === id);
+  }
+
+  async createPurchaseOrder(po: any): Promise<any> {
+    const newPO = { ...po, id: randomUUID(), status: 'Draft', createdAt: new Date() };
+    this.purchaseOrders.push(newPO);
+    // Add items to purchaseOrderItems
+    if (po.items && po.items.length > 0) {
+      po.items.forEach((item: any) => {
+        this.purchaseOrderItems.push({
+          id: randomUUID(),
+          purchaseOrderId: newPO.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitCost: item.unitCost,
+          totalCost: item.totalCost
+        });
+      });
+    }
+    return newPO;
+  }
+
+  async updatePurchaseOrder(id: string, updates: Partial<any>): Promise<any | undefined> {
+    const po = this.purchaseOrders.find(p => p.id === id);
+    if (!po) return undefined;
+    const updatedPO = { ...po, ...updates };
+    this.purchaseOrders = this.purchaseOrders.map(p => p.id === id ? updatedPO : p);
+    // If status changes to 'Delivered', update vendor's totalSpent and outstandingDues
+    if (updatedPO.status === 'Delivered' && po.status !== 'Delivered') {
+      const vendor = await this.getVendor(updatedPO.vendorId);
+      if (vendor) {
+        const totalCostOfPO = this.purchaseOrderItems
+          .filter(item => item.purchaseOrderId === id)
+          .reduce((sum, item) => sum + parseFloat(item.totalCost), 0);
+        
+        const newTotalSpent = (parseFloat(vendor.totalSpent) + totalCostOfPO).toFixed(2);
+        const newOutstandingDues = (parseFloat(vendor.outstandingDues) + totalCostOfPO).toFixed(2); // Assuming PO cost adds to dues initially
+
+        await this.updateVendor(vendor.id, {
+          totalSpent: newTotalSpent,
+          outstandingDues: newOutstandingDues
+        });
+      }
+    }
+    return updatedPO;
+  }
+
+  async getPurchaseOrdersByVendor(vendorId: string): Promise<any[]> {
+    return this.purchaseOrders.filter(po => po.vendorId === vendorId);
+  }
+
+  async getVendorPayments(): Promise<any[]> {
+    return this.vendorPayments;
+  }
+
+  async getVendorPayment(id: string): Promise<any | undefined> {
+    return this.vendorPayments.find(vp => vp.id === id);
+  }
+
+  async createVendorPayment(payment: any): Promise<any> {
+    const newPayment = { ...payment, id: randomUUID(), timestamp: new Date() };
+    this.vendorPayments.push(newPayment);
+
+    // Update vendor's outstanding dues
+    const vendor = await this.getVendor(payment.vendorId);
+    if (vendor) {
+      const newOutstandingDues = (parseFloat(vendor.outstandingDues) - parseFloat(payment.amount)).toFixed(2);
+      await this.updateVendor(vendor.id, { outstandingDues: newOutstandingDues });
+    }
+    
+    // Potentially update PO status if fully paid
+    if (payment.purchaseOrderId) {
+      const po = await this.getPurchaseOrder(payment.purchaseOrderId);
+      if (po && parseFloat(po.totalCost) <= parseFloat(payment.amount)) {
+        await this.updatePurchaseOrder(payment.purchaseOrderId, { status: 'Closed' });
+      }
+    }
+
+    return newPayment;
+  }
+
+
   // Analytics methods
   async getStats(shopDomain?: string) {
     const products = await this.getProducts(shopDomain);
@@ -500,7 +766,7 @@ export class MemStorage implements IStorage {
         order.createdAt.toISOString().split('T')[0] === date
       );
       const sales = dayOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
-      
+
       return {
         date,
         sales: Math.round(sales * 100) / 100,
@@ -510,14 +776,16 @@ export class MemStorage implements IStorage {
   }
 
   async getTopProducts() {
+    // This needs actual sales data per product. Currently, 'sold' is not tracked per product.
+    // For demonstration, we'll return dummy data or data based on current stock.
     const products = await this.getProducts();
     return products
-      .sort((a, b) => b.sold - a.sold)
+      .sort((a, b) => (b.sold || 0) - (a.sold || 0)) // Assuming 'sold' might be added later
       .slice(0, 5)
       .map(p => ({
         name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
-        sold: p.sold || 0,
-        revenue: (p.sold || 0) * parseFloat(p.price)
+        sold: p.sold || 0, // Placeholder for actual sold quantity
+        revenue: ((p.sold || 0) * parseFloat(p.price)) // Placeholder for revenue
       }));
   }
 
@@ -525,7 +793,7 @@ export class MemStorage implements IStorage {
     const transactions = await this.getLoyaltyTransactions();
     const earned = transactions.filter(t => t.type === 'earned').reduce((sum, t) => sum + t.points, 0);
     const redeemed = transactions.filter(t => t.type === 'redeemed').reduce((sum, t) => sum + Math.abs(t.points), 0);
-    
+
     return {
       earned,
       redeemed,
@@ -536,17 +804,26 @@ export class MemStorage implements IStorage {
   // Stock forecasting
   async getStockForecast() {
     const products = await this.getProducts();
-    const orders = await this.getOrders();
-    
+    const orders = await this.getOrders(); // This might not be the best source for sales if not all orders are processed through this system
+
     return products.map(product => {
-      // Calculate average daily sales over last 30 days
-      const productSales = orders
-        .filter(order => order.createdAt >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-        .reduce((sum, order) => sum + (product.sold || 0) / 30, 0);
+      // Calculate average daily sales over last 30 days from orders
+      const relevantOrders = orders.filter(order => 
+        order.createdAt >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      );
       
-      const dailySales = Math.max(productSales, 0.1); // Prevent division by zero
+      // This logic needs to be more robust - mapping orders to products and their quantities sold.
+      // For now, it's a placeholder using a simplified approach.
+      const totalQuantitySold = relevantOrders.reduce((sum, order) => {
+        // This is a simplification, assuming product.sold could be populated from order items.
+        // A real implementation would need to parse order items.
+        return sum + (product.sold || 0); // Placeholder for actual quantity sold
+      }, 0);
+      
+      const averageDailySales = totalQuantitySold > 0 ? totalQuantitySold / 30 : 0;
+      const dailySales = Math.max(averageDailySales, 0.1); // Prevent division by zero
       const daysLeft = product.stock / dailySales;
-      
+
       return {
         id: product.id,
         name: product.name,
@@ -558,44 +835,101 @@ export class MemStorage implements IStorage {
     });
   }
 
+  async getVendorAnalytics() {
+    const vendors = await this.getVendors();
+    const purchaseOrders = await this.getPurchaseOrders();
+
+    const vendorAnalytics = vendors.map(vendor => {
+      const vendorPOs = purchaseOrders.filter(po => po.vendorId === vendor.id);
+      const totalPOs = vendorPOs.length;
+      const deliveredPOs = vendorPOs.filter(po => po.status === 'Delivered').length;
+      const avgCostPerPO = totalPOs > 0 ? vendor.totalSpent / totalPOs : 0;
+      const deliveryPerformance = totalPOs > 0 ? (deliveredPOs / totalPOs) * 100 : 0;
+
+      return {
+        id: vendor.id,
+        name: vendor.name,
+        totalPOs,
+        deliveredPOs,
+        avgCostPerPO: parseFloat(avgCostPerPO.toFixed(2)),
+        deliveryPerformance: parseFloat(deliveryPerformance.toFixed(2)),
+        outstandingDues: parseFloat(vendor.outstandingDues)
+      };
+    });
+
+    // Add overall trends if needed, e.g., cost trend over time (requires PO dates)
+    return vendorAnalytics;
+  }
+
+
   // Role-based access helpers
   async getUserRole(userId: string): Promise<'admin' | 'staff' | 'customer'> {
     // Mock role assignment based on user ID patterns for demo
+    const user = await this.getUser(userId);
+    if (!user) return 'customer'; // Default to customer if user not found
+
+    if (user.role) return user.role as 'admin' | 'staff' | 'customer';
+
+    // Fallback for mock roles if not explicitly set
     if (userId === 'admin' || userId.includes('admin')) return 'admin';
     if (userId === 'staff' || userId.includes('staff')) return 'staff';
     return 'customer';
   }
 
-  async getAlertsForUser(role: 'admin' | 'staff' | 'customer') {
+  async getAlertsForUser(userId: string) {
+    const role = await this.getUserRole(userId);
     const alerts = [];
-    
+
+    // Low Stock Alert (for Admin/Staff)
     if (role === 'admin' || role === 'staff') {
-      const lowStock = await this.getLowStockProducts();
-      if (lowStock.length > 0) {
+      const lowStockProducts = await this.getLowStockProducts();
+      if (lowStockProducts.length > 0) {
         alerts.push({
           type: 'warning',
-          message: `${lowStock.length} products are low in stock`,
-          action: 'View Inventory'
+          message: `${lowStockProducts.length} products are low in stock`,
+          action: 'View Inventory',
+          route: '/inventory' // Example route
         });
       }
-      
-      const subscriptions = await this.getSubscriptions();
-      const expiring = subscriptions.filter(s => {
-        const endDate = new Date(s.endDate);
-        const now = new Date();
-        const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        return daysLeft <= 7 && s.status === 'active';
-      });
-      
-      if (expiring.length > 0) {
+
+      // Expiring Stock Alert (for Admin/Staff)
+      const expiringBatches = await this.getExpiringStock(7); // Within 7 days
+      if (expiringBatches.length > 0) {
         alerts.push({
           type: 'info',
-          message: `${expiring.length} subscriptions expire within 7 days`,
-          action: 'View Subscriptions'
+          message: `${expiringBatches.length} inventory batches expire within 7 days`,
+          action: 'View Batches',
+          route: '/inventory/batches' // Example route
         });
       }
     }
-    
+
+    // Pending Purchase Orders Alert (for Admin/Staff)
+    if (role === 'admin' || role === 'staff') {
+      const pendingPOs = this.purchaseOrders.filter(po => po.status === 'Sent');
+      if (pendingPOs.length > 0) {
+        alerts.push({
+          type: 'info',
+          message: `${pendingPOs.length} purchase orders are awaiting delivery`,
+          action: 'View Purchase Orders',
+          route: '/vendors/purchase-orders' // Example route
+        });
+      }
+    }
+
+    // Pending Vendor Payments Alert (for Admin/Staff)
+    if (role === 'admin' || role === 'staff') {
+      const vendorsWithDue = this.vendors.filter(v => parseFloat(v.outstandingDues) > 0);
+      if (vendorsWithDue.length > 0) {
+        alerts.push({
+          type: 'warning',
+          message: `Outstanding dues for ${vendorsWithDue.length} vendors`,
+          action: 'View Vendor Payments',
+          route: '/vendors/payments' // Example route
+        });
+      }
+    }
+
     return alerts;
   }
 }

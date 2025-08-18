@@ -631,6 +631,227 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced Inventory Management
+  app.get("/api/inventory/advanced-forecast", async (req, res) => {
+    try {
+      const { inventoryService } = await import("./inventory-service");
+      const forecast = await inventoryService.getStockForecast();
+      res.json(forecast);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get stock forecast" });
+    }
+  });
+
+  app.get("/api/inventory/expiring-stock", async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const { inventoryService } = await import("./inventory-service");
+      const expiringStock = await inventoryService.getExpiringStock(days);
+      res.json(expiringStock);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get expiring stock" });
+    }
+  });
+
+  app.post("/api/inventory/adjust-stock", async (req, res) => {
+    try {
+      const { batchId, adjustmentType, newQuantity, reason } = req.body;
+      const { inventoryService } = await import("./inventory-service");
+      
+      const batch = await storage.getInventoryBatch(batchId);
+      if (!batch) return res.status(404).json({ error: "Batch not found" });
+
+      const adjustment = await inventoryService.adjustStock({
+        productId: batch.productId!,
+        warehouseId: batch.warehouseId!,
+        batchId,
+        adjustmentType,
+        quantityBefore: batch.remainingQuantity,
+        quantityAfter: newQuantity,
+        reason,
+        adjustedBy: 'admin' // TODO: Get from auth
+      });
+
+      res.json(adjustment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to adjust stock" });
+    }
+  });
+
+  app.get("/api/inventory/audit-trail", async (req, res) => {
+    try {
+      const { productId, warehouseId, days } = req.query;
+      const { inventoryService } = await import("./inventory-service");
+      
+      const auditTrail = await inventoryService.getStockAuditTrail(
+        productId as string,
+        warehouseId as string,
+        parseInt(days as string) || 30
+      );
+      
+      res.json(auditTrail);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get audit trail" });
+    }
+  });
+
+  app.post("/api/inventory/consume-stock", async (req, res) => {
+    try {
+      const { productId, warehouseId, quantity, reference, referenceType } = req.body;
+      const { inventoryService } = await import("./inventory-service");
+      
+      const consumed = await inventoryService.consumeStock(
+        productId,
+        warehouseId,
+        quantity,
+        reference,
+        referenceType,
+        'system' // TODO: Get from auth
+      );
+      
+      res.json(consumed);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to consume stock: " + (error as Error).message });
+    }
+  });
+
+  // Warehouse Management
+  app.get("/api/warehouses", async (req, res) => {
+    try {
+      const shopDomain = req.query.shop as string;
+      const warehouses = await storage.getWarehouses(shopDomain);
+      res.json(warehouses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch warehouses" });
+    }
+  });
+
+  app.post("/api/warehouses", async (req, res) => {
+    try {
+      const warehouseData = req.body;
+      const warehouse = await storage.createWarehouse(warehouseData);
+      res.status(201).json(warehouse);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create warehouse" });
+    }
+  });
+
+  // Vendor Management
+  app.get("/api/vendors", async (req, res) => {
+    try {
+      const shopDomain = req.query.shop as string;
+      const vendors = await storage.getVendors(shopDomain);
+      res.json(vendors);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendors" });
+    }
+  });
+
+  app.post("/api/vendors", async (req, res) => {
+    try {
+      const vendorData = req.body;
+      const vendor = await storage.createVendor(vendorData);
+      res.status(201).json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create vendor" });
+    }
+  });
+
+  app.put("/api/vendors/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const vendor = await storage.updateVendor(id, req.body);
+      if (!vendor) return res.status(404).json({ error: "Vendor not found" });
+      res.json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update vendor" });
+    }
+  });
+
+  // Purchase Order Management
+  app.get("/api/purchase-orders", async (req, res) => {
+    try {
+      const shopDomain = req.query.shop as string;
+      const pos = await storage.getPurchaseOrders(shopDomain);
+      res.json(pos);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch purchase orders" });
+    }
+  });
+
+  app.post("/api/purchase-orders", async (req, res) => {
+    try {
+      const { poData, items } = req.body;
+      const { vendorService } = await import("./vendor-service");
+      
+      const result = await vendorService.createPurchaseOrder(poData, items);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create purchase order" });
+    }
+  });
+
+  app.post("/api/purchase-orders/:id/receive", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { receivedItems, warehouseId } = req.body;
+      const { vendorService } = await import("./vendor-service");
+      
+      const result = await vendorService.receivePurchaseOrder(
+        id,
+        receivedItems,
+        warehouseId,
+        'admin' // TODO: Get from auth
+      );
+      
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to receive purchase order" });
+    }
+  });
+
+  // Vendor Analytics
+  app.get("/api/vendor-analytics", async (req, res) => {
+    try {
+      const { vendorId, days } = req.query;
+      const { vendorService } = await import("./vendor-service");
+      
+      const analytics = await vendorService.getVendorAnalytics(
+        vendorId as string,
+        parseInt(days as string) || 90
+      );
+      
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get vendor analytics" });
+    }
+  });
+
+  app.get("/api/purchase-order-recommendations", async (req, res) => {
+    try {
+      const { warehouseId } = req.query;
+      const { vendorService } = await import("./vendor-service");
+      
+      const recommendations = await vendorService.getPurchaseOrderRecommendations(warehouseId as string);
+      res.json(recommendations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get PO recommendations" });
+    }
+  });
+
+  // Vendor Payments
+  app.post("/api/vendor-payments", async (req, res) => {
+    try {
+      const paymentData = req.body;
+      const { vendorService } = await import("./vendor-service");
+      
+      const payment = await vendorService.recordPayment(paymentData);
+      res.status(201).json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to record payment" });
+    }
+  });
+
   // AI Sales Forecasting
   app.get("/api/ai/sales-forecast", async (req, res) => {
     try {
