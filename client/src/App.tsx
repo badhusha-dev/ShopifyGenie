@@ -7,7 +7,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PermissionProvider } from './contexts/PermissionContext';
 import { useAuth } from './contexts/AuthContext';
 import { Sidebar } from './components/Sidebar';
-import { TopNav } from './components/TopNav';
+import TopNav from './components/TopNav';
 import { LoginForm } from './components/LoginForm';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';

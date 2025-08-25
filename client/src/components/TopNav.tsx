@@ -23,7 +23,7 @@ interface TopNavProps {
   showSearch?: boolean;
 }
 
-export const TopNav: React.FC<TopNavProps> = ({ 
+const TopNav: React.FC<TopNavProps> = ({ 
   title, 
   subtitle, 
   onMenuToggle,
@@ -138,3 +138,5 @@ export const TopNav: React.FC<TopNavProps> = ({
     </header>
   );
 };
+
+export default TopNav;

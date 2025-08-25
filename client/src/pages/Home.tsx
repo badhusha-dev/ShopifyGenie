@@ -11,7 +11,7 @@ import {
   Heart,
   CreditCard
 } from 'lucide-react';
-import { KPICard } from '@/components/ui/kpi-card';
+import { KpiCard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -180,7 +180,7 @@ const Dashboard = () => {
       {/* KPI Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {mockKPIData.map((kpi, index) => (
-          <KPICard key={index} {...kpi} />
+          <KpiCard key={index} {...kpi} />
         ))}
       </div>
 

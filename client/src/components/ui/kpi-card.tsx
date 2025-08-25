@@ -14,7 +14,7 @@ interface KPICardProps {
   gradient?: 'coral' | 'emerald' | 'blue' | 'purple';
 }
 
-export const KPICard: React.FC<KPICardProps> = ({
+export const KpiCard: React.FC<KPICardProps> = ({
   title,
   value,
   change,

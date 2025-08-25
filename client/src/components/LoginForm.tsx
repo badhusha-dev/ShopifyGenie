@@ -166,4 +166,4 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
   );
 };
 
-export default LoginForm;
+export { LoginForm };
