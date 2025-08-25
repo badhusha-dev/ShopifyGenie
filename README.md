@@ -1,244 +1,178 @@
 
 # ShopifyApp - Complete Business Management Suite
 
-A comprehensive Shopify App built with React, Express.js, and modern web technologies for complete e-commerce business management including inventory, loyalty, AI insights, and vendor management.
+A comprehensive Shopify App built with React 18, TypeScript, Express.js, and modern web technologies for complete e-commerce business management including inventory, loyalty, AI insights, vendor management, and accounting features.
 
-## 🎨 Modern UI Refactor - COMPLETED ✅
+## 🎨 Modern UI Design System - COMPLETED ✅
 
-**Major UI/UX Overhaul (January 2024)**
-- ✅ **Complete Shopify-inspired Design System**: Modern, clean interface with coral/emerald accent colors
-- ✅ **Responsive Layout Redesign**: Mobile-first approach with collapsible sidebar and sticky navigation
-- ✅ **shadcn/ui Component Integration**: Replaced Bootstrap-heavy components with modern shadcn/ui elements
-- ✅ **Advanced Typography & Spacing**: Inter font family with improved readability and white space
-- ✅ **Interactive Data Tables**: Striped rows, hover states, sticky headers, and action dropdowns
-- ✅ **Modern Form Design**: Tabbed layouts for complex forms with validation feedback
-- ✅ **KPI Dashboard Cards**: Large numbers, gradient highlights, and interactive charts
-- ✅ **Enhanced Navigation**: Grouped sidebar sections with lucide-react icons
-- ✅ **Toast Notification System**: Real-time feedback for user actions
-- ✅ **Card-based Layout**: Rounded-xl cards with soft shadows throughout the application
+**Complete UI/UX Overhaul with shadcn/ui (January 2024)**
+- ✅ **Modern Component Library**: Full shadcn/ui integration with Radix UI primitives
+- ✅ **Tailwind CSS Design System**: Utility-first styling with custom design tokens
+- ✅ **Responsive Layout**: Mobile-first approach with collapsible sidebar navigation
+- ✅ **Advanced Data Tables**: Interactive tables with search, filtering, and pagination
+- ✅ **KPI Dashboard Cards**: Animated cards with gradient highlights and real-time data
+- ✅ **Form Validation**: React Hook Form with Zod validation schemas
+- ✅ **Toast Notification System**: Real-time user feedback with shadcn/ui toast
+- ✅ **Progressive Web App**: PWA-ready with service worker and manifest
+- ✅ **Dark/Light Theme Support**: Theme context with system preference detection
 
-## 🚀 Development Status
+## 🚀 Current Feature Status
 
-### ✅ Completed Features
+### ✅ Completed Core Features
 
-**🏠 Core Application Infrastructure**
-- ✅ Authentication & authorization system with JWT
-- ✅ Role-based access control (Admin, Staff, Customer)
-- ✅ Modern responsive UI with Tailwind CSS and shadcn/ui components
-- ✅ Client-side routing and navigation with wouter
-- ✅ Real-time error handling and toast notifications
-- ✅ Progressive Web App (PWA) ready with service worker
+**🏠 Application Infrastructure**
+- ✅ Modern React 18 with TypeScript and Vite build system
+- ✅ Express.js API server with WebSocket support
+- ✅ Role-based authentication system with JWT tokens
+- ✅ Multi-language support with i18n internationalization
+- ✅ Progressive Web App capabilities with offline support
+- ✅ Real-time notifications and alert system
 
-**📊 Dashboard & Analytics**
-- ✅ Business overview dashboard with KPIs
-- ✅ Sales trends and analytics reporting
-- ✅ Customer intelligence and metrics
-- ✅ Product performance analytics
-- ✅ Loyalty program statistics
+**👤 User & Role Management**
+- ✅ Complete user management system with CRUD operations
+- ✅ Role-based permission system (Super Admin, Admin, Manager, Staff, Customer)
+- ✅ Dynamic permission management with fine-grained controls
+- ✅ Role switching and permission gates for UI components
+- ✅ User authentication with secure JWT implementation
 
-**📦 Inventory Management**
-- ✅ Complete product CRUD operations
-- ✅ Stock level tracking and management
-- ✅ Low stock filtering and alerts
-- ✅ Product categorization and pricing
-- ✅ Inventory table with search and filters
+**📊 Advanced Dashboard & Analytics**
+- ✅ Comprehensive business overview dashboard
+- ✅ Real-time KPI cards with animated counters
+- ✅ Sales trends and revenue analytics
+- ✅ Customer insights and behavior analytics
+- ✅ Interactive charts using Recharts library
+- ✅ Inventory performance metrics
 
-**👥 Customer Management**
-- ✅ Customer database with full CRUD operations
-- ✅ Customer order history tracking
-- ✅ Loyalty points management per customer
-- ✅ Customer search and filtering capabilities
-- ✅ Customer analytics and insights
+**📦 Complete Inventory Management**
+- ✅ Advanced inventory system with CRUD operations
+- ✅ Stock level tracking and low stock alerts
+- ✅ Product categorization and pricing management
+- ✅ FIFO (First-In-First-Out) inventory tracking
+- ✅ Expiry date management and alerts
+- ✅ Multi-location inventory support
+- ✅ Automated restock recommendations
 
-**🎯 Loyalty Points System**
+**👥 Customer Relationship Management**
+- ✅ Complete customer database with analytics
+- ✅ Customer order history and purchase tracking
+- ✅ Loyalty points system with tier management
+- ✅ Customer portal for self-service access
+- ✅ Customer segmentation and insights
+- ✅ Communication history tracking
+
+**🎯 Loyalty & Subscription Systems**
 - ✅ Points earning and redemption system
-- ✅ Transaction history and tracking
-- ✅ Customer tier management (basic)
-- ✅ Loyalty analytics dashboard
-- ✅ Points balance management
+- ✅ Customer tier management with benefits
+- ✅ Subscription management with scheduling
+- ✅ Recurring order processing
+- ✅ Loyalty analytics and reporting
+- ✅ Customer retention tracking
 
-**🔄 Subscription Management**
-- ✅ Subscription CRUD operations
-- ✅ Status management (active, paused, cancelled)
-- ✅ Delivery frequency and scheduling
-- ✅ Customer subscription controls
-- ✅ Subscription analytics and reporting
+**💼 Vendor & Purchase Management**
+- ✅ Complete vendor database management
+- ✅ Purchase order system with approval workflows
+- ✅ Vendor performance tracking and analytics
+- ✅ Payment tracking and accounts payable
+- ✅ Supplier relationship management
 
-**🏪 Customer Portal**
-- ✅ Self-service customer interface
-- ✅ Personal order history viewing
-- ✅ Loyalty points dashboard
-- ✅ Subscription management controls
-- ✅ Profile and preferences management
+**💰 Financial & Accounting Features**
+- ✅ General Ledger with double-entry bookkeeping
+- ✅ Chart of Accounts management
+- ✅ Journal Entries with automated posting
+- ✅ Accounts Payable and Receivable tracking
+- ✅ Financial reporting and statements
+- ✅ Multi-currency wallet system
 
-**🎨 Modern UI Components**
-- ✅ KPI Cards with gradient highlights and icons
-- ✅ Advanced DataTables with search, filtering, and pagination
-- ✅ Tabbed forms with validation (General/Pricing/Stock tabs)
-- ✅ Modern sidebar with collapsible sections and grouped navigation
-- ✅ Interactive charts using Recharts (line, bar, pie charts)
-- ✅ Modal dialogs for Create/Edit operations
-- ✅ Badge system for status indicators
-- ✅ Avatar components with fallback initials
-- ✅ Toast notification system for user feedback
-- ✅ Responsive card layouts with hover effects
+**🤖 AI-Powered Intelligence**
+- ✅ AI recommendations engine
+- ✅ Sales forecasting algorithms
+- ✅ Customer behavior analysis
+- ✅ Inventory optimization suggestions
+- ✅ Churn prediction models
+- ✅ Smart business insights generation
 
-### 🚧 Features In Progress
+**🔗 System Integrations**
+- ✅ Shopify API integration framework
+- ✅ OAuth 2.0 authentication setup
+- ✅ Webhook processing system
+- ✅ Third-party integration management
+- ✅ API rate limiting and error handling
 
-**🤖 AI-Powered Features**
-- 🔄 AI recommendations engine (API structure ready)
-- 🔄 Sales forecasting algorithms
-- 🔄 Customer behavior analysis
-- 🔄 Inventory optimization suggestions
-- 🔄 Churn prediction models
+### 🚧 In Development
 
-**🏪 Shopify Integration**
-- 🔄 OAuth 2.0 authentication setup
-- 🔄 Webhook processing system
-- 🔄 Product synchronization
-- 🔄 Order data integration
-- 🔄 Customer data sync
+**📱 Enhanced Mobile Experience**
+- 🔄 Mobile app optimization
+- 🔄 Offline sync capabilities
+- 🔄 Push notification system
+- 🔄 Mobile-specific UI components
 
-**📦 Advanced Inventory Features**
-- 🔄 FIFO (First-In-First-Out) tracking
-- 🔄 Expiry date management
-- 🔄 Multi-warehouse support
-- 🔄 Batch and lot tracking
-- 🔄 Automated restock recommendations
+**🔐 Advanced Security**
+- 🔄 Two-factor authentication
+- 🔄 Audit logging system
+- 🔄 Data encryption at rest
+- 🔄 GDPR compliance features
 
-**🤝 Vendor Management**
-- 🔄 Complete vendor database
-- 🔄 Purchase order system
-- 🔄 Vendor performance analytics
-- 🔄 Payment tracking and management
-- 🔄 Supplier relationship management
+### 📋 Planned Features
 
-### 📋 Upcoming Features
+**🌐 Production Deployment**
+- ⏳ PostgreSQL database migration
+- ⏳ Production environment configuration
+- ⏳ Automated backup systems
+- ⏳ Performance monitoring
 
-**💾 Database & Production**
-- ⏳ PostgreSQL database migration (from in-memory)
-- ⏳ Production deployment configuration
-- ⏳ Data backup and recovery systems
-- ⏳ Performance optimization
-
-**🔧 System Enhancements**
-- ⏳ Real-time WebSocket notifications
-- ⏳ Advanced permission system
-- ⏳ Audit logging and compliance
-- ⏳ Multi-language support
-- ⏳ Advanced reporting exports
-
-**📱 Mobile & PWA**
-- ⏳ Progressive Web App features
-- ⏳ Mobile-optimized interfaces
-- ⏳ Offline functionality
-- ⏳ Push notifications
-
-**🔗 Third-Party Integrations**
-- ⏳ Payment gateway integration
-- ⏳ Email marketing automation
-- ⏳ SMS notification system
-- ⏳ Accounting software integration
-
-## 🎨 Design System
-
-### Color Palette
-- **Primary**: Coral (#FF6B6B) - Action buttons, highlights, accent colors
-- **Success**: Emerald (#2ECC71) - Success states, positive metrics
-- **Background**: White (#FFFFFF) - Main background color
-- **Surface**: Light Gray (#F8F9FA) - Card backgrounds, table headers
-- **Text**: Slate Gray (#334155) - Primary text color
-- **Muted**: Gray (#6B7280) - Secondary text, descriptions
-
-### Typography
-- **Font Family**: Inter - Clean, modern sans-serif
-- **Heading Scale**: 2xl (32px) for page titles, lg (18px) for card titles
-- **Body Text**: Base (16px) for main content, sm (14px) for secondary text
-
-### Components
-- **Cards**: Rounded-xl corners, soft shadows, 24px padding
-- **Buttons**: Rounded corners, hover transitions, coral primary color
-- **Tables**: Striped rows, hover states, sticky headers
-- **Forms**: Clean inputs, clear validation, tabbed layouts
-- **Icons**: Lucide React icons, 16px/20px sizes, consistent stroke width
-
-## 🎯 Current Development Priority
-
-The application currently has a **modern, production-ready UI** with comprehensive business functionality. The next phase focuses on:
-
-1. **Database Migration**: Moving from in-memory storage to PostgreSQL
-2. **Shopify Integration**: Completing the OAuth and webhook systems
-3. **AI Features**: Implementing machine learning algorithms
-4. **Advanced Inventory**: FIFO and multi-warehouse capabilities
-5. **Vendor Management**: Purchase order and supplier systems
-
-### 🤖 AI-Enhanced Features
-- **Sales Forecasting**: Predict future trends with 85%+ accuracy
-- **Customer Segmentation**: Automatic customer categorization and targeting
-- **Churn Prediction**: Identify at-risk customers before they leave
-- **Inventory Optimization**: AI-driven restock recommendations
-- **Price Optimization**: Dynamic pricing suggestions based on market data
-- **Upsell/Cross-sell**: Personalized product recommendations
-
-### 📊 Advanced Analytics
-- **Real-time Dashboards**: Live business metrics and performance indicators
-- **Sales Analytics**: Revenue trends, AOV, and conversion tracking
-- **Customer Analytics**: Lifetime value, retention rates, and behavior analysis
-- **Inventory Analytics**: Stock levels, turnover rates, and forecasting
-- **Vendor Performance**: Delivery times, quality scores, and cost analysis
-
-### 🛠️ Technical Features
-- **Real-time Webhooks**: Automatic sync with Shopify for orders, products, and customers
-- **Role-based Access Control**: Admin, Staff, and Customer permission levels
-- **Multi-warehouse Support**: Track inventory across multiple locations
-- **Advanced Notifications**: Real-time alerts for low stock, new orders, and system events
-- **FIFO Inventory Tracking**: First-in-first-out logic with batch and expiry management
-- **Purchase Order System**: Complete procurement workflow with vendor integration
+**📈 Advanced Analytics**
+- ⏳ Custom report builder
+- ⏳ Data export capabilities
+- ⏳ Advanced filtering and segmentation
+- ⏳ Scheduled report generation
 
 ## 🛠️ Technical Stack
 
-### Frontend
-- **React 18**: Modern component-based UI with hooks
-- **TypeScript**: Type-safe development
+### Frontend Technologies
+- **React 18**: Modern component architecture with concurrent features
+- **TypeScript**: Full type safety across the application
 - **Tailwind CSS**: Utility-first styling framework
-- **shadcn/ui**: Modern component library with Radix UI primitives
-- **Lucide React**: Modern icon library with 1000+ icons
-- **TanStack Query**: Advanced data fetching and caching
+- **shadcn/ui**: Modern component library built on Radix UI
+- **Lucide React**: Comprehensive icon library
 - **Wouter**: Lightweight client-side routing
+- **TanStack Query**: Advanced data fetching and caching
+- **React Hook Form**: Performant form handling
+- **Zod**: Runtime type validation
 - **Recharts**: Interactive data visualization
 - **Framer Motion**: Smooth animations and transitions
-- **React Hook Form**: Modern form handling with validation
 
-### Backend
-- **Express.js**: RESTful API server
-- **TypeScript**: Full-stack type safety
-- **MongoDB/PostgreSQL**: Flexible data storage options
+### Backend Technologies
+- **Express.js**: Fast, minimalist web framework
+- **TypeScript**: Type-safe server-side development
+- **WebSocket**: Real-time communication
+- **JWT**: Secure authentication tokens
 - **Drizzle ORM**: Type-safe database operations
-- **JWT Authentication**: Secure user sessions
-- **WebSocket Support**: Real-time notifications
+- **PostgreSQL**: Production-ready database (planned)
+- **In-Memory Storage**: Current development storage
+
+### Development Tools
+- **Vite**: Lightning-fast build tool and dev server
+- **ESLint + Prettier**: Code quality and formatting
+- **PostCSS**: CSS processing and optimization
+- **Autoprefixer**: Automatic vendor prefix handling
 
 ### Shopify Integration
 - **Shopify Admin API**: REST and GraphQL integration
-- **OAuth 2.0**: Secure app installation and authentication
+- **OAuth 2.0**: Secure app authentication
 - **Webhook Processing**: Real-time data synchronization
-- **Inventory Sync**: Bi-directional stock level updates
-- **Order Processing**: Automatic loyalty point calculation
+- **Inventory Sync**: Bi-directional stock updates
+- **Order Processing**: Automated loyalty calculations
 
-### Development Tools
-- **Vite**: Fast development server and build tool
-- **ESLint + Prettier**: Code quality and formatting
-- **Hot Module Replacement**: Instant development feedback
-
-## 🚀 Quick Start
+## 🚀 Quick Start Guide
 
 ### Prerequisites
 - Node.js 18+ installed
-- Shopify Partner account and test store
-- MongoDB or PostgreSQL database (optional)
+- Shopify Partner account (for integration)
+- Modern web browser with ES2020+ support
 
-### Installation
+### Installation & Setup
 
-1. **Clone and Setup**
+1. **Clone and Install Dependencies**
    ```bash
    git clone <repository-url>
    cd shopify-app
@@ -248,7 +182,7 @@ The application currently has a **modern, production-ready UI** with comprehensi
 2. **Environment Configuration**
    ```bash
    cp .env.example .env
-   # Edit .env with your configuration
+   # Configure your environment variables
    ```
 
 3. **Start Development Server**
@@ -258,159 +192,245 @@ The application currently has a **modern, production-ready UI** with comprehensi
 
 4. **Access Application**
    - Frontend: http://localhost:5000
-   - Backend API: http://localhost:5000/api
+   - API: http://localhost:5000/api
+   - WebSocket: ws://localhost:5000/ws
 
-## 📱 Application Structure
+## 🎨 Design System
 
-### Main Navigation
-- **Dashboard** (`/`) - Business overview and quick actions
-- **Inventory** (`/inventory`) - Product and stock management
-- **Advanced Inventory** (`/advanced-inventory`) - FIFO, expiry, and forecasting
-- **Customers** (`/customers`) - Customer management and analytics
-- **Customer Portal** (`/customer-portal`) - Self-service customer interface
-- **Loyalty** (`/loyalty`) - Points management and tier system
-- **Subscriptions** (`/subscriptions`) - Recurring order management
-- **Vendor Management** (`/vendor-management`) - Supplier and PO tracking
-- **AI Insights** (`/ai-insights`) - Advanced analytics and forecasting
-- **AI Recommendations** (`/ai-recommendations`) - Smart business suggestions
-- **Reports** (`/reports`) - Comprehensive business reporting
+### Color Palette
+- **Primary**: Coral (#FF6B6B) - Primary actions and highlights
+- **Secondary**: Emerald (#10B981) - Success states and positive metrics
+- **Background**: White (#FFFFFF) - Main application background
+- **Surface**: Gray 50 (#F9FAFB) - Card backgrounds and surfaces
+- **Text**: Slate 700 (#334155) - Primary text content
+- **Muted**: Gray 500 (#6B7280) - Secondary text and descriptions
 
-### User Roles
-- **Admin**: Full system access and configuration
-- **Staff**: Operational access to inventory and orders
-- **Customer**: Self-service portal access only
+### Typography System
+- **Font Family**: Inter - Modern, readable sans-serif
+- **Scale**: 
+  - Display: 36px (2.25rem) for hero text
+  - Heading: 24px (1.5rem) for page titles
+  - Subheading: 18px (1.125rem) for section headers
+  - Body: 16px (1rem) for content
+  - Small: 14px (0.875rem) for captions
 
-## 🔧 Environment Variables
+### Component Design
+- **Cards**: Rounded-xl corners, subtle shadows, proper spacing
+- **Buttons**: Consistent padding, hover states, focus indicators
+- **Forms**: Clear labels, validation feedback, logical grouping
+- **Tables**: Responsive design, sorting, filtering capabilities
+- **Navigation**: Intuitive hierarchy, clear active states
 
+## 📱 Application Features
+
+### 🏠 Dashboard Overview
+- **KPI Metrics**: Revenue, orders, customers, inventory levels
+- **Sales Charts**: Trend analysis with interactive visualizations
+- **Quick Actions**: Shortcut buttons for common tasks
+- **Recent Activity**: Latest orders, customers, and inventory changes
+- **Performance Insights**: AI-generated business recommendations
+
+### 📦 Advanced Inventory Management
+- **Product Catalog**: Complete product information management
+- **Stock Tracking**: Real-time inventory levels across locations
+- **FIFO Management**: First-in-first-out inventory rotation
+- **Expiry Alerts**: Automated notifications for expiring products
+- **Restock Recommendations**: AI-powered inventory optimization
+- **Batch Tracking**: Lot number and supplier batch management
+
+### 👥 Customer Intelligence
+- **360° Customer View**: Complete customer profile with history
+- **Loyalty Management**: Points, tiers, and rewards tracking
+- **Behavior Analytics**: Purchase patterns and preferences
+- **Churn Prevention**: AI-powered retention strategies
+- **Communication Hub**: Email, SMS, and notification management
+
+### 💼 Vendor Relations
+- **Supplier Database**: Comprehensive vendor information
+- **Purchase Orders**: Complete procurement workflow
+- **Performance Metrics**: Delivery times, quality scores, costs
+- **Payment Management**: Invoice tracking and payment history
+- **Contract Management**: Terms, agreements, and renewals
+
+### 💰 Financial Management
+- **Accounting System**: Double-entry bookkeeping
+- **Financial Reports**: P&L, Balance Sheet, Cash Flow
+- **Invoice Management**: Automated billing and collections
+- **Multi-Currency**: International transaction support
+- **Tax Compliance**: Automated tax calculations and reporting
+
+### 🤖 AI-Powered Insights
+- **Sales Forecasting**: Predictive analytics for revenue planning
+- **Customer Segmentation**: Automated grouping and targeting
+- **Inventory Optimization**: Demand prediction and stock planning
+- **Price Optimization**: Dynamic pricing recommendations
+- **Fraud Detection**: Anomaly detection for transactions
+
+## 🔧 Environment Configuration
+
+### Required Environment Variables
 ```env
-# Shopify App Configuration
-SHOPIFY_API_KEY=your_shopify_api_key_here
-SHOPIFY_API_SECRET=your_shopify_api_secret_here
-SHOPIFY_SCOPES=read_products,write_products,read_orders,write_orders,read_customers,write_customers,read_inventory,write_inventory
+# Shopify Integration
+SHOPIFY_API_KEY=your_api_key_here
+SHOPIFY_API_SECRET=your_api_secret_here
+SHOPIFY_SCOPES=read_products,write_products,read_orders,write_orders
 SHOPIFY_APP_URL=https://your-repl-name.replit.app
-SHOPIFY_WEBHOOK_SECRET=your_webhook_secret_here
 
 # Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/shopify_app
-# OR for MongoDB
-MONGODB_URI=mongodb://localhost:27017/shopify_app
+DATABASE_URL=postgresql://user:pass@localhost:5432/shopifyapp
 
-# Security
-SESSION_SECRET=your_session_secret_here_generate_random_string
+# Authentication
 JWT_SECRET=your_jwt_secret_here
+SESSION_SECRET=your_session_secret_here
 
 # Server Configuration
 PORT=5000
 NODE_ENV=development
 
 # AI Features (Optional)
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_key_here
 ```
-
-## 🔗 Shopify Integration Setup
-
-### 1. Create Shopify Partner App
-1. Visit [partners.shopify.com](https://partners.shopify.com)
-2. Create a new app with these settings:
-   - **App URL**: `https://your-repl-name.replit.app`
-   - **Allowed redirection URLs**: `https://your-repl-name.replit.app/auth/callback`
-
-### 2. Configure Required Scopes
-```
-read_products, write_products
-read_orders, write_orders
-read_customers, write_customers
-read_inventory, write_inventory
-read_analytics
-```
-
-### 3. Setup Webhooks
-Configure these webhook endpoints:
-- **Orders Create**: `https://your-repl-name.replit.app/webhooks/orders/create`
-- **Orders Updated**: `https://your-repl-name.replit.app/webhooks/orders/updated`
-- **Products Create**: `https://your-repl-name.replit.app/webhooks/products/create`
-- **Products Updated**: `https://your-repl-name.replit.app/webhooks/products/updated`
-- **Customers Create**: `https://your-repl-name.replit.app/webhooks/customers/create`
-
-## 🎯 Key Features Walkthrough
-
-### Customer Portal
-- **Profile Management**: Update personal information and preferences
-- **Order History**: View past purchases and track current orders
-- **Loyalty Dashboard**: Check points balance and tier status
-- **Subscription Control**: Manage recurring orders (pause, skip, cancel)
-- **Points Redemption**: Convert loyalty points to store credit
-
-### AI-Powered Insights
-- **Sales Forecasting**: 30/60/90-day revenue predictions
-- **Customer Segmentation**: Automatic grouping by value and behavior
-- **Inventory Optimization**: Smart restock recommendations
-- **Churn Prevention**: Early warning system for at-risk customers
-- **Performance Analytics**: Deep dive into business metrics
-
-### Advanced Inventory
-- **FIFO Tracking**: First-in-first-out inventory management
-- **Expiry Management**: Track product expiration dates
-- **Multi-location**: Support for multiple warehouses/stores
-- **Stock Forecasting**: Predict when products will run out
-- **Automated Alerts**: Low stock and expiry notifications
-
-### Vendor Management
-- **Supplier Database**: Comprehensive vendor information management
-- **Purchase Orders**: Create, track, and manage procurement
-- **Performance Metrics**: Monitor delivery times and quality
-- **Payment Tracking**: Manage vendor payments and terms
 
 ## 🚀 Deployment on Replit
 
-This application is optimized for deployment on Replit:
+This application is optimized for Replit deployment:
 
-1. **Fork the Repository** to your Replit account
-2. **Configure Environment Variables** in the Secrets tab
-3. **Install Shopify App** using the provided URLs
-4. **Run the Application** using the Run button
-5. **Access Your Live App** via the provided Replit URL
+1. **Import Project**: Fork this repository to your Replit account
+2. **Configure Secrets**: Add environment variables in Replit Secrets
+3. **Install Dependencies**: Run `npm install` in the shell
+4. **Start Application**: Click the Run button or use `npm run dev`
+5. **Access Application**: Use the provided Replit URL
 
-The app automatically configures ports and handles SSL certificates when deployed on Replit.
+### Replit-Specific Features
+- **Automatic SSL**: HTTPS enabled by default
+- **Port Forwarding**: Port 5000 automatically forwarded
+- **Domain Mapping**: Custom domains supported
+- **Always-On**: Keep your app running 24/7
+- **Database**: Replit Database integration available
 
-## 📚 API Documentation
+## 📊 API Documentation
 
-### Core Endpoints
-- `GET /api/dashboard` - Dashboard metrics and overview
-- `GET /api/inventory` - Product and inventory data
-- `GET /api/customers` - Customer management
-- `GET /api/loyalty` - Loyalty points and transactions
-- `GET /api/subscriptions` - Subscription management
-- `GET /api/vendors` - Vendor and purchase order data
-- `GET /api/ai/insights` - AI-generated business insights
-- `GET /api/ai/recommendations` - Smart recommendations
+### Core API Endpoints
 
-### Shopify Integration
-- `POST /api/shopify/sync` - Manual data synchronization
-- `POST /webhooks/orders/create` - New order webhook
-- `POST /webhooks/products/update` - Product update webhook
-- `GET /auth` - Shopify OAuth initialization
-- `GET /auth/callback` - OAuth callback handler
+#### Authentication
+- `POST /api/auth/login` - User authentication
+- `POST /api/auth/logout` - Session termination
+- `GET /api/auth/me` - Current user information
 
-## 🤝 Contributing
+#### Dashboard
+- `GET /api/dashboard` - Business metrics and KPIs
+- `GET /api/dashboard/analytics` - Advanced analytics data
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+#### Inventory Management
+- `GET /api/inventory` - Product listing with filtering
+- `POST /api/inventory` - Create new product
+- `PUT /api/inventory/:id` - Update product information
+- `DELETE /api/inventory/:id` - Remove product
+- `POST /api/inventory/:id/restock` - Add stock levels
+
+#### Customer Management
+- `GET /api/customers` - Customer database
+- `POST /api/customers` - Create customer profile
+- `GET /api/customers/:id/orders` - Customer order history
+- `POST /api/customers/:id/loyalty` - Update loyalty points
+
+#### Loyalty System
+- `GET /api/loyalty` - Loyalty program overview
+- `POST /api/loyalty/transactions` - Process point transaction
+- `GET /api/loyalty/tiers` - Customer tier information
+
+#### AI Insights
+- `GET /api/ai/recommendations` - AI-generated suggestions
+- `GET /api/ai/forecasting` - Sales predictions
+- `GET /api/ai/insights` - Business intelligence
+
+### Shopify Webhooks
+- `POST /webhooks/orders/create` - New order processing
+- `POST /webhooks/orders/updated` - Order status changes
+- `POST /webhooks/products/create` - New product sync
+- `POST /webhooks/inventory/update` - Stock level changes
+
+## 🔒 Security Features
+
+### Authentication & Authorization
+- **JWT Tokens**: Secure, stateless authentication
+- **Role-Based Access**: Fine-grained permission system
+- **Session Management**: Secure session handling
+- **Password Security**: Bcrypt hashing with salt
+
+### Data Protection
+- **Input Validation**: Comprehensive data sanitization
+- **SQL Injection Prevention**: Parameterized queries
+- **XSS Protection**: Content Security Policy headers
+- **CORS Configuration**: Controlled cross-origin requests
+
+### API Security
+- **Rate Limiting**: Request throttling per IP
+- **API Key Management**: Secure credential storage
+- **Webhook Verification**: Shopify signature validation
+- **Error Handling**: Secure error responses
+
+## 📈 Performance Optimization
+
+### Frontend Performance
+- **Code Splitting**: Lazy loading for route components
+- **Bundle Optimization**: Tree shaking and minification
+- **Caching Strategy**: Service worker and browser caching
+- **Image Optimization**: WebP format and lazy loading
+
+### Backend Performance
+- **Query Optimization**: Efficient database queries
+- **Response Caching**: Redis-based caching layer
+- **Connection Pooling**: Database connection management
+- **Compression**: Gzip response compression
+
+### Monitoring & Analytics
+- **Error Tracking**: Comprehensive error logging
+- **Performance Metrics**: Response time monitoring
+- **User Analytics**: Behavior tracking and insights
+- **Health Checks**: Application status monitoring
+
+## 🤝 Contributing Guidelines
+
+### Development Workflow
+1. **Fork Repository**: Create your own copy
+2. **Create Feature Branch**: `git checkout -b feature/amazing-feature`
+3. **Make Changes**: Follow coding standards
+4. **Test Thoroughly**: Ensure all tests pass
+5. **Submit PR**: Detailed description of changes
+
+### Code Standards
+- **TypeScript**: Strict type checking enabled
+- **ESLint**: Code quality enforcement
+- **Prettier**: Consistent code formatting
+- **Conventional Commits**: Standardized commit messages
+
+### Testing Requirements
+- **Unit Tests**: Component and utility testing
+- **Integration Tests**: API endpoint testing
+- **E2E Tests**: Full user flow testing
+- **Performance Tests**: Load and stress testing
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## 🆘 Support & Documentation
 
-For support and questions:
-- Check the [Issues](https://github.com/your-repo/issues) page
-- Read the [Shopify App Development Guide](https://shopify.dev/apps)
-- Review the [API Documentation](https://shopify.dev/api)
+### Getting Help
+- **Issues**: Report bugs and feature requests on GitHub
+- **Discussions**: Community support and questions
+- **Documentation**: Comprehensive guides and tutorials
+- **API Reference**: Complete endpoint documentation
+
+### Resources
+- **Shopify Developer Guide**: [shopify.dev](https://shopify.dev)
+- **React Documentation**: [react.dev](https://react.dev)
+- **TypeScript Guide**: [typescriptlang.org](https://typescriptlang.org)
+- **Tailwind CSS**: [tailwindcss.com](https://tailwindcss.com)
 
 ---
 
-**Built with ❤️ for the Shopify ecosystem**
+**Built with ❤️ for modern e-commerce management**
+
+*ShopifyApp - Empowering businesses with intelligent, scalable solutions*
