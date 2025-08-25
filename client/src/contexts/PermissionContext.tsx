@@ -11,9 +11,9 @@ interface PermissionContextType {
 
 const PermissionContext = createContext<PermissionContextType | undefined>(undefined);
 
-export const usePermissions = () => {
+export const usePermissions = (): PermissionContextType => {
   const context = useContext(PermissionContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('usePermissions must be used within a PermissionProvider');
   }
   return context;

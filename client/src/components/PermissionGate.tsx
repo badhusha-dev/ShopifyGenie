@@ -1,7 +1,50 @@
 
 import React from 'react';
 import { usePermissions } from '../contexts/PermissionContext';
-import { useRole } from './RoleProvider';
+import { useAuth } from '../contexts/AuthContext';
+
+interface PermissionGateProps {
+  children: React.ReactNode;
+  permission?: string;
+  role?: string | string[];
+  fallback?: React.ReactNode;
+  requireAll?: boolean; // If true, requires both role and permission
+}
+
+const PermissionGate: React.FC<PermissionGateProps> = ({
+  children,
+  permission,
+  role,
+  fallback = null,
+  requireAll = false,
+}) => {
+  const { hasPermission, isLoading } = usePermissions();
+  const { user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="w-6 h-6 border-2 border-coral-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  const hasRequiredPermission = permission ? hasPermission(permission) : true;
+  const hasRequiredRole = role ? 
+    (Array.isArray(role) ? role.includes(user?.role || '') : user?.role === role) : true;
+
+  const hasAccess = requireAll ? 
+    (hasRequiredPermission && hasRequiredRole) : 
+    (hasRequiredPermission || hasRequiredRole);
+
+  if (!hasAccess) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
+};
+
+export default PermissionGate;
 
 interface PermissionGateProps {
   children: React.ReactNode;
