@@ -1,3 +1,40 @@
+/**
+ * @swagger
+ * tags:
+ *   - name: Authentication
+ *     description: User authentication and authorization
+ *   - name: Dashboard
+ *     description: Business metrics and analytics
+ *   - name: Products
+ *     description: Product and inventory management
+ *   - name: Customers
+ *     description: Customer management and data
+ *   - name: Orders
+ *     description: Order processing and management
+ *   - name: Loyalty
+ *     description: Loyalty program and points management
+ *   - name: Subscriptions
+ *     description: Subscription management
+ *   - name: Analytics
+ *     description: Advanced analytics and insights
+ *   - name: AI
+ *     description: AI-powered features and recommendations
+ *   - name: Webhooks
+ *     description: Shopify webhook endpoints
+ *   - name: User Management
+ *     description: User administration (Admin only)
+ *   - name: Permissions
+ *     description: Role and permission management
+ *   - name: Accounting
+ *     description: Financial and accounting features
+ *   - name: Inventory
+ *     description: Advanced inventory management
+ *   - name: Vendors
+ *     description: Vendor and supplier management
+ *   - name: System
+ *     description: System configuration and settings
+ */
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -16,6 +53,48 @@ import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication Routes
+  /**
+   * @swagger
+   * /api/auth/login:
+   *   post:
+   *     tags: [Authentication]
+   *     summary: User login
+   *     description: Authenticate user with email and password
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/LoginRequest'
+   *           example:
+   *             email: "admin@example.com"
+   *             password: "password123"
+   *     responses:
+   *       200:
+   *         description: Login successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/LoginResponse'
+   *       400:
+   *         description: Email and password required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Invalid credentials
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Login failed
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -48,6 +127,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/auth/register:
+   *   post:
+   *     tags: [Authentication]
+   *     summary: User registration
+   *     description: Register a new user account
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [name, email, password]
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 example: "John Doe"
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 example: "john@example.com"
+   *               password:
+   *                 type: string
+   *                 minLength: 6
+   *                 example: "password123"
+   *               role:
+   *                 type: string
+   *                 enum: [admin, staff, customer]
+   *                 default: customer
+   *                 example: "customer"
+   *     responses:
+   *       201:
+   *         description: Registration successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/LoginResponse'
+   *       400:
+   *         description: Missing required fields
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       409:
+   *         description: User already exists
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Registration failed
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { name, email, password, role = 'customer' } = req.body;
@@ -83,6 +219,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/auth/me:
+   *   get:
+   *     tags: [Authentication]
+   *     summary: Get current user
+   *     description: Get current authenticated user information
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: User information retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 user:
+   *                   $ref: '#/components/schemas/User'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Failed to get user info
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.get("/api/auth/me", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const { password, ...userWithoutPassword } = req.user!;
@@ -253,6 +421,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats
+  /**
+   * @swagger
+   * /api/stats:
+   *   get:
+   *     tags: [Dashboard]
+   *     summary: Get dashboard statistics
+   *     description: Retrieve key business metrics and statistics
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: shop
+   *         schema:
+   *           type: string
+   *         description: Shop domain to filter stats
+   *     responses:
+   *       200:
+   *         description: Statistics retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 totalRevenue:
+   *                   type: number
+   *                   example: 15750.50
+   *                 totalOrders:
+   *                   type: integer
+   *                   example: 125
+   *                 totalCustomers:
+   *                   type: integer
+   *                   example: 89
+   *                 totalProducts:
+   *                   type: integer
+   *                   example: 45
+   *                 lowStockProducts:
+   *                   type: integer
+   *                   example: 3
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       403:
+   *         description: Insufficient permissions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Failed to fetch stats
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.get("/api/stats", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
@@ -322,6 +547,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Products/Inventory routes
+  /**
+   * @swagger
+   * /api/products:
+   *   get:
+   *     tags: [Products]
+   *     summary: Get all products
+   *     description: Retrieve all products for the authenticated shop
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: shop
+   *         schema:
+   *           type: string
+   *         description: Shop domain to filter products
+   *     responses:
+   *       200:
+   *         description: Products retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Product'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       403:
+   *         description: Insufficient permissions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Failed to fetch products
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.get("/api/products", authenticateToken, requirePermission('inventory:view'), async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;
@@ -343,6 +611,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/products:
+   *   post:
+   *     tags: [Products]
+   *     summary: Create a new product
+   *     description: Create a new product in inventory
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [name, price, stock]
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 example: "Premium Widget"
+   *               description:
+   *                 type: string
+   *                 example: "High-quality widget for professionals"
+   *               price:
+   *                 type: string
+   *                 example: "29.99"
+   *               stock:
+   *                 type: integer
+   *                 example: 100
+   *               category:
+   *                 type: string
+   *                 example: "Electronics"
+   *               shopDomain:
+   *                 type: string
+   *                 example: "demo-store.myshopify.com"
+   *     responses:
+   *       201:
+   *         description: Product created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Product'
+   *       400:
+   *         description: Invalid product data
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       403:
+   *         description: Insufficient permissions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post("/api/products", authenticateToken, requirePermission('inventory:create'), async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);
@@ -394,6 +723,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
+  /**
+   * @swagger
+   * /api/customers:
+   *   get:
+   *     tags: [Customers]
+   *     summary: Get all customers
+   *     description: Retrieve all customers for the authenticated shop
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: shop
+   *         schema:
+   *           type: string
+   *         description: Shop domain to filter customers
+   *     responses:
+   *       200:
+   *         description: Customers retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Customer'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       403:
+   *         description: Insufficient permissions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Failed to fetch customers
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.get("/api/customers", authenticateToken, requirePermission('customers:view'), async (req, res) => {
     try {
       const shopDomain = req.query.shop as string;

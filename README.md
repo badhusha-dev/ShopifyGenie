@@ -310,6 +310,20 @@ This application is optimized for Replit deployment:
 
 ## 📊 API Documentation
 
+### Interactive API Documentation
+
+This project includes comprehensive Swagger/OpenAPI documentation for all API endpoints. Once the server is running, you can access the interactive API documentation at:
+
+- **Swagger UI**: `http://0.0.0.0:5000/api-docs`
+- **OpenAPI JSON**: `http://0.0.0.0:5000/api-docs.json`
+
+The Swagger UI provides:
+- Complete API endpoint documentation
+- Interactive request/response testing
+- Schema definitions for all data models
+- Authentication testing with JWT tokens
+- Request/response examples
+
 ### Core API Endpoints
 
 #### Authentication

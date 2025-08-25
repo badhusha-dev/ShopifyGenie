@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeWebSocket } from "./websocket";
 import { corsMiddleware, rateLimiter, validateJsonBody } from "./middleware";
+import { setupSwagger } from "./swagger";
 
 const app = express();
 
@@ -80,6 +81,10 @@ process.on('SIGINT', () => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Setup Swagger API documentation
+  setupSwagger(app);
+  log('Swagger API documentation available at /api-docs');
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
