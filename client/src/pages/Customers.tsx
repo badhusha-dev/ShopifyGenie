@@ -357,19 +357,6 @@ const Customers: React.FC = () => {
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
-
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
-      </div>
-    );
-  }
 
   // Chart data
   const loyaltyDistributionData = loyaltyTiers.map((tier: LoyaltyTier) => ({

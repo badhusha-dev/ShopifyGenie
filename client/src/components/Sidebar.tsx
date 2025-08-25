@@ -58,6 +58,18 @@ const menuItems = [
     roles: ['superadmin', 'admin']
   },
   {
+    title: 'Chart of Accounts',
+    icon: 'fas fa-balance-scale',
+    href: '/chart-of-accounts',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'General Ledger',
+    icon: 'fas fa-book',
+    href: '/general-ledger',
+    roles: ['superadmin', 'admin']
+  },
+  {
     title: 'Settings',
     icon: 'fas fa-cog',
     href: '/settings',

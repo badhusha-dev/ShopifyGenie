@@ -27,6 +27,8 @@ import SystemSettings from './pages/SystemSettings';
 import UserManagement from './pages/UserManagement';
 import RolePermissionManagement from './pages/RolePermissionManagement';
 import Integrations from './pages/Integrations';
+import ChartOfAccounts from './pages/ChartOfAccounts';
+import GeneralLedger from './pages/GeneralLedger';
 import NotFound from './pages/not-found';
 
 // Design Tokens
@@ -275,6 +277,32 @@ const AppContent = () => {
                 <div className="container-fluid p-4 animate-fade-in-up">
                   <Integrations />
                 </div>
+              </main>
+            </>
+          } />
+
+          <Route path="/chart-of-accounts" element={
+            <>
+              <TopNav 
+                title="Chart of Accounts" 
+                subtitle="Manage your accounting structure and classifications"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <ChartOfAccounts />
+              </main>
+            </>
+          } />
+
+          <Route path="/general-ledger" element={
+            <>
+              <TopNav 
+                title="General Ledger" 
+                subtitle="Complete record of all accounting transactions"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <GeneralLedger />
               </main>
             </>
           } />

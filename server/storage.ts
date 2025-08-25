@@ -4,7 +4,17 @@ import {
   type Customer, type InsertCustomer,
   type Order, type InsertOrder,
   type Subscription, type InsertSubscription,
-  type LoyaltyTransaction, type InsertLoyaltyTransaction
+  type LoyaltyTransaction, type InsertLoyaltyTransaction,
+  type Account, type InsertAccount,
+  type JournalEntry, type InsertJournalEntry,
+  type JournalEntryLine, type InsertJournalEntryLine,
+  type GeneralLedger, type InsertGeneralLedger,
+  type AccountsReceivable, type InsertAccountsReceivable,
+  type AccountsPayable, type InsertAccountsPayable,
+  type Wallet, type InsertWallet,
+  type WalletTransaction, type InsertWalletTransaction,
+  type FiscalPeriod, type InsertFiscalPeriod,
+  type AccountBalance, type InsertAccountBalance
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { ShopifyService, type ShopifyProduct, type ShopifyCustomer, type ShopifyOrder } from "./shopify";
@@ -123,6 +133,90 @@ export interface IStorage {
   getLoyaltyPointsAnalytics(): Promise<any>;
   getStockForecast(): Promise<any[]>;
   getVendorAnalytics(): Promise<any>;
+
+  // ACCOUNTING MODULE METHODS
+
+  // Chart of Accounts
+  getAccounts(shopDomain?: string): Promise<Account[]>;
+  getAccount(id: string): Promise<Account | undefined>;
+  getAccountByCode(accountCode: string, shopDomain?: string): Promise<Account | undefined>;
+  createAccount(account: InsertAccount): Promise<Account>;
+  updateAccount(id: string, updates: Partial<Account>): Promise<Account | undefined>;
+  deleteAccount(id: string): Promise<boolean>;
+  getAccountsHierarchy(shopDomain?: string): Promise<any[]>;
+
+  // Journal Entries
+  getJournalEntries(shopDomain?: string, filters?: any): Promise<JournalEntry[]>;
+  getJournalEntry(id: string): Promise<JournalEntry | undefined>;
+  createJournalEntry(entry: InsertJournalEntry, lines: InsertJournalEntryLine[]): Promise<JournalEntry>;
+  updateJournalEntry(id: string, updates: Partial<JournalEntry>): Promise<JournalEntry | undefined>;
+  deleteJournalEntry(id: string): Promise<boolean>;
+  postJournalEntry(id: string, postedBy: string): Promise<JournalEntry | undefined>;
+  reverseJournalEntry(id: string, reversedBy: string): Promise<JournalEntry | undefined>;
+
+  // Journal Entry Lines
+  getJournalEntryLines(journalEntryId: string): Promise<JournalEntryLine[]>;
+  createJournalEntryLine(line: InsertJournalEntryLine): Promise<JournalEntryLine>;
+  updateJournalEntryLine(id: string, updates: Partial<JournalEntryLine>): Promise<JournalEntryLine | undefined>;
+  deleteJournalEntryLine(id: string): Promise<boolean>;
+
+  // General Ledger
+  getGeneralLedger(shopDomain?: string, filters?: any): Promise<GeneralLedger[]>;
+  getAccountLedger(accountId: string, startDate?: Date, endDate?: Date): Promise<GeneralLedger[]>;
+  createLedgerEntry(entry: InsertGeneralLedger): Promise<GeneralLedger>;
+
+  // Accounts Receivable
+  getAccountsReceivable(shopDomain?: string, filters?: any): Promise<AccountsReceivable[]>;
+  getReceivable(id: string): Promise<AccountsReceivable | undefined>;
+  createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable>;
+  updateReceivable(id: string, updates: Partial<AccountsReceivable>): Promise<AccountsReceivable | undefined>;
+  getReceivablesByCustomer(customerId: string): Promise<AccountsReceivable[]>;
+  getOverdueReceivables(shopDomain?: string): Promise<AccountsReceivable[]>;
+  getAgingReport(shopDomain?: string): Promise<any>;
+
+  // Accounts Payable
+  getAccountsPayable(shopDomain?: string, filters?: any): Promise<AccountsPayable[]>;
+  getPayable(id: string): Promise<AccountsPayable | undefined>;
+  createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable>;
+  updatePayable(id: string, updates: Partial<AccountsPayable>): Promise<AccountsPayable | undefined>;
+  getPayablesByVendor(vendorId: string): Promise<AccountsPayable[]>;
+  getOverduePayables(shopDomain?: string): Promise<AccountsPayable[]>;
+  getVendorAgingReport(shopDomain?: string): Promise<any>;
+
+  // Wallets & Credits
+  getWallets(entityType?: string, shopDomain?: string): Promise<Wallet[]>;
+  getWallet(id: string): Promise<Wallet | undefined>;
+  getWalletByEntity(entityType: string, entityId: string): Promise<Wallet | undefined>;
+  createWallet(wallet: InsertWallet): Promise<Wallet>;
+  updateWallet(id: string, updates: Partial<Wallet>): Promise<Wallet | undefined>;
+  deleteWallet(id: string): Promise<boolean>;
+
+  // Wallet Transactions
+  getWalletTransactions(walletId?: string): Promise<WalletTransaction[]>;
+  getWalletTransaction(id: string): Promise<WalletTransaction | undefined>;
+  createWalletTransaction(transaction: InsertWalletTransaction): Promise<WalletTransaction>;
+  adjustWalletBalance(walletId: string, amount: number, description: string, performedBy: string): Promise<WalletTransaction>;
+
+  // Fiscal Periods
+  getFiscalPeriods(shopDomain?: string): Promise<FiscalPeriod[]>;
+  getFiscalPeriod(id: string): Promise<FiscalPeriod | undefined>;
+  getCurrentFiscalPeriod(shopDomain?: string): Promise<FiscalPeriod | undefined>;
+  createFiscalPeriod(period: InsertFiscalPeriod): Promise<FiscalPeriod>;
+  updateFiscalPeriod(id: string, updates: Partial<FiscalPeriod>): Promise<FiscalPeriod | undefined>;
+  closeFiscalPeriod(id: string): Promise<FiscalPeriod | undefined>;
+
+  // Account Balances
+  getAccountBalances(accountId?: string, fiscalPeriodId?: string): Promise<AccountBalance[]>;
+  getAccountBalance(accountId: string, fiscalPeriodId: string): Promise<AccountBalance | undefined>;
+  calculateAccountBalance(accountId: string, fiscalPeriodId: string): Promise<AccountBalance>;
+  updateAccountBalance(id: string, updates: Partial<AccountBalance>): Promise<AccountBalance | undefined>;
+
+  // Financial Reports
+  getBalanceSheet(shopDomain?: string, asOfDate?: Date): Promise<any>;
+  getProfitAndLoss(shopDomain?: string, startDate?: Date, endDate?: Date): Promise<any>;
+  getCashFlowStatement(shopDomain?: string, startDate?: Date, endDate?: Date): Promise<any>;
+  getTrialBalance(shopDomain?: string, asOfDate?: Date): Promise<any>;
+  getAccountingSummary(shopDomain?: string): Promise<any>;
 }
 
 export class MemStorage implements IStorage {

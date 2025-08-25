@@ -454,3 +454,252 @@ export type WebPushSubscription = typeof webPushSubscriptions.$inferSelect;
 
 export type InsertOfflineCache = z.infer<typeof insertOfflineCacheSchema>;
 export type OfflineCache = typeof offlineCache.$inferSelect;
+
+// ADVANCED ACCOUNTING MODULE TABLES
+
+// Chart of Accounts
+export const accounts = pgTable("accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accountCode: text("account_code").notNull().unique(),
+  accountName: text("account_name").notNull(),
+  accountType: text("account_type").notNull(), // asset, liability, equity, revenue, expense
+  accountSubtype: text("account_subtype"), // current_asset, fixed_asset, current_liability, long_term_liability, etc.
+  parentAccountId: varchar("parent_account_id"), // Self-referential for account hierarchy
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  normalBalance: text("normal_balance").notNull(), // debit, credit
+  shopDomain: text("shop_domain").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Journal Entries
+export const journalEntries = pgTable("journal_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  journalNumber: text("journal_number").notNull().unique(),
+  transactionDate: timestamp("transaction_date").notNull(),
+  reference: text("reference"), // Invoice#, PO#, etc.
+  description: text("description").notNull(),
+  totalDebit: decimal("total_debit", { precision: 12, scale: 2 }).notNull(),
+  totalCredit: decimal("total_credit", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default('draft'), // draft, posted, reversed
+  shopDomain: text("shop_domain").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  postedBy: varchar("posted_by").references(() => users.id),
+  postedAt: timestamp("posted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Journal Entry Lines (Double-entry bookkeeping)
+export const journalEntryLines = pgTable("journal_entry_lines", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  journalEntryId: varchar("journal_entry_id").references(() => journalEntries.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  description: text("description"),
+  debitAmount: decimal("debit_amount", { precision: 12, scale: 2 }).default('0'),
+  creditAmount: decimal("credit_amount", { precision: 12, scale: 2 }).default('0'),
+  reference: text("reference"), // Additional reference for the line
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// General Ledger (Computed view of all transactions)
+export const generalLedger = pgTable("general_ledger", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accountId: varchar("account_id").references(() => accounts.id),
+  journalEntryId: varchar("journal_entry_id").references(() => journalEntries.id),
+  journalEntryLineId: varchar("journal_entry_line_id").references(() => journalEntryLines.id),
+  transactionDate: timestamp("transaction_date").notNull(),
+  description: text("description").notNull(),
+  reference: text("reference"),
+  debitAmount: decimal("debit_amount", { precision: 12, scale: 2 }).default('0'),
+  creditAmount: decimal("credit_amount", { precision: 12, scale: 2 }).default('0'),
+  runningBalance: decimal("running_balance", { precision: 12, scale: 2 }),
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Accounts Receivable
+export const accountsReceivable = pgTable("accounts_receivable", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+  orderId: varchar("order_id").references(() => orders.id),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  invoiceDate: timestamp("invoice_date").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  paidAmount: decimal("paid_amount", { precision: 12, scale: 2 }).default('0'),
+  outstandingAmount: decimal("outstanding_amount", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default('pending'), // pending, partial, paid, overdue, written_off
+  paymentTerms: integer("payment_terms").default(30), // Days
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Accounts Payable
+export const accountsPayable = pgTable("accounts_payable", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorId: varchar("vendor_id").references(() => vendors.id),
+  purchaseOrderId: varchar("purchase_order_id").references(() => purchaseOrders.id),
+  billNumber: text("bill_number").notNull(),
+  billDate: timestamp("bill_date").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  paidAmount: decimal("paid_amount", { precision: 12, scale: 2 }).default('0'),
+  outstandingAmount: decimal("outstanding_amount", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default('pending'), // pending, partial, paid, overdue
+  paymentTerms: integer("payment_terms").default(30), // Days
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Customer/Vendor Wallets for Credits & Refunds
+export const wallets = pgTable("wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityType: text("entity_type").notNull(), // customer, vendor
+  entityId: varchar("entity_id").notNull(), // customer_id or vendor_id
+  walletType: text("wallet_type").notNull(), // credit, refund, store_credit, vendor_credit
+  currentBalance: decimal("current_balance", { precision: 12, scale: 2 }).default('0'),
+  totalEarned: decimal("total_earned", { precision: 12, scale: 2 }).default('0'),
+  totalUsed: decimal("total_used", { precision: 12, scale: 2 }).default('0'),
+  currency: text("currency").default('USD'),
+  isActive: boolean("is_active").default(true),
+  expiresAt: timestamp("expires_at"), // For store credits that expire
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Wallet Transactions
+export const walletTransactions = pgTable("wallet_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id").references(() => wallets.id),
+  transactionType: text("transaction_type").notNull(), // credit, debit, transfer, adjustment
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  reference: text("reference"), // order_id, refund_id, etc.
+  referenceType: text("reference_type"), // order, refund, manual_adjustment
+  previousBalance: decimal("previous_balance", { precision: 12, scale: 2 }),
+  newBalance: decimal("new_balance", { precision: 12, scale: 2 }),
+  performedBy: varchar("performed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Financial Periods for Reporting
+export const fiscalPeriods = pgTable("fiscal_periods", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  periodName: text("period_name").notNull(), // "Q1 2024", "January 2024"
+  periodType: text("period_type").notNull(), // monthly, quarterly, yearly
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  isActive: boolean("is_active").default(true),
+  isClosed: boolean("is_closed").default(false),
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Account Balances (Snapshot for performance)
+export const accountBalances = pgTable("account_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accountId: varchar("account_id").references(() => accounts.id),
+  fiscalPeriodId: varchar("fiscal_period_id").references(() => fiscalPeriods.id),
+  beginningBalance: decimal("beginning_balance", { precision: 12, scale: 2 }).default('0'),
+  totalDebits: decimal("total_debits", { precision: 12, scale: 2 }).default('0'),
+  totalCredits: decimal("total_credits", { precision: 12, scale: 2 }).default('0'),
+  endingBalance: decimal("ending_balance", { precision: 12, scale: 2 }).default('0'),
+  lastCalculated: timestamp("last_calculated").defaultNow(),
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ACCOUNTING INSERT SCHEMAS
+export const insertAccountSchema = createInsertSchema(accounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertJournalEntryLineSchema = createInsertSchema(journalEntryLines).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGeneralLedgerSchema = createInsertSchema(generalLedger).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAccountsReceivableSchema = createInsertSchema(accountsReceivable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWalletSchema = createInsertSchema(wallets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWalletTransactionSchema = createInsertSchema(walletTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFiscalPeriodSchema = createInsertSchema(fiscalPeriods).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAccountBalanceSchema = createInsertSchema(accountBalances).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// ACCOUNTING TYPES
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+export type Account = typeof accounts.$inferSelect;
+
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+export type JournalEntry = typeof journalEntries.$inferSelect;
+
+export type InsertJournalEntryLine = z.infer<typeof insertJournalEntryLineSchema>;
+export type JournalEntryLine = typeof journalEntryLines.$inferSelect;
+
+export type InsertGeneralLedger = z.infer<typeof insertGeneralLedgerSchema>;
+export type GeneralLedger = typeof generalLedger.$inferSelect;
+
+export type InsertAccountsReceivable = z.infer<typeof insertAccountsReceivableSchema>;
+export type AccountsReceivable = typeof accountsReceivable.$inferSelect;
+
+export type InsertAccountsPayable = z.infer<typeof insertAccountsPayableSchema>;
+export type AccountsPayable = typeof accountsPayable.$inferSelect;
+
+export type InsertWallet = z.infer<typeof insertWalletSchema>;
+export type Wallet = typeof wallets.$inferSelect;
+
+export type InsertWalletTransaction = z.infer<typeof insertWalletTransactionSchema>;
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+
+export type InsertFiscalPeriod = z.infer<typeof insertFiscalPeriodSchema>;
+export type FiscalPeriod = typeof fiscalPeriods.$inferSelect;
+
+export type InsertAccountBalance = z.infer<typeof insertAccountBalanceSchema>;
+export type AccountBalance = typeof accountBalances.$inferSelect;

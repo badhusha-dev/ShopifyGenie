@@ -1,7 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema } from "@shared/schema";
+import { 
+  insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema,
+  insertAccountSchema, insertJournalEntrySchema, insertJournalEntryLineSchema,
+  insertAccountsReceivableSchema, insertAccountsPayableSchema, insertWalletSchema,
+  insertWalletTransactionSchema, insertFiscalPeriodSchema
+} from "@shared/schema";
 import { shopify, saveShopSession, getShopSession } from "./shopify";
 import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, requireSuperAdmin, requirePermission, requireRole, type AuthRequest } from "./auth";
 import { auditMiddleware } from "./middleware";
@@ -1420,6 +1425,370 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating theme:', error);
       res.status(500).json({ error: 'Failed to update theme' });
+    }
+  });
+
+  // ACCOUNTING MODULE ROUTES
+
+  // Chart of Accounts Routes
+  app.get("/api/accounts", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const accounts = await storage.getAccounts(req.user?.shopDomain);
+      res.json(accounts);
+    } catch (error) {
+      console.error('Get accounts error:', error);
+      res.status(500).json({ error: "Failed to fetch accounts" });
+    }
+  });
+
+  app.get("/api/accounts/hierarchy", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const hierarchy = await storage.getAccountsHierarchy(req.user?.shopDomain);
+      res.json(hierarchy);
+    } catch (error) {
+      console.error('Get accounts hierarchy error:', error);
+      res.status(500).json({ error: "Failed to fetch accounts hierarchy" });
+    }
+  });
+
+  app.get("/api/accounts/:id", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const account = await storage.getAccount(req.params.id);
+      if (!account) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json(account);
+    } catch (error) {
+      console.error('Get account error:', error);
+      res.status(500).json({ error: "Failed to fetch account" });
+    }
+  });
+
+  app.post("/api/accounts", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertAccountSchema.parse({
+        ...req.body,
+        shopDomain: req.user?.shopDomain,
+        createdBy: req.user?.id
+      });
+      const account = await storage.createAccount(validatedData);
+      res.status(201).json(account);
+    } catch (error) {
+      console.error('Create account error:', error);
+      res.status(500).json({ error: "Failed to create account" });
+    }
+  });
+
+  app.put("/api/accounts/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const account = await storage.updateAccount(req.params.id, req.body);
+      if (!account) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json(account);
+    } catch (error) {
+      console.error('Update account error:', error);
+      res.status(500).json({ error: "Failed to update account" });
+    }
+  });
+
+  app.delete("/api/accounts/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const success = await storage.deleteAccount(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      console.error('Delete account error:', error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
+  // Journal Entries Routes
+  app.get("/api/journal-entries", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const entries = await storage.getJournalEntries(req.user?.shopDomain, req.query);
+      res.json(entries);
+    } catch (error) {
+      console.error('Get journal entries error:', error);
+      res.status(500).json({ error: "Failed to fetch journal entries" });
+    }
+  });
+
+  app.get("/api/journal-entries/:id", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const entry = await storage.getJournalEntry(req.params.id);
+      if (!entry) {
+        return res.status(404).json({ error: "Journal entry not found" });
+      }
+      const lines = await storage.getJournalEntryLines(req.params.id);
+      res.json({ ...entry, lines });
+    } catch (error) {
+      console.error('Get journal entry error:', error);
+      res.status(500).json({ error: "Failed to fetch journal entry" });
+    }
+  });
+
+  app.post("/api/journal-entries", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { lines, ...entryData } = req.body;
+      
+      // Validate debit = credit
+      const totalDebit = lines.reduce((sum: number, line: any) => sum + (parseFloat(line.debitAmount) || 0), 0);
+      const totalCredit = lines.reduce((sum: number, line: any) => sum + (parseFloat(line.creditAmount) || 0), 0);
+      
+      if (Math.abs(totalDebit - totalCredit) > 0.01) {
+        return res.status(400).json({ error: "Debits must equal credits" });
+      }
+
+      const validatedEntry = insertJournalEntrySchema.parse({
+        ...entryData,
+        totalDebit,
+        totalCredit,
+        shopDomain: req.user?.shopDomain,
+        createdBy: req.user?.id
+      });
+
+      const validatedLines = lines.map((line: any) => 
+        insertJournalEntryLineSchema.parse(line)
+      );
+
+      const entry = await storage.createJournalEntry(validatedEntry, validatedLines);
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error('Create journal entry error:', error);
+      res.status(500).json({ error: "Failed to create journal entry" });
+    }
+  });
+
+  app.post("/api/journal-entries/:id/post", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const entry = await storage.postJournalEntry(req.params.id, req.user?.id || '');
+      if (!entry) {
+        return res.status(404).json({ error: "Journal entry not found" });
+      }
+      res.json(entry);
+    } catch (error) {
+      console.error('Post journal entry error:', error);
+      res.status(500).json({ error: "Failed to post journal entry" });
+    }
+  });
+
+  // General Ledger Routes
+  app.get("/api/general-ledger", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const ledger = await storage.getGeneralLedger(req.user?.shopDomain, req.query);
+      res.json(ledger);
+    } catch (error) {
+      console.error('Get general ledger error:', error);
+      res.status(500).json({ error: "Failed to fetch general ledger" });
+    }
+  });
+
+  app.get("/api/general-ledger/account/:accountId", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const ledger = await storage.getAccountLedger(
+        req.params.accountId,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(ledger);
+    } catch (error) {
+      console.error('Get account ledger error:', error);
+      res.status(500).json({ error: "Failed to fetch account ledger" });
+    }
+  });
+
+  // Accounts Receivable Routes
+  app.get("/api/accounts-receivable", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const receivables = await storage.getAccountsReceivable(req.user?.shopDomain, req.query);
+      res.json(receivables);
+    } catch (error) {
+      console.error('Get accounts receivable error:', error);
+      res.status(500).json({ error: "Failed to fetch accounts receivable" });
+    }
+  });
+
+  app.get("/api/accounts-receivable/aging-report", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const report = await storage.getAgingReport(req.user?.shopDomain);
+      res.json(report);
+    } catch (error) {
+      console.error('Get aging report error:', error);
+      res.status(500).json({ error: "Failed to fetch aging report" });
+    }
+  });
+
+  app.post("/api/accounts-receivable", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertAccountsReceivableSchema.parse({
+        ...req.body,
+        shopDomain: req.user?.shopDomain
+      });
+      const receivable = await storage.createReceivable(validatedData);
+      res.status(201).json(receivable);
+    } catch (error) {
+      console.error('Create receivable error:', error);
+      res.status(500).json({ error: "Failed to create receivable" });
+    }
+  });
+
+  // Accounts Payable Routes
+  app.get("/api/accounts-payable", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const payables = await storage.getAccountsPayable(req.user?.shopDomain, req.query);
+      res.json(payables);
+    } catch (error) {
+      console.error('Get accounts payable error:', error);
+      res.status(500).json({ error: "Failed to fetch accounts payable" });
+    }
+  });
+
+  app.get("/api/accounts-payable/aging-report", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const report = await storage.getVendorAgingReport(req.user?.shopDomain);
+      res.json(report);
+    } catch (error) {
+      console.error('Get vendor aging report error:', error);
+      res.status(500).json({ error: "Failed to fetch vendor aging report" });
+    }
+  });
+
+  app.post("/api/accounts-payable", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertAccountsPayableSchema.parse({
+        ...req.body,
+        shopDomain: req.user?.shopDomain
+      });
+      const payable = await storage.createPayable(validatedData);
+      res.status(201).json(payable);
+    } catch (error) {
+      console.error('Create payable error:', error);
+      res.status(500).json({ error: "Failed to create payable" });
+    }
+  });
+
+  // Wallets & Credits Routes
+  app.get("/api/wallets", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { entityType } = req.query;
+      const wallets = await storage.getWallets(entityType as string, req.user?.shopDomain);
+      res.json(wallets);
+    } catch (error) {
+      console.error('Get wallets error:', error);
+      res.status(500).json({ error: "Failed to fetch wallets" });
+    }
+  });
+
+  app.get("/api/wallets/:id/transactions", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const transactions = await storage.getWalletTransactions(req.params.id);
+      res.json(transactions);
+    } catch (error) {
+      console.error('Get wallet transactions error:', error);
+      res.status(500).json({ error: "Failed to fetch wallet transactions" });
+    }
+  });
+
+  app.post("/api/wallets", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertWalletSchema.parse({
+        ...req.body,
+        shopDomain: req.user?.shopDomain
+      });
+      const wallet = await storage.createWallet(validatedData);
+      res.status(201).json(wallet);
+    } catch (error) {
+      console.error('Create wallet error:', error);
+      res.status(500).json({ error: "Failed to create wallet" });
+    }
+  });
+
+  app.post("/api/wallets/:id/adjust", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { amount, description } = req.body;
+      const transaction = await storage.adjustWalletBalance(
+        req.params.id, 
+        amount, 
+        description, 
+        req.user?.id || ''
+      );
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error('Adjust wallet balance error:', error);
+      res.status(500).json({ error: "Failed to adjust wallet balance" });
+    }
+  });
+
+  // Financial Reports Routes
+  app.get("/api/reports/balance-sheet", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { asOfDate } = req.query;
+      const report = await storage.getBalanceSheet(
+        req.user?.shopDomain,
+        asOfDate ? new Date(asOfDate as string) : undefined
+      );
+      res.json(report);
+    } catch (error) {
+      console.error('Get balance sheet error:', error);
+      res.status(500).json({ error: "Failed to fetch balance sheet" });
+    }
+  });
+
+  app.get("/api/reports/profit-loss", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const report = await storage.getProfitAndLoss(
+        req.user?.shopDomain,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(report);
+    } catch (error) {
+      console.error('Get profit and loss error:', error);
+      res.status(500).json({ error: "Failed to fetch profit and loss statement" });
+    }
+  });
+
+  app.get("/api/reports/cash-flow", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const report = await storage.getCashFlowStatement(
+        req.user?.shopDomain,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(report);
+    } catch (error) {
+      console.error('Get cash flow error:', error);
+      res.status(500).json({ error: "Failed to fetch cash flow statement" });
+    }
+  });
+
+  app.get("/api/reports/trial-balance", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { asOfDate } = req.query;
+      const report = await storage.getTrialBalance(
+        req.user?.shopDomain,
+        asOfDate ? new Date(asOfDate as string) : undefined
+      );
+      res.json(report);
+    } catch (error) {
+      console.error('Get trial balance error:', error);
+      res.status(500).json({ error: "Failed to fetch trial balance" });
+    }
+  });
+
+  app.get("/api/reports/accounting-summary", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const summary = await storage.getAccountingSummary(req.user?.shopDomain);
+      res.json(summary);
+    } catch (error) {
+      console.error('Get accounting summary error:', error);
+      res.status(500).json({ error: "Failed to fetch accounting summary" });
     }
   });
 
