@@ -2096,6 +2096,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Financial Reports Routes
+  app.get("/api/financial-reports", async (req, res) => {
+    try {
+      const { type, startDate, endDate } = req.query;
+      
+      const balanceSheet = await storage.getBalanceSheet();
+      const profitAndLoss = await storage.getProfitAndLoss();
+      const cashFlow = await storage.getCashFlowStatement();
+
+      const consolidatedReport = {
+        profitAndLoss,
+        balanceSheet,
+        cashFlow
+      };
+
+      res.json(consolidatedReport);
+    } catch (error) {
+      console.error('Get financial reports error:', error);
+      res.status(500).json({ error: "Failed to fetch financial reports" });
+    }
+  });
+
+  app.get("/api/financial-reports/export", async (req, res) => {
+    try {
+      const { type, format, startDate, endDate } = req.query;
+      
+      // Mock export functionality - in real app would generate PDF/Excel
+      res.json({ 
+        message: `${format?.toString().toUpperCase()} export for ${type} report would be generated here`,
+        downloadUrl: `/downloads/${type}-report-${Date.now()}.${format}`
+      });
+    } catch (error) {
+      console.error('Export financial reports error:', error);
+      res.status(500).json({ error: "Failed to export financial reports" });
+    }
+  });
+
   app.get("/api/reports/balance-sheet", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
     try {
       const { asOfDate } = req.query;
@@ -2161,6 +2197,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Get accounting summary error:', error);
       res.status(500).json({ error: "Failed to fetch accounting summary" });
+    }
+  });
+
+  app.get("/api/reports/financial-metrics", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { period } = req.query;
+      const metrics = await storage.getFinancialMetrics(
+        req.user?.shopDomain,
+        period as 'month' | 'quarter' | 'year'
+      );
+      res.json(metrics);
+    } catch (error) {
+      console.error('Get financial metrics error:', error);
+      res.status(500).json({ error: "Failed to fetch financial metrics" });
     }
   });
 

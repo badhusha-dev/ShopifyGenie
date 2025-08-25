@@ -217,6 +217,7 @@ export interface IStorage {
   getCashFlowStatement(shopDomain?: string, startDate?: Date, endDate?: Date): Promise<any>;
   getTrialBalance(shopDomain?: string, asOfDate?: Date): Promise<any>;
   getAccountingSummary(shopDomain?: string): Promise<any>;
+  getFinancialMetrics(shopDomain?: string, period?: 'month' | 'quarter' | 'year'): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -263,6 +264,22 @@ export class MemStorage implements IStorage {
   private purchaseOrderItems: any[] = [];
   private vendorPayments: any[] = [];
   private stockMovements: any[] = [];
+
+  // Accounting related storage
+  private accounts: Map<string, Account> = new Map();
+  private journalEntries: Map<string, JournalEntry> = new Map();
+  private journalEntryLines: Map<string, JournalEntryLine[]> = new Map();
+  private generalLedger: Map<string, GeneralLedger> = new Map();
+  private accountsReceivable: Map<string, AccountsReceivable> = new Map();
+  private accountsPayable: Map<string, AccountsPayable> = new Map();
+  private wallets: Map<string, Wallet> = new Map();
+  private walletTransactions: Map<string, WalletTransaction> = new Map();
+  private fiscalPeriods: Map<string, FiscalPeriod> = new Map();
+  private accountBalances: Map<string, AccountBalance> = new Map();
+
+  // Permissions storage
+  private permissions: any[] = [];
+  private rolePermissions: any[] = [];
 
   constructor() {
     this.seedData();
@@ -409,41 +426,41 @@ export class MemStorage implements IStorage {
     const permissionsList = [
       // Dashboard
       { name: 'dashboard:view', category: 'dashboard', operation: 'view', description: 'View dashboard' },
-      
+
       // Inventory
       { name: 'inventory:view', category: 'inventory', operation: 'view', description: 'View inventory' },
       { name: 'inventory:create', category: 'inventory', operation: 'create', description: 'Create inventory items' },
       { name: 'inventory:edit', category: 'inventory', operation: 'edit', description: 'Edit inventory items' },
       { name: 'inventory:delete', category: 'inventory', operation: 'delete', description: 'Delete inventory items' },
-      
+
       // Orders
       { name: 'orders:view', category: 'orders', operation: 'view', description: 'View orders' },
       { name: 'orders:create', category: 'orders', operation: 'create', description: 'Create orders' },
       { name: 'orders:edit', category: 'orders', operation: 'edit', description: 'Edit orders' },
       { name: 'orders:delete', category: 'orders', operation: 'delete', description: 'Delete orders' },
-      
+
       // Customers
       { name: 'customers:view', category: 'customers', operation: 'view', description: 'View customers' },
       { name: 'customers:create', category: 'customers', operation: 'create', description: 'Create customers' },
       { name: 'customers:edit', category: 'customers', operation: 'edit', description: 'Edit customers' },
       { name: 'customers:delete', category: 'customers', operation: 'delete', description: 'Delete customers' },
-      
+
       // Reports
       { name: 'reports:view', category: 'reports', operation: 'view', description: 'View reports' },
       { name: 'reports:export', category: 'reports', operation: 'export', description: 'Export reports' },
-      
+
       // Users
       { name: 'users:view', category: 'users', operation: 'view', description: 'View users' },
       { name: 'users:create', category: 'users', operation: 'create', description: 'Create users' },
       { name: 'users:edit', category: 'users', operation: 'edit', description: 'Edit users' },
       { name: 'users:delete', category: 'users', operation: 'delete', description: 'Delete users' },
-      
+
       // Vendors
       { name: 'vendors:view', category: 'vendors', operation: 'view', description: 'View vendors' },
       { name: 'vendors:create', category: 'vendors', operation: 'create', description: 'Create vendors' },
       { name: 'vendors:edit', category: 'vendors', operation: 'edit', description: 'Edit vendors' },
       { name: 'vendors:delete', category: 'vendors', operation: 'delete', description: 'Delete vendors' },
-      
+
       // Subscriptions
       { name: 'subscriptions:view', category: 'subscriptions', operation: 'view', description: 'View subscriptions' },
       { name: 'subscriptions:create', category: 'subscriptions', operation: 'create', description: 'Create subscriptions' },
@@ -523,10 +540,10 @@ export class MemStorage implements IStorage {
   async updateUser(id: string, updates: any): Promise<any> {
     const user = this.users.get(id);
     if (!user) return null;
-    
+
     const updatedUser = { ...user, ...updates, updatedAt: new Date() };
     this.users.set(id, updatedUser);
-    
+
     const { password, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   }
@@ -539,7 +556,7 @@ export class MemStorage implements IStorage {
     const products = Array.from(this.products.values());
     const customers = Array.from(this.customers.values());
     const orders = Array.from(this.orders.values());
-    
+
     return {
       totalProducts: products.length,
       totalCustomers: customers.length,
@@ -575,7 +592,7 @@ export class MemStorage implements IStorage {
     const transactions = Array.from(this.loyaltyTransactions.values());
     const earned = transactions.filter(t => t.type === 'earned').reduce((sum, t) => sum + t.points, 0);
     const redeemed = transactions.filter(t => t.type === 'redeemed').reduce((sum, t) => sum + t.points, 0);
-    
+
     return {
       earned,
       redeemed,
@@ -599,7 +616,7 @@ export class MemStorage implements IStorage {
   async getAlertsForUser(role: string): Promise<any[]> {
     // Return role-specific alerts
     const baseAlerts: any[] = [];
-    
+
     if (role === 'admin' || role === 'superadmin') {
       baseAlerts.push({
         id: '1',
@@ -608,7 +625,7 @@ export class MemStorage implements IStorage {
         timestamp: new Date()
       });
     }
-    
+
     return baseAlerts;
   }
 
@@ -649,12 +666,12 @@ export class MemStorage implements IStorage {
     if (role === 'superadmin') {
       return true;
     }
-    
+
     // Check stored role permissions
     const rolePermission = this.rolePermissions.find(rp => 
       rp.role === role && rp.permissionName === permission && rp.granted
     );
-    
+
     return !!rolePermission;
   }
 
@@ -671,18 +688,18 @@ export class MemStorage implements IStorage {
       });
       return permissions;
     }
-    
+
     const permissions: Record<string, boolean> = {};
     this.permissions.forEach(p => {
       permissions[p.name] = false;
     });
-    
+
     this.rolePermissions.forEach(rp => {
       if (rp.role === role) {
         permissions[rp.permissionName] = rp.granted;
       }
     });
-    
+
     return permissions;
   }
 
@@ -690,10 +707,10 @@ export class MemStorage implements IStorage {
     if (role === 'superadmin') {
       throw new Error('Cannot modify super admin permissions');
     }
-    
+
     // Remove existing permissions for this role
     this.rolePermissions = this.rolePermissions.filter(rp => rp.role !== role);
-    
+
     // Add new permissions
     Object.entries(permissions).forEach(([permissionName, granted]) => {
       if (granted) {
@@ -734,12 +751,12 @@ export class MemStorage implements IStorage {
 
   async deleteUser(id: string): Promise<boolean> {
     const user = this.users.get(id);
-    
+
     // Protect Super Admin from deletion
     if (user && user.role === 'superadmin' && user.email === 'superadmin@shopifyapp.com') {
       throw new Error('Cannot delete the default Super Admin user');
     }
-    
+
     return this.users.delete(id);
   }
 
@@ -1011,7 +1028,7 @@ export class MemStorage implements IStorage {
     return this.subscriptions.get(id);
   }
 
-  async getSubscriptionsByCustomer(customerId: string): Promise<Subscription[]> {
+  async getSubscriptionsByCustomer(customerId: string): Promise<Subscription[] > {
     return Array.from(this.subscriptions.values()).filter(s => s.customerId === customerId);
   }
 
@@ -1440,10 +1457,6 @@ export class MemStorage implements IStorage {
   }
 
 
-  // Permission Management
-  private permissions: any[] = [];
-  private rolePermissions: any[] = [];
-
   // Permission Management Methods
   async getPermissions(): Promise<any[]> {
     return this.permissions;
@@ -1456,7 +1469,7 @@ export class MemStorage implements IStorage {
   async updateRolePermissions(role: string, permissions: Record<string, boolean>): Promise<void> {
     // Remove existing permissions for this role
     this.rolePermissions = this.rolePermissions.filter(rp => rp.role !== role);
-    
+
     // Add new permissions
     Object.entries(permissions).forEach(([permissionName, granted]) => {
       this.rolePermissions.push({
@@ -1472,22 +1485,22 @@ export class MemStorage implements IStorage {
 
   async checkUserPermission(role: string, permissionName: string): Promise<boolean> {
     if (role === 'superadmin') return true; // Super admin has all permissions
-    
+
     const rolePermission = this.rolePermissions.find(
       rp => rp.role === role && rp.permissionName === permissionName
     );
-    
+
     return rolePermission ? rolePermission.granted : false;
   }
 
   async getUserPermissions(role: string): Promise<Record<string, boolean>> {
     const userRolePermissions = this.rolePermissions.filter(rp => rp.role === role);
     const permissionsObj: Record<string, boolean> = {};
-    
+
     userRolePermissions.forEach(rp => {
       permissionsObj[rp.permissionName] = rp.granted;
     });
-    
+
     return permissionsObj;
   }
 
@@ -1560,6 +1573,1008 @@ export class MemStorage implements IStorage {
     }
 
     return alerts;
+  }
+
+  // Accounting Module Methods
+
+  // Chart of Accounts
+  async getAccounts(shopDomain?: string): Promise<Account[]> {
+    // In a real scenario, this would fetch accounts from a database, possibly filtered by shopDomain
+    const mockAccounts: Account[] = [
+      { id: '1000', code: '1000', name: 'Cash', type: 'Asset', category: 'Current', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '1100', code: '1100', name: 'Accounts Receivable', type: 'Asset', category: 'Current', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '1200', code: '1200', name: 'Inventory', type: 'Asset', category: 'Current', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '1500', code: '1500', name: 'Equipment', type: 'Asset', category: 'Fixed', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '1510', code: '1510', name: 'Accumulated Depreciation', type: 'Contra-Asset', category: 'Fixed', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '2000', code: '2000', name: 'Accounts Payable', type: 'Liability', category: 'Current', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '2200', code: '2200', name: 'Short-term Debt', type: 'Liability', category: 'Current', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '2500', code: '2500', name: 'Long-term Debt', type: 'Liability', category: 'Long-Term', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '3000', code: '3000', name: 'Owner\'s Equity', type: 'Equity', category: 'Equity', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '3100', code: '3100', name: 'Retained Earnings', type: 'Equity', category: 'Equity', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '4000', code: '4000', name: 'Sales Revenue', type: 'Revenue', category: 'Operating', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '5000', code: '5000', name: 'Cost of Goods Sold', type: 'Expense', category: 'Operating', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '6000', code: '6000', name: 'Salaries Expense', type: 'Expense', category: 'Operating', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+      { id: '6100', code: '6100', name: 'Rent Expense', type: 'Expense', category: 'Operating', shopDomain: shopDomain || 'demo-store.myshopify.com', createdAt: new Date(), updatedAt: new Date() },
+    ];
+    return mockAccounts.filter(acc => !shopDomain || acc.shopDomain === shopDomain);
+  }
+
+  async getAccount(id: string): Promise<Account | undefined> {
+    return this.accounts.get(id);
+  }
+
+  async getAccountByCode(accountCode: string, shopDomain?: string): Promise<Account | undefined> {
+    const accounts = await this.getAccounts(shopDomain);
+    return accounts.find(acc => acc.code === accountCode);
+  }
+
+  async createAccount(account: InsertAccount): Promise<Account> {
+    const id = randomUUID();
+    const newAccount: Account = {
+      id,
+      code: account.code,
+      name: account.name,
+      type: account.type,
+      category: account.category,
+      shopDomain: account.shopDomain || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.accounts.set(id, newAccount);
+    return newAccount;
+  }
+
+  async updateAccount(id: string, updates: Partial<Account>): Promise<Account | undefined> {
+    const account = this.accounts.get(id);
+    if (!account) return undefined;
+    const updatedAccount = { ...account, ...updates, updatedAt: new Date() };
+    this.accounts.set(id, updatedAccount);
+    return updatedAccount;
+  }
+
+  async deleteAccount(id: string): Promise<boolean> {
+    return this.accounts.delete(id);
+  }
+
+  async getAccountsHierarchy(shopDomain?: string): Promise<any[]> {
+    // This is a complex operation that requires building a tree structure.
+    // For mock data, we can return a flat list or a simplified structure.
+    const accounts = await this.getAccounts(shopDomain);
+    return accounts.map(acc => ({ ...acc, children: [] })); // Simplified structure
+  }
+
+  // Journal Entries
+  async getJournalEntries(shopDomain?: string, filters?: any): Promise<JournalEntry[]> {
+    // Mock journal entries, potentially filtered
+    const mockEntries: JournalEntry[] = [
+      {
+        id: randomUUID(),
+        journalId: 'JRN001',
+        date: new Date('2023-10-26'),
+        description: 'Initial Setup',
+        status: 'Posted',
+        postedBy: 'admin',
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        journalId: 'JRN002',
+        date: new Date('2023-10-27'),
+        description: 'Purchase of Supplies',
+        status: 'Posted',
+        postedBy: 'staff',
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockEntries.filter(entry => !shopDomain || entry.shopDomain === shopDomain);
+  }
+
+  async getJournalEntry(id: string): Promise<JournalEntry | undefined> {
+    return this.journalEntries.get(id);
+  }
+
+  async createJournalEntry(entry: InsertJournalEntry, lines: InsertJournalEntryLine[]): Promise<JournalEntry> {
+    const id = randomUUID();
+    const newEntry: JournalEntry = {
+      id,
+      journalId: entry.journalId,
+      date: entry.date,
+      description: entry.description,
+      status: 'Draft', // Default status
+      postedBy: null,
+      shopDomain: entry.shopDomain || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.journalEntries.set(id, newEntry);
+
+    // Create journal entry lines
+    const createdLines = lines.map(line => ({
+      id: randomUUID(),
+      journalEntryId: id,
+      accountId: line.accountId,
+      debit: line.debit || 0,
+      credit: line.credit || 0,
+      description: line.description,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
+    this.journalEntryLines.set(id, createdLines);
+
+    return newEntry;
+  }
+
+  async updateJournalEntry(id: string, updates: Partial<JournalEntry>): Promise<JournalEntry | undefined> {
+    const entry = this.journalEntries.get(id);
+    if (!entry) return undefined;
+    const updatedEntry = { ...entry, ...updates, updatedAt: new Date() };
+    this.journalEntries.set(id, updatedEntry);
+    return updatedEntry;
+  }
+
+  async deleteJournalEntry(id: string): Promise<boolean> {
+    this.journalEntryLines.delete(id); // Also delete associated lines
+    return this.journalEntries.delete(id);
+  }
+
+  async postJournalEntry(id: string, postedBy: string): Promise<JournalEntry | undefined> {
+    const entry = this.journalEntries.get(id);
+    if (!entry || entry.status === 'Posted') return entry;
+
+    // Update status and postedBy
+    const updatedEntry = await this.updateJournalEntry(id, { status: 'Posted', postedBy });
+
+    // In a real system, posting would involve updating account balances and general ledger.
+    // For mock, we'll just update the status.
+    return updatedEntry;
+  }
+
+  async reverseJournalEntry(id: string, reversedBy: string): Promise<JournalEntry | undefined> {
+    const entry = this.journalEntries.get(id);
+    if (!entry || entry.status !== 'Posted') return entry;
+
+    // Create a reversing entry
+    const reversingEntry: InsertJournalEntry = {
+      journalId: `REV-${entry.journalId}`,
+      date: entry.date, // Or current date
+      description: `Reversal of ${entry.description}`,
+      shopDomain: entry.shopDomain,
+    };
+
+    const lines = (this.journalEntryLines.get(id) || []).map(line => ({
+      accountId: line.accountId,
+      debit: line.credit || 0, // Swap debit and credit
+      credit: line.debit || 0,
+      description: `Reversal of: ${line.description}`,
+    }));
+
+    const reversedEntry = await this.createJournalEntry(reversingEntry, lines);
+    await this.postJournalEntry(reversedEntry.id, reversedBy); // Automatically post the reversing entry
+
+    // Mark the original entry as reversed
+    await this.updateJournalEntry(id, { status: 'Reversed', reversedBy });
+
+    return reversedEntry;
+  }
+
+  // Journal Entry Lines
+  async getJournalEntryLines(journalEntryId: string): Promise<JournalEntryLine[]> {
+    return this.journalEntryLines.get(journalEntryId) || [];
+  }
+
+  async createJournalEntryLine(line: InsertJournalEntryLine): Promise<JournalEntryLine> {
+    const id = randomUUID();
+    const newLine: JournalEntryLine = {
+      id,
+      journalEntryId: line.journalEntryId,
+      accountId: line.accountId,
+      debit: line.debit || 0,
+      credit: line.credit || 0,
+      description: line.description,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const existingLines = this.journalEntryLines.get(line.journalEntryId) || [];
+    existingLines.push(newLine);
+    this.journalEntryLines.set(line.journalEntryId, existingLines);
+
+    return newLine;
+  }
+
+  async updateJournalEntryLine(id: string, updates: Partial<JournalEntryLine>): Promise<JournalEntryLine | undefined> {
+    // Find the entry and then the line to update
+    for (const [entryId, lines] of this.journalEntryLines.entries()) {
+      const lineIndex = lines.findIndex(line => line.id === id);
+      if (lineIndex !== -1) {
+        const updatedLine = { ...lines[lineIndex], ...updates, updatedAt: new Date() };
+        lines[lineIndex] = updatedLine;
+        this.journalEntryLines.set(entryId, lines);
+        return updatedLine;
+      }
+    }
+    return undefined;
+  }
+
+  async deleteJournalEntryLine(id: string): Promise<boolean> {
+    for (const [entryId, lines] of this.journalEntryLines.entries()) {
+      const initialLength = lines.length;
+      const updatedLines = lines.filter(line => line.id !== id);
+      if (updatedLines.length < initialLength) {
+        this.journalEntryLines.set(entryId, updatedLines);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // General Ledger
+  async getGeneralLedger(shopDomain?: string, filters?: any): Promise<GeneralLedger[]> {
+    // Mock general ledger entries
+    const mockLedger: GeneralLedger[] = [
+      {
+        id: randomUUID(),
+        journalEntryId: 'JRN001',
+        accountId: '1000', // Cash
+        date: new Date('2023-10-26'),
+        description: 'Initial Setup - Cash Deposit',
+        debit: 50000,
+        credit: 0,
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        journalEntryId: 'JRN001',
+        accountId: '3000', // Owner's Equity
+        date: new Date('2023-10-26'),
+        description: 'Initial Setup - Owner Contribution',
+        debit: 0,
+        credit: 50000,
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        journalEntryId: 'JRN002',
+        accountId: '1200', // Inventory
+        date: new Date('2023-10-27'),
+        description: 'Purchase of Supplies - Inventory',
+        debit: 10000,
+        credit: 0,
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        journalEntryId: 'JRN002',
+        accountId: '2000', // Accounts Payable
+        date: new Date('2023-10-27'),
+        description: 'Purchase of Supplies - Accounts Payable',
+        debit: 0,
+        credit: 10000,
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockLedger.filter(entry => !shopDomain || entry.shopDomain === shopDomain);
+  }
+
+  async getAccountLedger(accountId: string, startDate?: Date, endDate?: Date): Promise<GeneralLedger[]> {
+    const ledgerEntries = Array.from(this.generalLedger.values());
+    return ledgerEntries.filter(entry => 
+      entry.accountId === accountId &&
+      (!startDate || entry.date >= startDate) &&
+      (!endDate || entry.date <= endDate)
+    );
+  }
+
+  async createLedgerEntry(entry: InsertGeneralLedger): Promise<GeneralLedger> {
+    const id = randomUUID();
+    const newEntry: GeneralLedger = {
+      id,
+      journalEntryId: entry.journalEntryId,
+      accountId: entry.accountId,
+      date: entry.date,
+      description: entry.description,
+      debit: entry.debit || 0,
+      credit: entry.credit || 0,
+      shopDomain: entry.shopDomain || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.generalLedger.set(id, newEntry);
+    return newEntry;
+  }
+
+  // Accounts Receivable
+  async getAccountsReceivable(shopDomain?: string, filters?: any): Promise<AccountsReceivable[]> {
+    const mockAR: AccountsReceivable[] = [
+      {
+        id: randomUUID(),
+        customerId: 'cust_001',
+        invoiceNumber: 'INV001',
+        invoiceDate: new Date('2023-10-15'),
+        dueDate: new Date('2023-11-14'),
+        amount: 500.00,
+        status: 'Open',
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        customerId: 'cust_002',
+        invoiceNumber: 'INV002',
+        invoiceDate: new Date('2023-10-20'),
+        dueDate: new Date('2023-11-19'),
+        amount: 750.50,
+        status: 'Open',
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockAR.filter(ar => !shopDomain || ar.shopDomain === shopDomain);
+  }
+
+  async getReceivable(id: string): Promise<AccountsReceivable | undefined> {
+    return this.accountsReceivable.get(id);
+  }
+
+  async createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable> {
+    const id = randomUUID();
+    const newAR: AccountsReceivable = {
+      id,
+      customerId: receivable.customerId,
+      invoiceNumber: receivable.invoiceNumber,
+      invoiceDate: receivable.invoiceDate,
+      dueDate: receivable.dueDate,
+      amount: receivable.amount,
+      status: receivable.status || 'Open',
+      shopDomain: receivable.shopDomain || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.accountsReceivable.set(id, newAR);
+    return newAR;
+  }
+
+  async updateReceivable(id: string, updates: Partial<AccountsReceivable>): Promise<AccountsReceivable | undefined> {
+    const ar = this.accountsReceivable.get(id);
+    if (!ar) return undefined;
+    const updatedAR = { ...ar, ...updates, updatedAt: new Date() };
+    this.accountsReceivable.set(id, updatedAR);
+    return updatedAR;
+  }
+
+  async getReceivablesByCustomer(customerId: string): Promise<AccountsReceivable[]> {
+    return Array.from(this.accountsReceivable.values()).filter(ar => ar.customerId === customerId);
+  }
+
+  async getOverdueReceivables(shopDomain?: string): Promise<AccountsReceivable[]> {
+    const today = new Date();
+    return Array.from(this.accountsReceivable.values())
+      .filter(ar => 
+        (!shopDomain || ar.shopDomain === shopDomain) &&
+        ar.status === 'Open' &&
+        ar.dueDate < today
+      );
+  }
+
+  async getAgingReport(shopDomain?: string): Promise<any> {
+    // Mock aging report
+    const overdue = await this.getOverdueReceivables(shopDomain);
+    const today = new Date();
+    return {
+      '0-30 Days': overdue.filter(ar => (today.getTime() - ar.dueDate.getTime()) / (1000 * 60 * 60 * 24) <= 30).reduce((sum, ar) => sum + ar.amount, 0).toFixed(2),
+      '31-60 Days': overdue.filter(ar => (today.getTime() - ar.dueDate.getTime()) / (1000 * 60 * 60 * 24) > 30 && (today.getTime() - ar.dueDate.getTime()) / (1000 * 60 * 60 * 24) <= 60).reduce((sum, ar) => sum + ar.amount, 0).toFixed(2),
+      '61-90 Days': overdue.filter(ar => (today.getTime() - ar.dueDate.getTime()) / (1000 * 60 * 60 * 24) > 60 && (today.getTime() - ar.dueDate.getTime()) / (1000 * 60 * 60 * 24) <= 90).reduce((sum, ar) => sum + ar.amount, 0).toFixed(2),
+      '>90 Days': overdue.filter(ar => (today.getTime() - ar.dueDate.getTime()) / (1000 * 60 * 60 * 24) > 90).reduce((sum, ar) => sum + ar.amount, 0).toFixed(2),
+      totalOverdue: overdue.reduce((sum, ar) => sum + ar.amount, 0).toFixed(2)
+    };
+  }
+
+  // Accounts Payable
+  async getAccountsPayable(shopDomain?: string, filters?: any): Promise<AccountsPayable[]> {
+    const mockAP: AccountsPayable[] = [
+      {
+        id: randomUUID(),
+        vendorId: 'vendor-1',
+        invoiceNumber: 'APINV001',
+        invoiceDate: new Date('2023-10-10'),
+        dueDate: new Date('2023-11-09'),
+        amount: 1200.00,
+        status: 'Open',
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        vendorId: 'vendor-1',
+        invoiceNumber: 'APINV002',
+        invoiceDate: new Date('2023-10-22'),
+        dueDate: new Date('2023-11-21'),
+        amount: 800.00,
+        status: 'Open',
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockAP.filter(ap => !shopDomain || ap.shopDomain === shopDomain);
+  }
+
+  async getPayable(id: string): Promise<AccountsPayable | undefined> {
+    return this.accountsPayable.get(id);
+  }
+
+  async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
+    const id = randomUUID();
+    const newAP: AccountsPayable = {
+      id,
+      vendorId: payable.vendorId,
+      invoiceNumber: payable.invoiceNumber,
+      invoiceDate: payable.invoiceDate,
+      dueDate: payable.dueDate,
+      amount: payable.amount,
+      status: payable.status || 'Open',
+      shopDomain: payable.shopDomain || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.accountsPayable.set(id, newAP);
+    return newAP;
+  }
+
+  async updatePayable(id: string, updates: Partial<AccountsPayable>): Promise<AccountsPayable | undefined> {
+    const ap = this.accountsPayable.get(id);
+    if (!ap) return undefined;
+    const updatedAP = { ...ap, ...updates, updatedAt: new Date() };
+    this.accountsPayable.set(id, updatedAP);
+    return updatedAP;
+  }
+
+  async getPayablesByVendor(vendorId: string): Promise<AccountsPayable[]> {
+    return Array.from(this.accountsPayable.values()).filter(ap => ap.vendorId === vendorId);
+  }
+
+  async getOverduePayables(shopDomain?: string): Promise<AccountsPayable[]> {
+    const today = new Date();
+    return Array.from(this.accountsPayable.values())
+      .filter(ap => 
+        (!shopDomain || ap.shopDomain === shopDomain) &&
+        ap.status === 'Open' &&
+        ap.dueDate < today
+      );
+  }
+
+  async getVendorAgingReport(shopDomain?: string): Promise<any> {
+    // Mock vendor aging report
+    const overdue = await this.getOverduePayables(shopDomain);
+    const today = new Date();
+    return {
+      '0-30 Days': overdue.filter(ap => (today.getTime() - ap.dueDate.getTime()) / (1000 * 60 * 60 * 24) <= 30).reduce((sum, ap) => sum + ap.amount, 0).toFixed(2),
+      '31-60 Days': overdue.filter(ap => (today.getTime() - ap.dueDate.getTime()) / (1000 * 60 * 60 * 24) > 30 && (today.getTime() - ap.dueDate.getTime()) / (1000 * 60 * 60 * 24) <= 60).reduce((sum, ap) => sum + ap.amount, 0).toFixed(2),
+      '61-90 Days': overdue.filter(ap => (today.getTime() - ap.dueDate.getTime()) / (1000 * 60 * 60 * 24) > 60 && (today.getTime() - ap.dueDate.getTime()) / (1000 * 60 * 60 * 24) <= 90).reduce((sum, ap) => sum + ap.amount, 0).toFixed(2),
+      '>90 Days': overdue.filter(ap => (today.getTime() - ap.dueDate.getTime()) / (1000 * 60 * 60 * 24) > 90).reduce((sum, ap) => sum + ap.amount, 0).toFixed(2),
+      totalOverdue: overdue.reduce((sum, ap) => sum + ap.amount, 0).toFixed(2)
+    };
+  }
+
+  // Wallets & Credits
+  async getWallets(entityType?: string, shopDomain?: string): Promise<Wallet[]> {
+    const mockWallets: Wallet[] = [
+      {
+        id: randomUUID(),
+        entityType: 'customer',
+        entityId: 'cust_001',
+        balance: 150.75,
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        entityType: 'customer',
+        entityId: 'cust_002',
+        balance: 50.00,
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockWallets.filter(w => 
+      (!entityType || w.entityType === entityType) &&
+      (!shopDomain || w.shopDomain === shopDomain)
+    );
+  }
+
+  async getWallet(id: string): Promise<Wallet | undefined> {
+    return this.wallets.get(id);
+  }
+
+  async getWalletByEntity(entityType: string, entityId: string): Promise<Wallet | undefined> {
+    return Array.from(this.wallets.values()).find(w => w.entityType === entityType && w.entityId === entityId);
+  }
+
+  async createWallet(wallet: InsertWallet): Promise<Wallet> {
+    const id = randomUUID();
+    const newWallet: Wallet = {
+      id,
+      entityType: wallet.entityType,
+      entityId: wallet.entityId,
+      balance: wallet.balance || 0,
+      shopDomain: wallet.shopDomain || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.wallets.set(id, newWallet);
+    return newWallet;
+  }
+
+  async updateWallet(id: string, updates: Partial<Wallet>): Promise<Wallet | undefined> {
+    const wallet = this.wallets.get(id);
+    if (!wallet) return undefined;
+    const updatedWallet = { ...wallet, ...updates, updatedAt: new Date() };
+    this.wallets.set(id, updatedWallet);
+    return updatedWallet;
+  }
+
+  async deleteWallet(id: string): Promise<boolean> {
+    // Potentially also delete associated transactions
+    return this.wallets.delete(id);
+  }
+
+  // Wallet Transactions
+  async getWalletTransactions(walletId?: string): Promise<WalletTransaction[]> {
+    const mockTransactions: WalletTransaction[] = [
+      {
+        id: randomUUID(),
+        walletId: Array.from(this.wallets.values())[0]?.id, // Assuming first wallet is for cust_001
+        amount: 50.00,
+        type: 'credit',
+        description: 'Loyalty Points Redemption',
+        performedBy: 'customer',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        walletId: Array.from(this.wallets.values())[0]?.id,
+        amount: -25.50,
+        type: 'debit',
+        description: 'Order Discount',
+        performedBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockTransactions.filter(t => !walletId || t.walletId === walletId);
+  }
+
+  async getWalletTransaction(id: string): Promise<WalletTransaction | undefined> {
+    // This requires iterating through all transactions if not stored efficiently
+    for (const [, transactions] of this.walletTransactions.entries()) {
+      const transaction = transactions.find(t => t.id === id);
+      if (transaction) return transaction;
+    }
+    return undefined;
+  }
+
+  async createWalletTransaction(transaction: InsertWalletTransaction): Promise<WalletTransaction> {
+    const id = randomUUID();
+    const newTransaction: WalletTransaction = {
+      id,
+      walletId: transaction.walletId,
+      amount: transaction.amount,
+      type: transaction.type,
+      description: transaction.description,
+      performedBy: transaction.performedBy,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const existingTransactions = this.walletTransactions.get(transaction.walletId) || [];
+    existingTransactions.push(newTransaction);
+    this.walletTransactions.set(transaction.walletId, existingTransactions);
+
+    return newTransaction;
+  }
+
+  async adjustWalletBalance(walletId: string, amount: number, description: string, performedBy: string): Promise<WalletTransaction> {
+    const wallet = await this.getWallet(walletId);
+    if (!wallet) throw new Error('Wallet not found');
+
+    const transactionType = amount >= 0 ? 'credit' : 'debit';
+    const transactionAmount = Math.abs(amount);
+
+    const newBalance = wallet.balance + amount;
+    await this.updateWallet(walletId, { balance: newBalance });
+
+    return this.createWalletTransaction({
+      walletId,
+      amount: amount,
+      type: transactionType,
+      description,
+      performedBy
+    });
+  }
+
+  // Fiscal Periods
+  async getFiscalPeriods(shopDomain?: string): Promise<FiscalPeriod[]> {
+    const mockPeriods: FiscalPeriod[] = [
+      {
+        id: randomUUID(),
+        shopDomain: shopDomain || 'demo-store.myshopify.com',
+        startDate: new Date('2023-01-01'),
+        endDate: new Date('2023-12-31'),
+        name: '2023 Fiscal Year',
+        status: 'Open',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockPeriods.filter(p => !shopDomain || p.shopDomain === shopDomain);
+  }
+
+  async getFiscalPeriod(id: string): Promise<FiscalPeriod | undefined> {
+    return this.fiscalPeriods.get(id);
+  }
+
+  async getCurrentFiscalPeriod(shopDomain?: string): Promise<FiscalPeriod | undefined> {
+    const periods = await this.getFiscalPeriods(shopDomain);
+    const today = new Date();
+    return periods.find(p => p.startDate <= today && p.endDate >= today && p.status === 'Open');
+  }
+
+  async createFiscalPeriod(period: InsertFiscalPeriod): Promise<FiscalPeriod> {
+    const id = randomUUID();
+    const newPeriod: FiscalPeriod = {
+      id,
+      shopDomain: period.shopDomain || null,
+      startDate: period.startDate,
+      endDate: period.endDate,
+      name: period.name,
+      status: period.status || 'Open',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.fiscalPeriods.set(id, newPeriod);
+    return newPeriod;
+  }
+
+  async updateFiscalPeriod(id: string, updates: Partial<FiscalPeriod>): Promise<FiscalPeriod | undefined> {
+    const period = this.fiscalPeriods.get(id);
+    if (!period) return undefined;
+    const updatedPeriod = { ...period, ...updates, updatedAt: new Date() };
+    this.fiscalPeriods.set(id, updatedPeriod);
+    return updatedPeriod;
+  }
+
+  async closeFiscalPeriod(id: string): Promise<FiscalPeriod | undefined> {
+    const period = await this.getFiscalPeriod(id);
+    if (!period || period.status === 'Closed') return period;
+
+    // In a real system, closing a period would involve generating closing journal entries.
+    // For mock, we just update the status.
+    return this.updateFiscalPeriod(id, { status: 'Closed' });
+  }
+
+  // Account Balances
+  async getAccountBalances(accountId?: string, fiscalPeriodId?: string): Promise<AccountBalance[]> {
+    // Mock account balances
+    const mockBalances: AccountBalance[] = [
+      {
+        id: randomUUID(),
+        accountId: '1000', // Cash
+        fiscalPeriodId: await this.getCurrentFiscalPeriod()?.id,
+        openingBalance: 6800,
+        debits: 50000,
+        credits: 2500,
+        closingBalance: 115500, // This should be calculated
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        accountId: '4000', // Sales Revenue
+        fiscalPeriodId: await this.getCurrentFiscalPeriod()?.id,
+        openingBalance: 0,
+        debits: 0,
+        credits: 103500,
+        closingBalance: 103500,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    return mockBalances.filter(b => 
+      (!accountId || b.accountId === accountId) &&
+      (!fiscalPeriodId || b.fiscalPeriodId === fiscalPeriodId)
+    );
+  }
+
+  async getAccountBalance(accountId: string, fiscalPeriodId: string): Promise<AccountBalance | undefined> {
+    return Array.from(this.accountBalances.values()).find(b => b.accountId === accountId && b.fiscalPeriodId === fiscalPeriodId);
+  }
+
+  async calculateAccountBalance(accountId: string, fiscalPeriodId: string): Promise<AccountBalance> {
+    const period = await this.getFiscalPeriod(fiscalPeriodId);
+    if (!period) throw new Error('Fiscal period not found');
+
+    // Fetch all journal entries within the period for the account
+    const ledgerEntries = await this.getGeneralLedger(undefined, {
+      accountId,
+      startDate: period.startDate,
+      endDate: period.endDate
+    });
+
+    let openingBalance = 0; // Need a way to get previous period balance
+    let debits = 0;
+    let credits = 0;
+
+    ledgerEntries.forEach(entry => {
+      if (entry.accountId === accountId) {
+        debits += entry.debit;
+        credits += entry.credit;
+      }
+    });
+
+    // Determine closing balance based on account type
+    let closingBalance = openingBalance + debits - credits; // Default for Asset/Expense accounts
+
+    const account = await this.getAccountByCode(accountId); // Assuming accountId is actually account code here
+    if (account) {
+      if (account.type === 'Liability' || account.type === 'Equity' || account.type === 'Revenue') {
+        closingBalance = openingBalance + credits - debits;
+      }
+    }
+    
+    return {
+      id: randomUUID(), // New ID for calculation result
+      accountId,
+      fiscalPeriodId,
+      openingBalance,
+      debits,
+      credits,
+      closingBalance,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  async updateAccountBalance(id: string, updates: Partial<AccountBalance>): Promise<AccountBalance | undefined> {
+    const balance = this.accountBalances.get(id);
+    if (!balance) return undefined;
+    const updatedBalance = { ...balance, ...updates, updatedAt: new Date() };
+    this.accountBalances.set(id, updatedBalance);
+    return updatedBalance;
+  }
+
+  // Financial Reports Methods
+  async getBalanceSheet(shopDomain?: string, asOfDate?: Date) {
+    // Mock balance sheet data with realistic business figures
+    return {
+      assets: {
+        currentAssets: [
+          { accountName: "Cash and Cash Equivalents", amount: 125000 },
+          { accountName: "Accounts Receivable", amount: 85000 },
+          { accountName: "Inventory", amount: 235000 },
+          { accountName: "Prepaid Expenses", amount: 12000 },
+          { accountName: "Short-term Investments", amount: 25000 }
+        ],
+        fixedAssets: [
+          { accountName: "Equipment", amount: 180000 },
+          { accountName: "Less: Accumulated Depreciation", amount: -35000 },
+          { accountName: "Furniture & Fixtures", amount: 45000 },
+          { accountName: "Vehicles", amount: 65000 },
+          { accountName: "Building", amount: 350000 },
+          { accountName: "Land", amount: 100000 }
+        ],
+        totalCurrentAssets: 482000,
+        totalFixedAssets: 705000,
+        totalAssets: 1187000
+      },
+      liabilities: {
+        currentLiabilities: [
+          { accountName: "Accounts Payable", amount: 65000 },
+          { accountName: "Accrued Expenses", amount: 18000 },
+          { accountName: "Short-term Debt", amount: 35000 },
+          { accountName: "Payroll Liabilities", amount: 22000 },
+          { accountName: "Sales Tax Payable", amount: 8500 }
+        ],
+        longTermLiabilities: [
+          { accountName: "Long-term Debt", amount: 250000 },
+          { accountName: "Equipment Loan", amount: 85000 },
+          { accountName: "Mortgage Payable", amount: 280000 }
+        ],
+        totalCurrentLiabilities: 148500,
+        totalLongTermLiabilities: 615000,
+        totalLiabilities: 763500
+      },
+      equity: {
+        equityAccounts: [
+          { accountName: "Owner's Equity", amount: 300000 },
+          { accountName: "Additional Paid-in Capital", amount: 75000 },
+          { accountName: "Common Stock", amount: 50000 }
+        ],
+        retainedEarnings: -1500,
+        totalEquity: 423500
+      }
+    };
+  }
+
+  async getProfitAndLoss(shopDomain?: string, startDate?: Date, endDate?: Date) {
+    // Mock P&L data with comprehensive revenue and expense categories
+    return {
+      revenue: [
+        { accountName: "Product Sales", amount: 485000 },
+        { accountName: "Service Revenue", amount: 125000 },
+        { accountName: "Shipping Revenue", amount: 28500 },
+        { accountName: "Digital Products", amount: 65000 },
+        { accountName: "Subscription Revenue", amount: 45000 },
+        { accountName: "Commission Income", amount: 18000 },
+        { accountName: "Interest Income", amount: 3200 }
+      ],
+      expenses: [
+        { accountName: "Cost of Goods Sold", amount: 295000 },
+        { accountName: "Salaries & Wages", amount: 185000 },
+        { accountName: "Rent Expense", amount: 48000 },
+        { accountName: "Marketing & Advertising", amount: 35000 },
+        { accountName: "Utilities", amount: 12000 },
+        { accountName: "Insurance", amount: 15000 },
+        { accountName: "Office Supplies", amount: 8500 },
+        { accountName: "Professional Services", amount: 22000 },
+        { accountName: "Depreciation", amount: 18000 },
+        { accountName: "Travel & Entertainment", amount: 12000 },
+        { accountName: "Software & Technology", amount: 25000 },
+        { accountName: "Shipping & Freight", amount: 18500 },
+        { accountName: "Bank Fees", amount: 3200 },
+        { accountName: "Interest Expense", amount: 15000 },
+        { accountName: "Repairs & Maintenance", amount: 8800 },
+        { accountName: "Training & Development", amount: 6500 }
+      ],
+      totalRevenue: 769700,
+      totalExpenses: 727500,
+      netIncome: 42200
+    };
+  }
+
+  async getCashFlowStatement(shopDomain?: string, startDate?: Date, endDate?: Date) {
+    // Mock cash flow data with detailed operating, investing, and financing activities
+    return {
+      operatingActivities: [
+        { description: "Net Income", amount: 42200 },
+        { description: "Depreciation & Amortization", amount: 18000 },
+        { description: "Increase in Accounts Receivable", amount: -15000 },
+        { description: "Increase in Inventory", amount: -25000 },
+        { description: "Increase in Prepaid Expenses", amount: -3000 },
+        { description: "Increase in Accounts Payable", amount: 12000 },
+        { description: "Increase in Accrued Expenses", amount: 5500 },
+        { description: "Increase in Payroll Liabilities", amount: 3800 },
+        { description: "Decrease in Short-term Investments", amount: 8000 }
+      ],
+      investingActivities: [
+        { description: "Purchase of Equipment", amount: -45000 },
+        { description: "Purchase of Vehicles", amount: -28000 },
+        { description: "Sale of Old Equipment", amount: 8500 },
+        { description: "Software & Technology Investments", amount: -15000 },
+        { description: "Building Improvements", amount: -22000 }
+      ],
+      financingActivities: [
+        { description: "Loan Proceeds", amount: 75000 },
+        { description: "Principal Payments on Loans", amount: -35000 },
+        { description: "Owner Contributions", amount: 25000 },
+        { description: "Owner Withdrawals", amount: -18000 },
+        { description: "Interest Payments", amount: -12000 },
+        { description: "Equipment Financing", amount: 20000 }
+      ],
+      netOperatingCash: 46500,
+      netInvestingCash: -101500,
+      netFinancingCash: 55000,
+      netCashFlow: 0,
+      beginningCash: 125000,
+      endingCash: 125000
+    };
+  }
+
+  async getTrialBalance(shopDomain?: string, asOfDate?: Date) {
+    // Mock trial balance with realistic account balances
+    return [
+      { accountId: '1000', accountName: 'Cash and Cash Equivalents', accountCode: '1000', debitBalance: 125000, creditBalance: 0 },
+      { accountId: '1100', accountName: 'Accounts Receivable', accountCode: '1100', debitBalance: 85000, creditBalance: 0 },
+      { accountId: '1200', accountName: 'Inventory', accountCode: '1200', debitBalance: 235000, creditBalance: 0 },
+      { accountId: '1300', accountName: 'Prepaid Expenses', accountCode: '1300', debitBalance: 12000, creditBalance: 0 },
+      { accountId: '1500', accountName: 'Equipment', accountCode: '1500', debitBalance: 180000, creditBalance: 0 },
+      { accountId: '1510', accountName: 'Accumulated Depreciation', accountCode: '1510', debitBalance: 0, creditBalance: 35000 },
+      { accountId: '1600', accountName: 'Building', accountCode: '1600', debitBalance: 350000, creditBalance: 0 },
+      { accountId: '2000', accountName: 'Accounts Payable', accountCode: '2000', debitBalance: 0, creditBalance: 65000 },
+      { accountId: '2100', accountName: 'Accrued Expenses', accountCode: '2100', debitBalance: 0, creditBalance: 18000 },
+      { accountId: '2200', accountName: 'Short-term Debt', accountCode: '2200', debitBalance: 0, creditBalance: 35000 },
+      { accountId: '2500', accountName: 'Long-term Debt', accountCode: '2500', debitBalance: 0, creditBalance: 250000 },
+      { accountId: '3000', accountName: 'Owner\'s Equity', accountCode: '3000', debitBalance: 0, creditBalance: 300000 },
+      { accountId: '3100', accountName: 'Retained Earnings', accountCode: '3100', debitBalance: 1500, creditBalance: 0 }, // Example of debit balance for retained earnings if negative
+      { accountId: '4000', accountName: 'Product Sales', accountCode: '4000', debitBalance: 0, creditBalance: 485000 },
+      { accountId: '4100', accountName: 'Service Revenue', accountCode: '4100', debitBalance: 0, creditBalance: 125000 },
+      { accountId: '5000', accountName: 'Cost of Goods Sold', accountCode: '5000', debitBalance: 295000, creditBalance: 0 },
+      { accountId: '6000', accountName: 'Salaries & Wages', accountCode: '6000', debitBalance: 185000, creditBalance: 0 },
+      { accountId: '6100', accountName: 'Rent Expense', accountCode: '6100', debitBalance: 48000, creditBalance: 0 },
+      { accountId: '6200', accountName: 'Marketing & Advertising', accountCode: '6200', debitBalance: 35000, creditBalance: 0 },
+      { accountId: '6300', accountName: 'Utilities', accountCode: '6300', debitBalance: 12000, creditBalance: 0 }
+    ];
+  }
+
+  async getAccountingSummary(shopDomain?: string) {
+    // Mock accounting summary with comprehensive financial metrics
+    return {
+      totalAssets: 1187000,
+      totalLiabilities: 763500,
+      totalEquity: 423500,
+      totalRevenue: 769700,
+      totalExpenses: 727500,
+      netIncome: 42200,
+      cashBalance: 125000,
+      accountsReceivable: 85000,
+      accountsPayable: 65000,
+      inventory: 235000,
+      grossMargin: ((769700 - 295000) / 769700 * 100).toFixed(2), // 61.7%
+      operatingMargin: ((769700 - 295000 - 727500 + 295000) / 769700 * 100).toFixed(2), // Calculated net income margin (5.5%)
+      currentRatio: (482000 / 148500).toFixed(2), // 3.25
+      debtToEquityRatio: (763500 / 423500).toFixed(2), // 1.80
+      returnOnAssets: (42200 / 1187000 * 100).toFixed(2), // 3.6%
+      returnOnEquity: (42200 / 423500 * 100).toFixed(2), // 10.0%
+      workingCapital: (482000 - 148500).toFixed(2), // 333500
+      quickRatio: ((125000 + 85000 + 25000) / 148500).toFixed(2) // 1.58 (assuming short-term investments are liquid)
+    };
+  }
+
+  async getFinancialMetrics(shopDomain?: string, period?: 'month' | 'quarter' | 'year') {
+    // Mock financial KPIs and trends
+    return {
+      revenue: {
+        current: 769700,
+        previous: 723400,
+        growth: 6.4,
+        trend: 'up'
+      },
+      expenses: {
+        current: 727500,
+        previous: 695200,
+        growth: 4.6,
+        trend: 'up'
+      },
+      netIncome: {
+        current: 42200,
+        previous: 28200,
+        growth: 49.6,
+        trend: 'up'
+      },
+      cashFlow: {
+        operating: 46500,
+        investing: -101500,
+        financing: 55000,
+        net: 0
+      },
+      margins: {
+        gross: 61.7,
+        operating: 5.5,
+        net: 5.5
+      },
+      efficiency: {
+        assetTurnover: 0.65,
+        inventoryTurnover: 1.26,
+        receivablesTurnover: 9.05
+      }
+    };
   }
 }
 
