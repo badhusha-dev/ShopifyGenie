@@ -130,6 +130,24 @@ export const requirePermission = (permission: string) => {
   };
 };
 
+// Role-based access control
+export const requireRole = (allowedRoles: string[]) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: `Access denied. Required roles: ${allowedRoles.join(', ')}`,
+        current: req.user.role
+      });
+    }
+
+    next();
+  };
+};
+
 // Combined role and permission check
 export const requireRoleAndPermission = (roles: string[], permission: string) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
