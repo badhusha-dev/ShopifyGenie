@@ -1,393 +1,389 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
-import TopNav from "../components/TopNav";
-import CustomerTable from "../components/CustomerTable";
-import { apiRequest } from "../lib/queryClient";
+
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+  Users, 
+  Plus, 
+  Search, 
+  Mail,
+  Phone,
+  MapPin,
+  Star,
+  MoreHorizontal,
+  Edit,
+  Trash2
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Badge } from '../components/ui/badge';
+import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '../components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../components/ui/dialog';
+import { Label } from '../components/ui/label';
+import { useToast } from '../hooks/use-toast';
 
 interface Customer {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  address?: string;
   loyaltyPoints: number;
-  totalSpent: string;
-  createdAt: string;
+  tier: string;
+  totalSpent: number;
+  lastOrderDate?: string;
+  ordersCount: number;
 }
 
-interface Order {
-  id: string;
-  total: string;
-  status: string;
-  createdAt: string;
-}
-
-const Customers = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+const Customers: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const { data: customers, refetch } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: ''
   });
 
-  const { data: customerOrders } = useQuery<Order[]>({
-    queryKey: [`/api/customers/${selectedCustomer?.id}/orders`],
-    enabled: !!selectedCustomer,
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: customers = [], isLoading } = useQuery({
+    queryKey: ['customers'],
+    queryFn: async () => {
+      const response = await fetch('/api/customers');
+      if (!response.ok) throw new Error('Failed to fetch customers');
+      return response.json();
+    }
   });
 
   const createCustomerMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/customers", data),
-    onSuccess: () => {
-      setShowModal(false);
-      setEditingCustomer(null);
-      refetch();
+    mutationFn: async (customerData: any) => {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customerData)
+      });
+      if (!response.ok) throw new Error('Failed to create customer');
+      return response.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Customer created successfully",
+      });
+    }
   });
 
   const updateCustomerMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest("PUT", `/api/customers/${id}`, data),
-    onSuccess: () => {
-      setShowModal(false);
-      setEditingCustomer(null);
-      refetch();
+    mutationFn: async (customerData: any) => {
+      const response = await fetch(`/api/customers/${customerData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customerData)
+      });
+      if (!response.ok) throw new Error('Failed to update customer');
+      return response.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Customer updated successfully",
+      });
+    }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const customerData = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      loyaltyPoints: parseInt(formData.get("loyaltyPoints") as string) || 0,
-    };
-
-    if (editingCustomer) {
-      updateCustomerMutation.mutate({ id: editingCustomer.id, data: customerData });
-    } else {
-      createCustomerMutation.mutate(customerData);
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (customerId: string) => {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete customer');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({
+        title: "Success",
+        description: "Customer deleted successfully",
+      });
     }
-  };
+  });
 
-  const openAddModal = () => {
-    setEditingCustomer(null);
-    setShowModal(true);
-  };
-
-  const openEditModal = (customer: Customer) => {
-    setEditingCustomer(customer);
-    setShowModal(true);
-  };
-
-  const openDetailsModal = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowDetailsModal(true);
-  };
-
-  const filteredCustomers = customers?.filter(customer =>
+  const filteredCustomers = customers.filter((customer: Customer) => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate customer stats
-  const totalCustomers = customers?.length || 0;
-  const totalSpent = customers?.reduce((sum, c) => sum + parseFloat(c.totalSpent || "0"), 0) || 0;
-  const totalLoyaltyPoints = customers?.reduce((sum, c) => sum + c.loyaltyPoints, 0) || 0;
-  const avgSpentPerCustomer = totalCustomers > 0 ? totalSpent / totalCustomers : 0;
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      address: ''
+    });
+    setSelectedCustomer(null);
+  };
+
+  const handleEdit = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setFormData({
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone || '',
+      address: customer.address || ''
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedCustomer) {
+      updateCustomerMutation.mutate({ ...formData, id: selectedCustomer.id });
+    } else {
+      createCustomerMutation.mutate(formData);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const getTierColor = (tier: string) => {
+    switch (tier.toLowerCase()) {
+      case 'bronze': return 'bg-amber-100 text-amber-800';
+      case 'silver': return 'bg-gray-100 text-gray-800';
+      case 'gold': return 'bg-yellow-100 text-yellow-800';
+      case 'platinum': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+        <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <TopNav title="Customer Management" subtitle="Manage customer accounts and loyalty status" />
-      <div className="content-wrapper">
-        {/* Stats Cards */}
-        <div className="row mb-4">
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-primary">{totalCustomers}</h3>
-                <p className="mb-0">Total Customers</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-success">${totalSpent.toFixed(2)}</h3>
-                <p className="mb-0">Total Revenue</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-warning">{totalLoyaltyPoints.toLocaleString()}</h3>
-                <p className="mb-0">Loyalty Points</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-info">${avgSpentPerCustomer.toFixed(2)}</h3>
-                <p className="mb-0">Avg per Customer</p>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+          <p className="text-gray-600">Manage your customer relationships and loyalty</p>
         </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm} className="bg-coral-600 hover:bg-coral-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Customer
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedCustomer ? 'Edit Customer' : 'Add New Customer'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone (Optional)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address (Optional)</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                />
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-coral-600 hover:bg-coral-700">
+                  {selectedCustomer ? 'Update' : 'Create'} Customer
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-        {/* Controls */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div className="input-group" style={{ maxWidth: "300px" }}>
-            <span className="input-group-text">
-              <i className="fas fa-search"></i>
-            </span>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search customers..."
+      {/* Search */}
+      <Card className="rounded-xl">
+        <CardContent className="p-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search customers by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
             />
           </div>
-          <button className="btn btn-primary" onClick={openAddModal}>
-            <i className="fas fa-plus me-2"></i>
-            Add Customer
-          </button>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Customers Table */}
-        <div className="card">
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Customer</th>
-                    <th>Loyalty Points</th>
-                    <th>Total Spent</th>
-                    <th>Joined Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCustomers?.map((customer) => (
-                    <tr key={customer.id}>
-                      <td>
-                        <div>
-                          <strong>{customer.name}</strong>
-                          <br />
-                          <small className="text-muted">{customer.email}</small>
+      {/* Customers Table */}
+      <Card className="rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Customers ({filteredCustomers.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-gray-50">
+              <TableRow>
+                <TableHead className="font-medium">Customer</TableHead>
+                <TableHead className="font-medium">Contact</TableHead>
+                <TableHead className="font-medium">Loyalty</TableHead>
+                <TableHead className="font-medium">Orders</TableHead>
+                <TableHead className="font-medium">Total Spent</TableHead>
+                <TableHead className="font-medium">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.map((customer: Customer) => (
+                <TableRow key={customer.id} className="hover:bg-gray-50">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-coral-100 text-coral-700">
+                          {getInitials(customer.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-gray-500">ID: {customer.id.slice(-8)}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="w-3 h-3 text-gray-400" />
+                        {customer.email}
+                      </div>
+                      {customer.phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Phone className="w-3 h-3 text-gray-400" />
+                          {customer.phone}
                         </div>
-                      </td>
-                      <td>
-                        <span className="badge bg-primary">{customer.loyaltyPoints.toLocaleString()}</span>
-                      </td>
-                      <td>
-                        <strong>${parseFloat(customer.totalSpent || "0").toFixed(2)}</strong>
-                      </td>
-                      <td>{new Date(customer.createdAt).toLocaleDateString()}</td>
-                      <td>
-                        <span className={`badge ${parseFloat(customer.totalSpent || "0") > 100 ? "bg-success" : "bg-secondary"}`}>
-                          {parseFloat(customer.totalSpent || "0") > 100 ? "VIP" : "Regular"}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="btn-group btn-group-sm">
-                          <button
-                            className="btn btn-outline-info"
-                            onClick={() => openDetailsModal(customer)}
-                            title="View Details"
-                          >
-                            <i className="fas fa-eye"></i>
-                          </button>
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => openEditModal(customer)}
-                            title="Edit"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button
-                            className="btn btn-outline-success"
-                            title="Add Points"
-                          >
-                            <i className="fas fa-star"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Customer Modal */}
-        {showModal && (
-          <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    {editingCustomer ? "Edit Customer" : "Add New Customer"}
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowModal(false)}
-                  ></button>
-                </div>
-                <form onSubmit={handleSubmit}>
-                  <div className="modal-body">
-                    <div className="mb-3">
-                      <label className="form-label">Full Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        className="form-control"
-                        defaultValue={editingCustomer?.name || ""}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Email Address *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        className="form-control"
-                        defaultValue={editingCustomer?.email || ""}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Loyalty Points</label>
-                      <input
-                        type="number"
-                        name="loyaltyPoints"
-                        className="form-control"
-                        defaultValue={editingCustomer?.loyaltyPoints || 0}
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setShowModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={createCustomerMutation.isPending || updateCustomerMutation.isPending}
-                    >
-                      {createCustomerMutation.isPending || updateCustomerMutation.isPending
-                        ? "Saving..."
-                        : editingCustomer
-                        ? "Update Customer"
-                        : "Add Customer"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Customer Details Modal */}
-        {showDetailsModal && selectedCustomer && (
-          <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <div className="modal-dialog modal-lg">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Customer Details</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowDetailsModal(false)}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <div className="row">
-                    <div className="col-md-6">
-                      <h6>Customer Information</h6>
-                      <table className="table table-sm">
-                        <tbody>
-                          <tr>
-                            <td><strong>Name:</strong></td>
-                            <td>{selectedCustomer.name}</td>
-                          </tr>
-                          <tr>
-                            <td><strong>Email:</strong></td>
-                            <td>{selectedCustomer.email}</td>
-                          </tr>
-                          <tr>
-                            <td><strong>Loyalty Points:</strong></td>
-                            <td><span className="badge bg-primary">{selectedCustomer.loyaltyPoints}</span></td>
-                          </tr>
-                          <tr>
-                            <td><strong>Total Spent:</strong></td>
-                            <td><strong>${parseFloat(selectedCustomer.totalSpent || "0").toFixed(2)}</strong></td>
-                          </tr>
-                          <tr>
-                            <td><strong>Member Since:</strong></td>
-                            <td>{new Date(selectedCustomer.createdAt).toLocaleDateString()}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="col-md-6">
-                      <h6>Recent Orders</h6>
-                      {customerOrders && customerOrders.length > 0 ? (
-                        <div className="table-responsive">
-                          <table className="table table-sm">
-                            <thead>
-                              <tr>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {customerOrders.slice(0, 5).map((order) => (
-                                <tr key={order.id}>
-                                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                                  <td>${parseFloat(order.total).toFixed(2)}</td>
-                                  <td>
-                                    <span className="badge bg-success">{order.status}</span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <p className="text-muted">No orders found</p>
                       )}
                     </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowDetailsModal(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <Badge className={getTierColor(customer.tier)}>
+                        <Star className="w-3 h-3 mr-1" />
+                        {customer.tier}
+                      </Badge>
+                      <div className="text-sm text-gray-500">
+                        {customer.loyaltyPoints} points
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-center">
+                      <div className="font-medium">{customer.ordersCount}</div>
+                      {customer.lastOrderDate && (
+                        <div className="text-xs text-gray-500">
+                          Last: {new Date(customer.lastOrderDate).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">${customer.totalSpent.toFixed(2)}</div>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(customer)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => deleteCustomerMutation.mutate(customer.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

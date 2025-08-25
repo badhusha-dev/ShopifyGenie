@@ -1,353 +1,419 @@
+
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import TopNav from "../components/TopNav";
-import PermissionGate from '../components/PermissionGate';
-import { useAuth } from '../contexts/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+  Package, 
+  Plus, 
+  Search, 
+  Filter, 
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  AlertTriangle
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Badge } from '../components/ui/badge';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '../components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Label } from '../components/ui/label';
+import { Switch } from '../components/ui/switch';
+import { useToast } from '../hooks/use-toast';
 
 interface Product {
   id: string;
   name: string;
-  sku: string;
-  stock: number;
-  price: string;
   category: string;
-  imageUrl?: string;
+  price: number;
+  stock: number;
+  lowStockThreshold: number;
+  status: 'active' | 'draft';
 }
 
-const Inventory = () => {
-  const { token } = useAuth();
+const Inventory: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
   const [showLowStock, setShowLowStock] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    price: '',
+    stock: '',
+    lowStockThreshold: '',
+    status: 'active' as 'active' | 'draft'
+  });
 
-  const { data: products, refetch } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['products'],
     queryFn: async () => {
-      const response = await fetch('/api/products', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch('/api/products');
       if (!response.ok) throw new Error('Failed to fetch products');
       return response.json();
-    },
-    enabled: !!token,
+    }
   });
 
   const createProductMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/products", data),
-    onSuccess: () => {
-      setShowModal(false);
-      setEditingProduct(null);
-      refetch();
+    mutationFn: async (productData: any) => {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+      if (!response.ok) throw new Error('Failed to create product');
+      return response.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Product created successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create product",
+        variant: "destructive",
+      });
+    }
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest("PUT", `/api/products/${id}`, data),
-    onSuccess: () => {
-      setShowModal(false);
-      setEditingProduct(null);
-      refetch();
+    mutationFn: async (productData: any) => {
+      const response = await fetch(`/api/products/${productData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+      if (!response.ok) throw new Error('Failed to update product');
+      return response.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+      });
+    }
   });
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    await apiRequest("DELETE", `/api/products/${id}`);
-    refetch();
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete product');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+      });
+    }
+  });
+
+  const filteredProducts = products.filter((product: Product) => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLowStock = !showLowStock || product.stock <= product.lowStockThreshold;
+    return matchesSearch && matchesLowStock;
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      category: '',
+      price: '',
+      stock: '',
+      lowStockThreshold: '',
+      status: 'active'
+    });
+    setSelectedProduct(null);
+  };
+
+  const handleEdit = (product: Product) => {
+    setSelectedProduct(product);
+    setFormData({
+      name: product.name,
+      category: product.category,
+      price: product.price.toString(),
+      stock: product.stock.toString(),
+      lowStockThreshold: product.lowStockThreshold.toString(),
+      status: product.status
+    });
+    setIsDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
     const productData = {
-      name: formData.get("name"),
-      sku: formData.get("sku"),
-      stock: parseInt(formData.get("stock") as string),
-      price: formData.get("price"),
-      category: formData.get("category"),
-      imageUrl: formData.get("imageUrl"),
+      ...formData,
+      price: parseFloat(formData.price),
+      stock: parseInt(formData.stock),
+      lowStockThreshold: parseInt(formData.lowStockThreshold)
     };
 
-    if (editingProduct) {
-      updateProductMutation.mutate({ id: editingProduct.id, data: productData });
+    if (selectedProduct) {
+      updateProductMutation.mutate({ ...productData, id: selectedProduct.id });
     } else {
       createProductMutation.mutate(productData);
     }
   };
 
-  const openAddModal = () => {
-    setEditingProduct(null);
-    setShowModal(true);
+  const getStockStatus = (product: Product) => {
+    if (product.stock === 0) return { label: 'Out of stock', variant: 'destructive' as const };
+    if (product.stock <= product.lowStockThreshold) return { label: 'Low stock', variant: 'secondary' as const };
+    return { label: 'In stock', variant: 'default' as const };
   };
 
-  const openEditModal = (product: Product) => {
-    setEditingProduct(product);
-    setShowModal(true);
-  };
-
-  const filteredProducts = showLowStock
-    ? products?.filter(p => p.stock < 10)
-    : products;
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+        <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <TopNav
-        title="Inventory Management"
-        subtitle="Track products, stock levels, and manage inventory alerts"
-      />
-      <div className="content-wrapper">
-        {/* Stats Cards */}
-        <div className="row mb-4">
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-primary">{products?.length || 0}</h3>
-                <p className="mb-0">Total Products</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-warning">{products?.filter(p => p.stock < 10).length || 0}</h3>
-                <p className="mb-0">Low Stock</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-success">{products?.reduce((sum, p) => sum + p.stock, 0) || 0}</h3>
-                <p className="mb-0">Total Stock</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body text-center">
-                <h3 className="text-info">${products?.reduce((sum, p) => sum + parseFloat(p.price || "0"), 0).toFixed(2) || "0.00"}</h3>
-                <p className="mb-0">Total Value</p>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+          <p className="text-gray-600">Manage your products and stock levels</p>
         </div>
-
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h4>Inventory Management</h4>
-            <p className="text-muted mb-0">Manage your product inventory and stock levels</p>
-          </div>
-          <PermissionGate permission="inventory:create">
-            <button
-              className="btn btn-primary"
-              onClick={openAddModal}
-            >
-              <i className="fas fa-plus me-2"></i>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm} className="bg-coral-600 hover:bg-coral-700">
+              <Plus className="w-4 h-4 mr-2" />
               Add Product
-            </button>
-          </PermissionGate>
-        </div>
-
-        {/* Products Table */}
-        <div className="card">
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Product</th>
-                    <th>SKU</th>
-                    <th>Category</th>
-                    <th>Stock</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts?.map((product) => (
-                    <tr key={product.id}>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          {product.imageUrl && (
-                            <img
-                              src={product.imageUrl}
-                              alt={product.name}
-                              className="me-3"
-                              style={{ width: "40px", height: "40px", objectFit: "cover" }}
-                            />
-                          )}
-                          <div>
-                            <strong>{product.name}</strong>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <code>{product.sku}</code>
-                      </td>
-                      <td>{product.category}</td>
-                      <td>
-                        <span className={`badge ${product.stock < 10 ? "bg-danger" : product.stock < 20 ? "bg-warning text-dark" : "bg-success"}`}>
-                          {product.stock}
-                        </span>
-                      </td>
-                      <td>${parseFloat(product.price || "0").toFixed(2)}</td>
-                      <td>
-                        <span className={`badge ${product.stock > 0 ? "bg-success" : "bg-danger"}`}>
-                          {product.stock > 0 ? "In Stock" : "Out of Stock"}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="btn-group">
-                          <PermissionGate permission="inventory:edit">
-                            <button
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => openEditModal(product)}
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                          </PermissionGate>
-                          <PermissionGate permission="inventory:delete">
-                            <button
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => handleDelete(product.id)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
-                          </PermissionGate>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Product Modal */}
-        {showModal && (
-          <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    {editingProduct ? "Edit Product" : "Add New Product"}
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowModal(false)}
-                  ></button>
-                </div>
-                <form onSubmit={handleSubmit}>
-                  <div className="modal-body">
-                    <div className="mb-3">
-                      <label className="form-label">Product Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        className="form-control"
-                        defaultValue={editingProduct?.name || ""}
-                        required
-                      />
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6">
-                        <div className="mb-3">
-                          <label className="form-label">SKU *</label>
-                          <input
-                            type="text"
-                            name="sku"
-                            className="form-control"
-                            defaultValue={editingProduct?.sku || ""}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="col-md-6">
-                        <div className="mb-3">
-                          <label className="form-label">Category</label>
-                          <select name="category" className="form-select" defaultValue={editingProduct?.category || ""}>
-                            <option value="">Select category...</option>
-                            <option value="Electronics">Electronics</option>
-                            <option value="Clothing">Clothing</option>
-                            <option value="Books">Books</option>
-                            <option value="Home & Garden">Home & Garden</option>
-                            <option value="Sports">Sports</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6">
-                        <div className="mb-3">
-                          <label className="form-label">Stock Quantity *</label>
-                          <input
-                            type="number"
-                            name="stock"
-                            className="form-control"
-                            defaultValue={editingProduct?.stock || 0}
-                            min="0"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="col-md-6">
-                        <div className="mb-3">
-                          <label className="form-label">Price *</label>
-                          <input
-                            type="number"
-                            name="price"
-                            className="form-control"
-                            step="0.01"
-                            defaultValue={editingProduct?.price || ""}
-                            required
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Image URL</label>
-                      <input
-                        type="url"
-                        name="imageUrl"
-                        className="form-control"
-                        defaultValue={editingProduct?.imageUrl || ""}
-                      />
-                    </div>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedProduct ? 'Edit Product' : 'Add New Product'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <Tabs defaultValue="general" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="general">General</TabsTrigger>
+                  <TabsTrigger value="pricing">Pricing</TabsTrigger>
+                  <TabsTrigger value="stock">Stock</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="general" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Product Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      required
+                    />
                   </div>
-                  <div className="modal-footer">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setShowModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={createProductMutation.isPending || updateProductMutation.isPending}
-                    >
-                      {createProductMutation.isPending || updateProductMutation.isPending
-                        ? "Saving..."
-                        : editingProduct
-                        ? "Update Product"
-                        : "Add Product"}
-                    </button>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Input
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      required
+                    />
                   </div>
-                </form>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="status"
+                      checked={formData.status === 'active'}
+                      onCheckedChange={(checked) => setFormData({...formData, status: checked ? 'active' : 'draft'})}
+                    />
+                    <Label htmlFor="status">Active</Label>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="pricing" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price ($)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      required
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="stock" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="stock">Stock Quantity</Label>
+                    <Input
+                      id="stock"
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                    <Input
+                      id="lowStockThreshold"
+                      type="number"
+                      value={formData.lowStockThreshold}
+                      onChange={(e) => setFormData({...formData, lowStockThreshold: e.target.value})}
+                      required
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-coral-600 hover:bg-coral-700">
+                  {selectedProduct ? 'Update' : 'Create'} Product
+                </Button>
               </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Filters */}
+      <Card className="rounded-xl">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="lowStock"
+                checked={showLowStock}
+                onCheckedChange={setShowLowStock}
+              />
+              <Label htmlFor="lowStock" className="flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                <span>Low Stock Only</span>
+              </Label>
             </div>
           </div>
-        )}
-      </div>
-    </>
+        </CardContent>
+      </Card>
+
+      {/* Products Table */}
+      <Card className="rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            Products ({filteredProducts.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-gray-50">
+              <TableRow>
+                <TableHead className="font-medium">Product</TableHead>
+                <TableHead className="font-medium">Category</TableHead>
+                <TableHead className="font-medium">Price</TableHead>
+                <TableHead className="font-medium">Stock</TableHead>
+                <TableHead className="font-medium">Status</TableHead>
+                <TableHead className="font-medium">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product: Product) => {
+                const stockStatus = getStockStatus(product);
+                return (
+                  <TableRow key={product.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>{product.stock}</span>
+                        <Badge variant={stockStatus.variant} className="text-xs">
+                          {stockStatus.label}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                        {product.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(product)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => deleteProductMutation.mutate(product.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

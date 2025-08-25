@@ -52,12 +52,30 @@ app.use((req, res, next) => {
 // Handle uncaught exceptions and unhandled promise rejections
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
-  // Don't exit the process in development
+  // Log but don't exit in development
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Don't exit the process in development
+  // Log but don't exit in development
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
+
+// Handle SIGTERM gracefully
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+// Handle SIGINT gracefully
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
 });
 
 (async () => {
