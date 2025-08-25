@@ -104,23 +104,23 @@ process.on('SIGINT', () => {
   log('WebSocket server initialized');
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
+  // Other ports are firewalled. Default to 3001 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  
+  const PORT = parseInt(process.env.PORT || '3001', 10);
+
   server.on('error', (error: any) => {
     if (error.code === 'EADDRINUSE') {
-      console.error(`Port ${port} is already in use`);
+      console.error(`Port ${PORT} is already in use`);
       process.exit(1);
     } else {
       console.error('Server error:', error);
     }
   });
 
-  server.listen(port, "0.0.0.0", () => {
-    log(`serving on port ${port}`);
-    log(`WebSocket available at ws://0.0.0.0:${port}/ws`);
-    log(`Application ready at http://0.0.0.0:${port}`);
+  server.listen(PORT, "0.0.0.0", () => {
+    log(`serving on port ${PORT}`);
+    log(`WebSocket available at ws://0.0.0.0:${PORT}/ws`);
+    log(`Application ready at http://0.0.0.0:${PORT}`);
   });
 })();
