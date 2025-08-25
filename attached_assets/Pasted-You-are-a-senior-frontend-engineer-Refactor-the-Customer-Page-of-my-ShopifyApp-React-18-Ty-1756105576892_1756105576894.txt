@@ -1,0 +1,57 @@
+You are a senior frontend engineer. Refactor the **Customer Page** of my ShopifyApp 
+(React 18 + TypeScript + Bootstrap 5.3 + JWT + RBAC + Chart.js + reusable Bootstrap components) 
+to match the modern design system used in Dashboard, Inventory, and Finance.
+
+Goal
+Replace the "dumb" design with a professional, Shopify-inspired Bootstrap 5 layout 
+using gradient KPI cards, animated tables, modals, and interactive charts.
+
+Features to Add/Improve
+
+1. Customer Overview
+   - KPI Cards (Total Customers, Active Customers, Loyalty Points Issued, Avg Lifetime Value)
+   - Animated counters with gradient backgrounds.
+   - Hover lift effect like Dashboard cards.
+
+2. Customer List
+   - Use reusable `DataTable` component:
+     * Search by name/email
+     * Filters: loyalty tier, active/inactive, order volume
+     * Sortable columns (Name, Email, Orders, Loyalty Points, Tier, Last Order Date)
+     * Pagination + empty state placeholder
+   - Hover highlight rows with smooth transitions.
+
+3. Customer Profile Modal
+   - Triggered by clicking a row in the table.
+   - Slide-in `AnimatedModal` with tabs:
+     * Profile (name, email, contact, preferences)
+     * Orders (recent order list with status badges)
+     * Loyalty (points balance, tier, redemption history)
+     * Subscriptions (active/past subscriptions)
+   - Gradient header + responsive design for mobile.
+
+4. Analytics & Insights
+   - Chart.js section below table:
+     * Loyalty Distribution (pie chart: Bronze/Silver/Gold/Platinum)
+     * Orders per Customer (bar chart with top 10 customers)
+     * Customer Growth Trend (line chart, animated fill)
+
+5. Micro-Interactions
+   - Ripple effect on action buttons (View, Edit, Reward Points).
+   - Smooth expand animation when filtering/searching.
+   - Hover animations for loyalty badges (subtle pulse).
+
+6. RBAC Rules
+   - SuperAdmin/Admin → full access (CRUD + analytics).
+   - Staff → view-only (cannot delete customers or adjust points).
+   - Customer role → should never access this page.
+
+Styling & Tokens
+- Use existing design tokens for colors, gradients, and animations.
+- Maintain Shopify-inspired emerald/coral theme.
+- Apply consistent Bootstrap 5 spacing, shadows, and rounded corners.
+
+Deliverables
+- Updated Customer Page with modern Bootstrap 5 design.
+- Reuse existing reusable components: `AnimatedCard`, `AnimatedModal`, `DataTable`, `BootstrapChart`.
+- Consistent styling and interactions across Dashboard, Inventory, Finance, and Customers.
