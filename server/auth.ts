@@ -2,11 +2,12 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { Request, Response, NextFunction } from 'express';
+import { User } from '@shared/schema';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const SALT_ROUNDS = 10;
 
-export interface User {
+export interface AuthUser {
   id: string;
   name: string;
   email: string;
@@ -130,23 +131,6 @@ export const requirePermission = (permission: string) => {
   };
 };
 
-// Role-based access control
-export const requireRole = (allowedRoles: string[]) => {
-  return async (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        error: `Access denied. Required roles: ${allowedRoles.join(', ')}`,
-        current: req.user.role
-      });
-    }
-
-    next();
-  };
-};
 
 // Combined role and permission check
 export const requireRoleAndPermission = (roles: string[], permission: string) => {
