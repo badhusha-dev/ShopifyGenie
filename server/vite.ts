@@ -22,7 +22,14 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
-    hmr: { server },
+    hmr: { 
+      server,
+      port: 5000,
+      host: '0.0.0.0'
+    },
+    host: '0.0.0.0',
+    port: 5000,
+    strictPort: false,
     allowedHosts: true as const,
   };
 
@@ -32,8 +39,8 @@ export async function setupVite(app: Express, server: Server) {
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
+        console.error('[Vite Error]:', msg);
+        // Don't exit the process on Vite errors in development
       },
     },
     server: serverOptions,
@@ -52,6 +59,11 @@ export async function setupVite(app: Express, server: Server) {
         "index.html",
       );
 
+      // Check if template file exists
+      if (!await fs.promises.access(clientTemplate).then(() => true).catch(() => false)) {
+        return res.status(404).send('Template file not found');
+      }
+
       // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
@@ -61,8 +73,10 @@ export async function setupVite(app: Express, server: Server) {
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
+      console.error('Vite middleware error:', e);
       vite.ssrFixStacktrace(e as Error);
-      next(e);
+      // Send a fallback response instead of crashing
+      res.status(500).send('Internal Server Error');
     }
   });
 }

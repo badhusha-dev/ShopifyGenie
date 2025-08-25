@@ -90,12 +90,19 @@ process.on('unhandledRejection', (reason, promise) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  
+  server.on('error', (error: any) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${port} is already in use`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', error);
+    }
+  });
+
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
-    log(`WebSocket available at ws://localhost:${port}/ws`);
+    log(`WebSocket available at ws://0.0.0.0:${port}/ws`);
+    log(`Application ready at http://0.0.0.0:${port}`);
   });
 })();
