@@ -277,6 +277,9 @@ export class MemStorage implements IStorage {
   private fiscalPeriods: Map<string, FiscalPeriod> = new Map();
   private accountBalances: Map<string, AccountBalance> = new Map();
 
+  private permissions: any[] = [];
+  private rolePermissions: any[] = [];
+
   constructor() {
     this.seedData();
     this.seedPermissions();
@@ -571,16 +574,6 @@ export class MemStorage implements IStorage {
     };
 
     this.fiscalPeriods.set(fiscalPeriod.id, fiscalPeriod as FiscalPeriod);
-  }
-
-  // Permissions storage
-  private permissions: any[] = [];
-  private rolePermissions: any[] = [];
-
-  constructor() {
-    this.seedData();
-    this.seedPermissions();
-    this.seedAccountingData();
   }
 
   private async seedData() {
@@ -2972,7 +2965,7 @@ export class MemStorage implements IStorage {
         closingBalance = openingBalance + credits - debits;
       }
     }
-    
+
     return {
       id: randomUUID(), // New ID for calculation result
       accountId,
