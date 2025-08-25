@@ -1,0 +1,46 @@
+You are an expert full-stack developer. Enhance my existing ShopifyApp (React 18 + TypeScript + Tailwind + shadcn/ui frontend, Express.js + TypeScript backend, JWT auth, RBAC roles: SuperAdmin/Admin/Staff/Customer, Shopify OAuth & webhooks integration).
+
+Goal
+Implement new **System Enhancements**, **Mobile/PWA features**, and **Third-Party Integrations** as planned in roadmap.
+
+Features to Add
+1. 🔧 System Enhancements
+   - WebSocket notifications (real-time alerts for stock, orders, vendor updates)
+   - Advanced permission system (Super Admin can edit permissions per role → API + UI matrix)
+   - Audit logging (DB table + middleware to log user/role actions: inventory edits, role changes, payouts)
+   - Multi-language support (i18n, locale switcher in UI)
+   - Advanced reporting exports (CSV, Excel, PDF with filters)
+
+2. 📱 Mobile & PWA
+   - Convert frontend into installable PWA (manifest.json + service worker)
+   - Mobile-optimized layouts (responsive adjustments, stacked views for data tables)
+   - Offline support for inventory/orders (IndexedDB cache + sync strategy)
+   - Push notifications (web push for low stock, loyalty alerts, new orders)
+
+3. 🔗 Third-Party Integrations
+   - Payment gateway integration (Stripe first; allow Admin to configure keys)
+   - Email marketing automation (SendGrid/Mailchimp connector, triggered campaigns)
+   - SMS notification system (Twilio integration for order + loyalty events)
+   - Accounting integration (QuickBooks/Xero → API for payouts, invoices, reconciliation)
+
+Tech & Implementation Notes
+- Backend: Extend Express routes under `/api/system`, `/api/mobile`, `/api/integrations`
+- Database: Use PostgreSQL/MongoDB (via Drizzle ORM) for new tables:
+  * `audit_logs`, `role_permissions`, `notifications`, `integrations_config`
+- Frontend:
+  * Add "System" section in sidebar → Permissions, Logs, Settings
+  * Add "Integrations" section in sidebar → Payments, Email, SMS, Accounting
+  * Add PWA manifest + service worker setup
+  * Add i18n support with JSON locale files
+- RBAC: Only SuperAdmin can configure system & integrations.
+- Testing: Simulate events (low stock, new order) → trigger WebSocket + push + SMS/Email.
+
+Deliverables
+- New backend routes + DB schemas
+- Updated frontend UI (pages + components)
+- Role-based access protection
+- PWA setup (manifest, service worker)
+- Integration stubs with Stripe, SendGrid, Twilio, QuickBooks (config + sample API calls)
+
+Output
+Generate both backend (Express + TS) and frontend (React + TS) code files needed to scaffold these features, using clean architecture, modular routing, and shadcn/ui components. 

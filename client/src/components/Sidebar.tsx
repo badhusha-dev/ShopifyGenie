@@ -2,10 +2,13 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from "../contexts/AuthContext";
 import { usePermissions } from '../contexts/PermissionContext';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from '../hooks/useTranslation';
 
 const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
   const { hasPermission } = usePermissions();
+  const { t } = useTranslation();
   const [location] = useLocation();
 
   const isActive = (path: string) => location === path;
@@ -14,74 +17,74 @@ const Sidebar: React.FC = () => {
       {
         path: "/",
         icon: "fas fa-tachometer-alt",
-        label: "Dashboard",
+        label: t('nav.dashboard'),
         permission: "dashboard:view"
       },
       {
         path: "/inventory",
         icon: "fas fa-boxes",
-        label: "Inventory",
+        label: t('nav.inventory'),
         permission: "inventory:view"
       },
       {
         path: "/customers",
         icon: "fas fa-users",
-        label: "Customers",
+        label: t('nav.customers'),
         permission: "customers:view"
       },
       {
         path: "/subscriptions",
         icon: "fas fa-sync-alt",
-        label: "Subscriptions",
+        label: t('nav.subscriptions'),
         permission: "subscriptions:view"
       },
       {
         path: "/loyalty",
         icon: "fas fa-star",
-        label: "Loyalty",
+        label: t('nav.loyalty'),
         permission: "customers:view"
       },
       {
         path: "/reports",
         icon: "fas fa-chart-bar",
-        label: "Reports",
+        label: t('nav.reports'),
         permission: "reports:view"
       },
       {
         path: "/customer-portal",
         icon: "fas fa-user-circle",
-        label: "Customer Portal",
+        label: t('nav.customerPortal'),
         permission: "dashboard:view",
         customerOnly: true
       },
       {
         path: "/ai-insights",
         icon: "fas fa-brain",
-        label: "AI Insights",
+        label: t('nav.aiInsights'),
         permission: "reports:view"
       },
       {
         path: "/ai-recommendations",
         icon: "fas fa-lightbulb",
-        label: "AI Recommendations",
+        label: t('nav.aiRecommendations'),
         permission: "customers:view"
       },
       {
         path: "/advanced-inventory",
         icon: "fas fa-warehouse",
-        label: "Advanced Inventory",
+        label: t('nav.advancedInventory'),
         permission: "inventory:view"
       },
       {
         path: "/vendor-management",
         icon: "fas fa-handshake",
-        label: "Vendor Management",
+        label: t('nav.vendorManagement'),
         permission: "vendors:view"
       },
       {
         path: "/user-management",
         icon: "fas fa-users-cog",
-        label: "User Management",
+        label: t('nav.userManagement'),
         roles: ["admin", "superadmin"]
       },
       {
@@ -89,6 +92,18 @@ const Sidebar: React.FC = () => {
         icon: "fas fa-shield-alt",
         label: "Role & Permissions",
         roles: ["superadmin"]
+      },
+      {
+        path: "/system-settings",
+        icon: "fas fa-cogs",
+        label: t('nav.systemSettings'),
+        roles: ["admin", "superadmin"]
+      },
+      {
+        path: "/integrations",
+        icon: "fas fa-plug",
+        label: t('nav.integrations'),
+        permission: "integrations:view"
       }
     ];
 
@@ -162,8 +177,13 @@ const Sidebar: React.FC = () => {
         ))}
       </nav>
 
+      {/* Language Switcher */}
+      <div className="p-3 border-top border-secondary">
+        <LanguageSwitcher />
+      </div>
+
       {/* Logout Button */}
-      <div className="mt-auto p-3">
+      <div className="p-3">
         <button
           onClick={logout}
           className="btn btn-outline-light btn-sm w-100"

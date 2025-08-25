@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { insertProductSchema, insertCustomerSchema, insertOrderSchema, insertSubscriptionSchema } from "@shared/schema";
 import { shopify, saveShopSession, getShopSession } from "./shopify";
 import { AuthService, authenticateToken, requireAdmin, requireStaffOrAdmin, requireCustomer, requireSuperAdmin, requirePermission, type AuthRequest } from "./auth";
+import { auditMiddleware } from "./middleware";
+import systemRoutes from "./system-routes";
+import integrationsRoutes from "./integrations-routes";
 import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1387,6 +1390,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to generate forecast" });
     }
   });
+
+  // Mount system and integration routes
+  app.use('/api/system', authenticateToken, systemRoutes);
+  app.use('/api/integrations', authenticateToken, integrationsRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

@@ -21,6 +21,8 @@ import AIRecommendations from "./pages/AIRecommendations";
 import VendorManagement from "./pages/VendorManagement";
 import UserManagement from "./pages/UserManagement";
 import RolePermissionManagement from './pages/RolePermissionManagement';
+import SystemSettings from "./pages/SystemSettings";
+import Integrations from "./pages/Integrations";
 import AlertSystem from "./components/AlertSystem";
 import "./index.css";
 
@@ -71,6 +73,8 @@ const AppContent = () => {
               <Route path="/vendor-management" component={VendorManagement} />
               <Route path="/user-management" component={UserManagement} />
               <Route path="/role-permission-management" component={RolePermissionManagement} />
+              <Route path="/system-settings" component={SystemSettings} />
+              <Route path="/integrations" component={Integrations} />
               <Route component={NotFound} />
             </Switch>
           </div>
