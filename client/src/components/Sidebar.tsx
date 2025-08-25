@@ -70,6 +70,36 @@ const menuItems = [
     roles: ['superadmin', 'admin']
   },
   {
+    title: 'Journal Entries',
+    icon: 'fas fa-pen-to-square',
+    href: '/journal-entries',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Accounts Receivable',
+    icon: 'fas fa-file-invoice-dollar',
+    href: '/accounts-receivable',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Accounts Payable',
+    icon: 'fas fa-file-invoice',
+    href: '/accounts-payable',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Wallets & Credits',
+    icon: 'fas fa-wallet',
+    href: '/wallets',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Financial Reports',
+    icon: 'fas fa-chart-bar',
+    href: '/financial-reports',
+    roles: ['superadmin', 'admin']
+  },
+  {
     title: 'Settings',
     icon: 'fas fa-cog',
     href: '/settings',

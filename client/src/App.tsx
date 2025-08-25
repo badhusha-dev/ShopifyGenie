@@ -29,6 +29,11 @@ import RolePermissionManagement from './pages/RolePermissionManagement';
 import Integrations from './pages/Integrations';
 import ChartOfAccounts from './pages/ChartOfAccounts';
 import GeneralLedger from './pages/GeneralLedger';
+import JournalEntries from './pages/JournalEntries';
+import AccountsReceivable from './pages/AccountsReceivable';
+import AccountsPayable from './pages/AccountsPayable';
+import Wallets from './pages/Wallets';
+import FinancialReports from './pages/FinancialReports';
 import NotFound from './pages/not-found';
 
 // Design Tokens
@@ -303,6 +308,71 @@ const AppContent = () => {
               />
               <main className="flex-fill">
                 <GeneralLedger />
+              </main>
+            </>
+          } />
+
+          <Route path="/journal-entries" element={
+            <>
+              <TopNav 
+                title="Journal Entries" 
+                subtitle="Create and manage manual journal entries"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <JournalEntries />
+              </main>
+            </>
+          } />
+
+          <Route path="/accounts-receivable" element={
+            <>
+              <TopNav 
+                title="Accounts Receivable" 
+                subtitle="Manage customer invoices and aging analysis"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <AccountsReceivable />
+              </main>
+            </>
+          } />
+
+          <Route path="/accounts-payable" element={
+            <>
+              <TopNav 
+                title="Accounts Payable" 
+                subtitle="Manage vendor bills and aging analysis"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <AccountsPayable />
+              </main>
+            </>
+          } />
+
+          <Route path="/wallets" element={
+            <>
+              <TopNav 
+                title="Wallets & Credits" 
+                subtitle="Manage customer and vendor credit wallets"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <Wallets />
+              </main>
+            </>
+          } />
+
+          <Route path="/financial-reports" element={
+            <>
+              <TopNav 
+                title="Financial Reports" 
+                subtitle="Generate comprehensive financial statements"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <FinancialReports />
               </main>
             </>
           } />
