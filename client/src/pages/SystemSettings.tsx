@@ -1,32 +1,5 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Settings, 
-  Bell, 
-  Shield, 
-  FileText,
-  Save,
-  Eye,
-  User,
-  Calendar
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Switch } from '../components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '../components/ui/table';
-import { Badge } from '../components/ui/badge';
-import { useToast } from '../hooks/use-toast';
 
 interface Setting {
   id: string;
@@ -45,7 +18,7 @@ interface AuditLog {
 
 const SystemSettings: React.FC = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
-  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('general');
   const queryClient = useQueryClient();
 
   const { data: systemSettings = [], isLoading: settingsLoading } = useQuery({
@@ -87,17 +60,9 @@ const SystemSettings: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });
-      toast({
-        title: "Success",
-        description: "Settings updated successfully",
-      });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update settings",
-        variant: "destructive",
-      });
+      console.error('Failed to update settings');
     }
   });
 
@@ -111,293 +76,507 @@ const SystemSettings: React.FC = () => {
 
   const getActionIcon = (action: string) => {
     switch (action.toLowerCase()) {
-      case 'create': return <span className="text-emerald-600">+</span>;
-      case 'update': return <span className="text-blue-600">✎</span>;
-      case 'delete': return <span className="text-red-600">×</span>;
-      case 'view': return <Eye className="w-4 h-4 text-gray-600" />;
-      default: return <span className="text-gray-600">•</span>;
+      case 'create': return <i className="fas fa-plus text-success"></i>;
+      case 'update': return <i className="fas fa-edit text-primary"></i>;
+      case 'delete': return <i className="fas fa-trash text-danger"></i>;
+      case 'view': return <i className="fas fa-eye text-muted"></i>;
+      default: return <i className="fas fa-circle text-muted"></i>;
     }
   };
 
-  const getActionColor = (action: string) => {
-    switch (action.toLowerCase()) {
-      case 'create': return 'bg-emerald-100 text-emerald-800';
-      case 'update': return 'bg-blue-100 text-blue-800';
-      case 'delete': return 'bg-red-100 text-red-800';
-      case 'view': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const getActionBadge = (action: string) => {
+    const badgeClasses = {
+      create: 'bg-success',
+      update: 'bg-primary',
+      delete: 'bg-danger',
+      view: 'bg-info'
+    };
+    return <span className={`badge ${badgeClasses[action.toLowerCase() as keyof typeof badgeClasses] || 'bg-secondary'}`}>
+      {action}
+    </span>;
   };
 
-  if (settingsLoading) {
+  if (settingsLoading && logsLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-96 bg-gray-200 rounded animate-pulse"></div>
+      <div className="container-fluid">
+        <div className="row g-4">
+          <div className="col-12">
+            <div className="placeholder-glow">
+              <span className="placeholder col-4 mb-3"></span>
+              <span className="placeholder w-100" style={{height: '400px'}}></span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container-fluid animate-fade-in-up">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
-        <p className="text-gray-600">Configure your application settings and monitor system activity</p>
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-start">
+            <div>
+              <h1 className="h3 fw-bold text-dark mb-2">
+                <i className="fas fa-cogs me-2 text-primary"></i>
+                System Settings
+              </h1>
+              <p className="text-muted mb-0">Configure system preferences and monitor activity</p>
+            </div>
+            <button 
+              className="btn btn-shopify d-flex align-items-center"
+              onClick={handleSaveSettings}
+              disabled={updateSettingsMutation.isPending}
+            >
+              {updateSettingsMutation.isPending ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2"></span>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-save me-2"></i>
+                  Save Settings
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="w-4 h-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Audit Logs
-          </TabsTrigger>
-        </TabsList>
+      {/* Navigation Tabs */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <ul className="nav nav-tabs nav-fill" id="settingsTab" role="tablist">
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'general' ? 'active' : ''}`}
+                onClick={() => setActiveTab('general')}
+                type="button"
+              >
+                <i className="fas fa-cog me-2"></i>
+                General Settings
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'notifications' ? 'active' : ''}`}
+                onClick={() => setActiveTab('notifications')}
+                type="button"
+              >
+                <i className="fas fa-bell me-2"></i>
+                Notifications
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'security' ? 'active' : ''}`}
+                onClick={() => setActiveTab('security')}
+                type="button"
+              >
+                <i className="fas fa-shield-alt me-2"></i>
+                Security
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'audit' ? 'active' : ''}`}
+                onClick={() => setActiveTab('audit')}
+                type="button"
+              >
+                <i className="fas fa-history me-2"></i>
+                Audit Logs ({auditLogs.length})
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
 
-        <TabsContent value="general">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="company_name">Company Name</Label>
-                  <Input
-                    id="company_name"
-                    value={settings.company_name || ''}
-                    onChange={(e) => handleSettingChange('company_name', e.target.value)}
-                    placeholder="Your Company Name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="low_stock_threshold">Low Stock Threshold</Label>
-                  <Input
-                    id="low_stock_threshold"
-                    type="number"
-                    value={settings.low_stock_threshold || '10'}
-                    onChange={(e) => handleSettingChange('low_stock_threshold', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="default_currency">Default Currency</Label>
-                  <Input
-                    id="default_currency"
-                    value={settings.default_currency || 'USD'}
-                    onChange={(e) => handleSettingChange('default_currency', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Input
-                    id="timezone"
-                    value={settings.timezone || 'UTC'}
-                    onChange={(e) => handleSettingChange('timezone', e.target.value)}
-                  />
+      {/* Tab Content */}
+      <div className="tab-content">
+        {/* General Settings Tab */}
+        {activeTab === 'general' && (
+          <div className="row g-4 animate-slide-in">
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-store me-2 text-primary"></i>
+                  Store Configuration
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <label htmlFor="storeName" className="form-label fw-semibold">Store Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="storeName"
+                      value={settings.storeName || ''}
+                      onChange={(e) => handleSettingChange('storeName', e.target.value)}
+                      placeholder="Enter your store name"
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label htmlFor="storeDescription" className="form-label fw-semibold">Store Description</label>
+                    <textarea
+                      className="form-control"
+                      id="storeDescription"
+                      rows={3}
+                      value={settings.storeDescription || ''}
+                      onChange={(e) => handleSettingChange('storeDescription', e.target.value)}
+                      placeholder="Describe your store"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label htmlFor="currency" className="form-label fw-semibold">Default Currency</label>
+                    <select
+                      className="form-select"
+                      id="currency"
+                      value={settings.currency || 'USD'}
+                      onChange={(e) => handleSettingChange('currency', e.target.value)}
+                    >
+                      <option value="USD">USD - US Dollar</option>
+                      <option value="EUR">EUR - Euro</option>
+                      <option value="GBP">GBP - British Pound</option>
+                      <option value="CAD">CAD - Canadian Dollar</option>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label htmlFor="timezone" className="form-label fw-semibold">Timezone</label>
+                    <select
+                      className="form-select"
+                      id="timezone"
+                      value={settings.timezone || 'UTC'}
+                      onChange={(e) => handleSettingChange('timezone', e.target.value)}
+                    >
+                      <option value="UTC">UTC</option>
+                      <option value="America/New_York">Eastern Time</option>
+                      <option value="America/Chicago">Central Time</option>
+                      <option value="America/Denver">Mountain Time</option>
+                      <option value="America/Los_Angeles">Pacific Time</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleSaveSettings}
-                  disabled={updateSettingsMutation.isPending}
-                  className="bg-coral-600 hover:bg-coral-700"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
+            </div>
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-paint-brush me-2 text-success"></i>
+                  Display Preferences
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="darkMode"
+                        checked={settings.darkMode === 'true'}
+                        onChange={(e) => handleSettingChange('darkMode', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="darkMode">
+                        <i className="fas fa-moon me-2"></i>
+                        Dark Mode
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="compactView"
+                        checked={settings.compactView === 'true'}
+                        onChange={(e) => handleSettingChange('compactView', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="compactView">
+                        <i className="fas fa-compress-alt me-2"></i>
+                        Compact View
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <label htmlFor="itemsPerPage" className="form-label fw-semibold">Items Per Page</label>
+                    <select
+                      className="form-select"
+                      id="itemsPerPage"
+                      value={settings.itemsPerPage || '25'}
+                      onChange={(e) => handleSettingChange('itemsPerPage', e.target.value)}
+                    >
+                      <option value="10">10</option>
+                      <option value="25">25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
+        )}
 
-        <TabsContent value="notifications">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="email_notifications">Email Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive email alerts for important events</p>
+        {/* Notifications Tab */}
+        {activeTab === 'notifications' && (
+          <div className="row g-4 animate-slide-in">
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-envelope me-2 text-primary"></i>
+                  Email Notifications
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="orderEmails"
+                        checked={settings.orderEmails === 'true'}
+                        onChange={(e) => handleSettingChange('orderEmails', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="orderEmails">
+                        Order Confirmations
+                      </label>
+                    </div>
                   </div>
-                  <Switch
-                    id="email_notifications"
-                    checked={settings.email_notifications === 'true'}
-                    onCheckedChange={(checked) => handleSettingChange('email_notifications', checked.toString())}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="low_stock_alerts">Low Stock Alerts</Label>
-                    <p className="text-sm text-gray-500">Get notified when products are running low</p>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="stockAlerts"
+                        checked={settings.stockAlerts === 'true'}
+                        onChange={(e) => handleSettingChange('stockAlerts', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="stockAlerts">
+                        Low Stock Alerts
+                      </label>
+                    </div>
                   </div>
-                  <Switch
-                    id="low_stock_alerts"
-                    checked={settings.low_stock_alerts === 'true'}
-                    onCheckedChange={(checked) => handleSettingChange('low_stock_alerts', checked.toString())}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="order_notifications">Order Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive alerts for new orders and updates</p>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="marketingEmails"
+                        checked={settings.marketingEmails === 'true'}
+                        onChange={(e) => handleSettingChange('marketingEmails', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="marketingEmails">
+                        Marketing Updates
+                      </label>
+                    </div>
                   </div>
-                  <Switch
-                    id="order_notifications"
-                    checked={settings.order_notifications === 'true'}
-                    onCheckedChange={(checked) => handleSettingChange('order_notifications', checked.toString())}
-                  />
                 </div>
               </div>
-              
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleSaveSettings}
-                  disabled={updateSettingsMutation.isPending}
-                  className="bg-coral-600 hover:bg-coral-700"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
+            </div>
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-mobile-alt me-2 text-success"></i>
+                  Push Notifications
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="pushOrders"
+                        checked={settings.pushOrders === 'true'}
+                        onChange={(e) => handleSettingChange('pushOrders', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="pushOrders">
+                        New Orders
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="pushReturns"
+                        checked={settings.pushReturns === 'true'}
+                        onChange={(e) => handleSettingChange('pushReturns', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="pushReturns">
+                        Return Requests
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="pushSystemAlerts"
+                        checked={settings.pushSystemAlerts === 'true'}
+                        onChange={(e) => handleSettingChange('pushSystemAlerts', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="pushSystemAlerts">
+                        System Alerts
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
+        )}
 
-        <TabsContent value="security">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="two_factor_auth">Two-Factor Authentication</Label>
-                    <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+        {/* Security Tab */}
+        {activeTab === 'security' && (
+          <div className="row g-4 animate-slide-in">
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-lock me-2 text-warning"></i>
+                  Authentication Settings
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="twoFactorAuth"
+                        checked={settings.twoFactorAuth === 'true'}
+                        onChange={(e) => handleSettingChange('twoFactorAuth', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="twoFactorAuth">
+                        Require Two-Factor Authentication
+                      </label>
+                    </div>
                   </div>
-                  <Switch
-                    id="two_factor_auth"
-                    checked={settings.two_factor_auth === 'true'}
-                    onCheckedChange={(checked) => handleSettingChange('two_factor_auth', checked.toString())}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="session_timeout">Session Timeout (minutes)</Label>
-                  <Input
-                    id="session_timeout"
-                    type="number"
-                    value={settings.session_timeout || '30'}
-                    onChange={(e) => handleSettingChange('session_timeout', e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="password_complexity">Enforce Password Complexity</Label>
-                    <p className="text-sm text-gray-500">Require strong passwords for all users</p>
+                  <div className="col-12">
+                    <label htmlFor="sessionTimeout" className="form-label fw-semibold">Session Timeout (minutes)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      id="sessionTimeout"
+                      min="15"
+                      max="480"
+                      value={settings.sessionTimeout || '60'}
+                      onChange={(e) => handleSettingChange('sessionTimeout', e.target.value)}
+                    />
                   </div>
-                  <Switch
-                    id="password_complexity"
-                    checked={settings.password_complexity === 'true'}
-                    onCheckedChange={(checked) => handleSettingChange('password_complexity', checked.toString())}
-                  />
+                  <div className="col-12">
+                    <label htmlFor="passwordExpiry" className="form-label fw-semibold">Password Expiry (days)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      id="passwordExpiry"
+                      min="30"
+                      max="365"
+                      value={settings.passwordExpiry || '90'}
+                      onChange={(e) => handleSettingChange('passwordExpiry', e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleSaveSettings}
-                  disabled={updateSettingsMutation.isPending}
-                  className="bg-coral-600 hover:bg-coral-700"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
+            </div>
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-shield-alt me-2 text-danger"></i>
+                  Security Policies
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="ipWhitelist"
+                        checked={settings.ipWhitelist === 'true'}
+                        onChange={(e) => handleSettingChange('ipWhitelist', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="ipWhitelist">
+                        IP Address Whitelist
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="auditLogging"
+                        checked={settings.auditLogging === 'true'}
+                        onChange={(e) => handleSettingChange('auditLogging', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="auditLogging">
+                        Enhanced Audit Logging
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <label htmlFor="maxLoginAttempts" className="form-label fw-semibold">Max Login Attempts</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      id="maxLoginAttempts"
+                      min="3"
+                      max="10"
+                      value={settings.maxLoginAttempts || '5'}
+                      onChange={(e) => handleSettingChange('maxLoginAttempts', e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
+        )}
 
-        <TabsContent value="audit">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle>Audit Logs</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {logsLoading ? (
-                <div className="p-6">
-                  <div className="h-32 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead className="font-medium">Action</TableHead>
-                      <TableHead className="font-medium">User</TableHead>
-                      <TableHead className="font-medium">Timestamp</TableHead>
-                      <TableHead className="font-medium">Details</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {auditLogs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                          No audit logs available
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      auditLogs.map((log: AuditLog) => (
-                        <TableRow key={log.id} className="hover:bg-gray-50">
-                          <TableCell>
-                            <Badge className={getActionColor(log.action)}>
+        {/* Audit Logs Tab */}
+        {activeTab === 'audit' && (
+          <div className="row animate-slide-in">
+            <div className="col-12">
+              <div className="modern-card">
+                <div className="table-responsive">
+                  <table className="table modern-table table-hover mb-0">
+                    <thead>
+                      <tr>
+                        <th>Action</th>
+                        <th>User</th>
+                        <th>Timestamp</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs.map((log: AuditLog) => (
+                        <tr key={log.id}>
+                          <td>
+                            <div className="d-flex align-items-center">
                               {getActionIcon(log.action)}
-                              <span className="ml-1">{log.action}</span>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-gray-400" />
+                              <span className="ms-2 fw-semibold">{log.action}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center">
+                              <div className="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                   style={{width: '32px', height: '32px'}}>
+                                <i className="fas fa-user text-primary"></i>
+                              </div>
                               {log.user}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-gray-400" />
-                              {new Date(log.timestamp).toLocaleString()}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-600">
-                            {log.details}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                          </td>
+                          <td>{new Date(log.timestamp).toLocaleString()}</td>
+                          <td>{log.details}</td>
+                          <td>{getActionBadge(log.action)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

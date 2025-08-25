@@ -1,31 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '../hooks/useTranslation';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Switch } from '../components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Badge } from '../components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { useToast } from '../hooks/use-toast';
 import { apiRequest } from '../lib/queryClient';
-import { 
-  Settings, 
-  CreditCard, 
-  Mail, 
-  MessageSquare, 
-  Calculator,
-  Check,
-  X,
-  ExternalLink,
-  TestTube,
-  Save,
-  AlertTriangle,
-  Shield,
-  Activity
-} from 'lucide-react';
 
 interface Integration {
   id: string;
@@ -50,12 +26,12 @@ interface TestResult {
 
 const Integrations: React.FC = () => {
   const { t } = useTranslation();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [configData, setConfigData] = useState<any>({});
   const [credentialsData, setCredentialsData] = useState<any>({});
+  const [activeTab, setActiveTab] = useState('all');
 
   // Fetch integrations
   const { data: integrations = [], isLoading } = useQuery({
@@ -68,12 +44,11 @@ const Integrations: React.FC = () => {
       apiRequest('PUT', `/api/integrations/${data.name}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/integrations'] });
-      toast({ title: 'Success', description: 'Integration updated successfully' });
-      setIsConfigDialogOpen(false);
+      setShowConfigModal(false);
       setSelectedIntegration(null);
     },
     onError: () => {
-      toast({ title: 'Error', description: 'Failed to update integration', variant: 'destructive' });
+      console.error('Failed to update integration');
     },
   });
 
@@ -84,35 +59,42 @@ const Integrations: React.FC = () => {
       return response as TestResult;
     },
     onSuccess: (result: TestResult) => {
-      toast({ 
-        title: result.success ? 'Success' : 'Error', 
-        description: result.message,
-        variant: result.success ? 'default' : 'destructive'
-      });
+      console.log(result.success ? 'Test successful' : 'Test failed:', result.message);
     },
     onError: () => {
-      toast({ title: 'Error', description: 'Failed to test integration', variant: 'destructive' });
+      console.error('Failed to test integration');
     },
   });
 
   const getIntegrationIcon = (type: string) => {
     switch (type) {
-      case 'payment': return <CreditCard className="w-6 h-6" />;
-      case 'email': return <Mail className="w-6 h-6" />;
-      case 'sms': return <MessageSquare className="w-6 h-6" />;
-      case 'accounting': return <Calculator className="w-6 h-6" />;
-      default: return <Settings className="w-6 h-6" />;
+      case 'payment': return 'fas fa-credit-card';
+      case 'email': return 'fas fa-envelope';
+      case 'sms': return 'fas fa-sms';
+      case 'accounting': return 'fas fa-calculator';
+      default: return 'fas fa-cog';
     }
   };
 
-  const getIntegrationTypeColor = (type: string) => {
+  const getIntegrationColor = (type: string) => {
     switch (type) {
-      case 'payment': return 'bg-green-100 text-green-800';
-      case 'email': return 'bg-blue-100 text-blue-800';
-      case 'sms': return 'bg-purple-100 text-purple-800';
-      case 'accounting': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'payment': return 'success';
+      case 'email': return 'primary';
+      case 'sms': return 'purple';
+      case 'accounting': return 'warning';
+      default: return 'secondary';
     }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badgeClasses = {
+      idle: 'bg-secondary',
+      syncing: 'bg-primary',
+      error: 'bg-danger'
+    };
+    return <span className={`badge ${badgeClasses[status as keyof typeof badgeClasses] || 'bg-secondary'}`}>
+      {status}
+    </span>;
   };
 
   const handleToggleIntegration = (integration: Integration) => {
@@ -124,326 +106,511 @@ const Integrations: React.FC = () => {
 
   const handleConfigureIntegration = (integration: Integration) => {
     setSelectedIntegration(integration);
-    const parsedConfig = integration.config ? JSON.parse(integration.config) : {};
-    setConfigData(parsedConfig);
-    setCredentialsData({});
-    setIsConfigDialogOpen(true);
+    setConfigData(integration.config ? JSON.parse(integration.config) : {});
+    setCredentialsData(integration.credentials ? JSON.parse(integration.credentials) : {});
+    setShowConfigModal(true);
   };
 
   const handleSaveConfiguration = () => {
-    if (!selectedIntegration) return;
-
-    const updateData: any = {
-      name: selectedIntegration.id,
-      config: configData
-    };
-
-    // Only include credentials if they've been changed
-    if (Object.keys(credentialsData).length > 0) {
-      updateData.credentials = credentialsData;
-    }
-
-    updateIntegrationMutation.mutate(updateData);
-  };
-
-  const handleTestIntegration = (integrationName: string) => {
-    testIntegrationMutation.mutate(integrationName);
-  };
-
-  const formatLastSync = (lastSyncAt: string | null) => {
-    if (!lastSyncAt) return 'Never';
-    return new Date(lastSyncAt).toLocaleString();
-  };
-
-  const renderStripeConfig = () => (
-    <div className="space-y-4">
-      <div>
-        <Label>Publishable Key</Label>
-        <Input
-          type="text"
-          placeholder="pk_test_..."
-          value={configData.publishableKey || ''}
-          onChange={(e) => setConfigData({...configData, publishableKey: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>Secret Key</Label>
-        <Input
-          type="password"
-          placeholder="sk_test_..."
-          value={credentialsData.secretKey || ''}
-          onChange={(e) => setCredentialsData({...credentialsData, secretKey: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>Webhook Secret</Label>
-        <Input
-          type="password"
-          placeholder="whsec_..."
-          value={configData.webhookSecret || ''}
-          onChange={(e) => setConfigData({...configData, webhookSecret: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>Currency</Label>
-        <Input
-          type="text"
-          placeholder="usd"
-          value={configData.currency || 'usd'}
-          onChange={(e) => setConfigData({...configData, currency: e.target.value})}
-        />
-      </div>
-    </div>
-  );
-
-  const renderSendGridConfig = () => (
-    <div className="space-y-4">
-      <div>
-        <Label>API Key</Label>
-        <Input
-          type="password"
-          placeholder="SG...."
-          value={credentialsData.apiKey || ''}
-          onChange={(e) => setCredentialsData({...credentialsData, apiKey: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>From Email</Label>
-        <Input
-          type="email"
-          placeholder="noreply@yourstore.com"
-          value={configData.fromEmail || ''}
-          onChange={(e) => setConfigData({...configData, fromEmail: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>From Name</Label>
-        <Input
-          type="text"
-          placeholder="Your Store"
-          value={configData.fromName || ''}
-          onChange={(e) => setConfigData({...configData, fromName: e.target.value})}
-        />
-      </div>
-    </div>
-  );
-
-  const renderTwilioConfig = () => (
-    <div className="space-y-4">
-      <div>
-        <Label>Account SID</Label>
-        <Input
-          type="text"
-          placeholder="AC..."
-          value={credentialsData.accountSid || ''}
-          onChange={(e) => setCredentialsData({...credentialsData, accountSid: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>Auth Token</Label>
-        <Input
-          type="password"
-          placeholder="Auth Token"
-          value={credentialsData.authToken || ''}
-          onChange={(e) => setCredentialsData({...credentialsData, authToken: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>From Number</Label>
-        <Input
-          type="text"
-          placeholder="+1234567890"
-          value={configData.fromNumber || ''}
-          onChange={(e) => setConfigData({...configData, fromNumber: e.target.value})}
-        />
-      </div>
-    </div>
-  );
-
-  const renderQuickBooksConfig = () => (
-    <div className="space-y-4">
-      <div>
-        <Label>Company ID</Label>
-        <Input
-          type="text"
-          placeholder="Company ID"
-          value={configData.companyId || ''}
-          onChange={(e) => setConfigData({...configData, companyId: e.target.value})}
-        />
-      </div>
-      <div>
-        <Label>Base URL</Label>
-        <Input
-          type="text"
-          placeholder="https://sandbox-quickbooks.api.intuit.com"
-          value={configData.baseUrl || 'https://sandbox-quickbooks.api.intuit.com'}
-          onChange={(e) => setConfigData({...configData, baseUrl: e.target.value})}
-        />
-      </div>
-      <div className="flex items-center justify-between">
-        <Label>Auto Create Customers</Label>
-        <Switch
-          checked={configData.autoCreateCustomers || false}
-          onCheckedChange={(checked) => setConfigData({...configData, autoCreateCustomers: checked})}
-        />
-      </div>
-    </div>
-  );
-
-  const renderConfigurationForm = () => {
-    if (!selectedIntegration) return null;
-
-    switch (selectedIntegration.id) {
-      case 'stripe':
-        return renderStripeConfig();
-      case 'sendgrid':
-        return renderSendGridConfig();
-      case 'twilio':
-        return renderTwilioConfig();
-      case 'quickbooks':
-        return renderQuickBooksConfig();
-      default:
-        return <div>No configuration available for this integration.</div>;
+    if (selectedIntegration) {
+      updateIntegrationMutation.mutate({
+        name: selectedIntegration.id,
+        config: configData,
+        credentials: credentialsData
+      });
     }
   };
+
+  const filterIntegrations = (integrations: Integration[]) => {
+    if (activeTab === 'all') return integrations;
+    return integrations.filter(integration => integration.type === activeTab);
+  };
+
+  const getTabCount = (type: string) => {
+    if (type === 'all') return integrations.length;
+    return integrations.filter(integration => integration.type === type).length;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container-fluid">
+        <div className="row g-4">
+          <div className="col-12">
+            <div className="placeholder-glow">
+              <span className="placeholder col-4 mb-3"></span>
+              <div className="row g-4">
+                {[1, 2, 3, 4, 5, 6].map(index => (
+                  <div key={index} className="col-lg-4 col-md-6">
+                    <div className="placeholder" style={{height: '200px', borderRadius: '12px'}}></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6" data-testid="integrations-page">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Settings className="w-8 h-8" />
-            {t('integrations.title')}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Connect and configure third-party services for enhanced functionality
-          </p>
+    <div className="container-fluid animate-fade-in-up">
+      {/* Header */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-start">
+            <div>
+              <h1 className="h3 fw-bold text-dark mb-2">
+                <i className="fas fa-plug me-2 text-primary"></i>
+                Integrations
+              </h1>
+              <p className="text-muted mb-0">Connect and manage your third-party services</p>
+            </div>
+            <div className="d-flex gap-2">
+              <button className="btn btn-outline-secondary">
+                <i className="fas fa-sync-alt me-2"></i>
+                Sync All
+              </button>
+              <button className="btn btn-shopify">
+                <i className="fas fa-plus me-2"></i>
+                Add Integration
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <div className="col-span-full text-center py-8">Loading integrations...</div>
-        ) : (
-          (integrations as Integration[]).map((integration: Integration) => (
-            <Card key={integration.id} className="relative">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${getIntegrationTypeColor(integration.type)}`}>
-                      {getIntegrationIcon(integration.type)}
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">{integration.name}</CardTitle>
-                      <Badge variant="outline" className="text-xs mt-1">
-                        {integration.type}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={integration.isEnabled}
-                    onCheckedChange={() => handleToggleIntegration(integration)}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Status</span>
-                  <div className="flex items-center gap-2">
-                    {integration.isEnabled ? (
-                      <>
-                        <Check className="w-4 h-4 text-green-500" />
-                        <span className="text-green-500">{t('integrations.enabled')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <X className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-500">{t('integrations.disabled')}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Last Sync</span>
-                  <span className="text-xs">{formatLastSync(integration.lastSyncAt)}</span>
-                </div>
-
-                {integration.syncStatus === 'error' && integration.errorLog && (
-                  <div className="flex items-center gap-2 p-2 bg-red-50 text-red-700 rounded-lg text-sm">
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>Sync Error</span>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleConfigureIntegration(integration)}
-                    className="flex-1"
-                    data-testid={`configure-${integration.id}`}
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    {t('integrations.configure')}
-                  </Button>
-                  
-                  {integration.isEnabled && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleTestIntegration(integration.id)}
-                      disabled={testIntegrationMutation.isPending}
-                      data-testid={`test-${integration.id}`}
-                    >
-                      <TestTube className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-
-                <div className="text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <ExternalLink className="w-3 h-3" />
-                    <span>Webhook: {integration.webhookUrl}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+      {/* Filter Tabs */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <ul className="nav nav-pills nav-fill" id="integrationTab" role="tablist">
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveTab('all')}
+                type="button"
+              >
+                <i className="fas fa-th-large me-2"></i>
+                All ({getTabCount('all')})
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'payment' ? 'active' : ''}`}
+                onClick={() => setActiveTab('payment')}
+                type="button"
+              >
+                <i className="fas fa-credit-card me-2"></i>
+                Payment ({getTabCount('payment')})
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'email' ? 'active' : ''}`}
+                onClick={() => setActiveTab('email')}
+                type="button"
+              >
+                <i className="fas fa-envelope me-2"></i>
+                Email ({getTabCount('email')})
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'sms' ? 'active' : ''}`}
+                onClick={() => setActiveTab('sms')}
+                type="button"
+              >
+                <i className="fas fa-sms me-2"></i>
+                SMS ({getTabCount('sms')})
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'accounting' ? 'active' : ''}`}
+                onClick={() => setActiveTab('accounting')}
+                type="button"
+              >
+                <i className="fas fa-calculator me-2"></i>
+                Accounting ({getTabCount('accounting')})
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
 
-      {/* Configuration Dialog */}
-      <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedIntegration && getIntegrationIcon(selectedIntegration.type)}
-              Configure {selectedIntegration?.name}
-            </DialogTitle>
-            <DialogDescription>
-              Configure the settings and credentials for this integration.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {renderConfigurationForm()}
-            
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSaveConfiguration}
-                disabled={updateIntegrationMutation.isPending}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save Configuration
-              </Button>
+      {/* Integration Cards Grid */}
+      <div className="row g-4">
+        {filterIntegrations(integrations).map((integration: Integration) => (
+          <div key={integration.id} className="col-xl-4 col-lg-6">
+            <div className="integration-card modern-card p-4 h-100">
+              <div className="d-flex justify-content-between align-items-start mb-3">
+                <div className="d-flex align-items-center">
+                  <div className={`integration-icon bg-${getIntegrationColor(integration.type)}-subtle rounded-circle d-flex align-items-center justify-content-center me-3`} 
+                       style={{width: '48px', height: '48px'}}>
+                    <i className={`${getIntegrationIcon(integration.type)} text-${getIntegrationColor(integration.type)} fs-5`}></i>
+                  </div>
+                  <div>
+                    <h5 className="fw-bold text-dark mb-1">{integration.name}</h5>
+                    <span className={`badge bg-${getIntegrationColor(integration.type)}-subtle text-${getIntegrationColor(integration.type)}`}>
+                      {integration.type}
+                    </span>
+                  </div>
+                </div>
+                <div className="form-check form-switch">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={integration.isEnabled}
+                    onChange={() => handleToggleIntegration(integration)}
+                    id={`switch-${integration.id}`}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="text-muted small">Status:</span>
+                  {getStatusBadge(integration.syncStatus)}
+                </div>
+                {integration.lastSyncAt && (
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span className="text-muted small">Last Sync:</span>
+                    <span className="small">{new Date(integration.lastSyncAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {integration.webhookUrl && (
+                  <div className="mb-2">
+                    <span className="text-muted small d-block">Webhook URL:</span>
+                    <code className="small bg-light p-1 rounded d-block text-truncate">
+                      {integration.webhookUrl}
+                    </code>
+                  </div>
+                )}
+              </div>
+
+              {integration.errorLog && (
+                <div className="alert alert-danger alert-sm mb-3" role="alert">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  <small>{integration.errorLog}</small>
+                </div>
+              )}
+
+              <div className="d-flex gap-2 mt-auto">
+                <button 
+                  className="btn btn-outline-primary btn-sm flex-fill"
+                  onClick={() => handleConfigureIntegration(integration)}
+                >
+                  <i className="fas fa-cog me-1"></i>
+                  Configure
+                </button>
+                <button 
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => testIntegrationMutation.mutate(integration.id)}
+                  disabled={testIntegrationMutation.isPending}
+                >
+                  {testIntegrationMutation.isPending ? (
+                    <span className="spinner-border spinner-border-sm"></span>
+                  ) : (
+                    <i className="fas fa-vial"></i>
+                  )}
+                </button>
+                <button className="btn btn-outline-info btn-sm">
+                  <i className="fas fa-external-link-alt"></i>
+                </button>
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filterIntegrations(integrations).length === 0 && (
+        <div className="row">
+          <div className="col-12">
+            <div className="text-center py-5">
+              <div className="mb-4">
+                <i className="fas fa-plug text-muted" style={{fontSize: '4rem'}}></i>
+              </div>
+              <h4 className="text-muted mb-3">No integrations found</h4>
+              <p className="text-muted mb-4">
+                {activeTab === 'all' 
+                  ? 'Start by adding your first integration to connect external services.'
+                  : `No ${activeTab} integrations configured yet.`
+                }
+              </p>
+              <button className="btn btn-shopify">
+                <i className="fas fa-plus me-2"></i>
+                Add Integration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Configuration Modal */}
+      {showConfigModal && selectedIntegration && (
+        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className={`${getIntegrationIcon(selectedIntegration.type)} me-2`}></i>
+                  Configure {selectedIntegration.name}
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowConfigModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {/* Configuration Tabs */}
+                <ul className="nav nav-tabs" id="configTabs" role="tablist">
+                  <li className="nav-item" role="presentation">
+                    <button 
+                      className="nav-link active" 
+                      id="config-tab" 
+                      data-bs-toggle="tab" 
+                      data-bs-target="#config-tab-pane" 
+                      type="button"
+                    >
+                      <i className="fas fa-cog me-2"></i>Configuration
+                    </button>
+                  </li>
+                  <li className="nav-item" role="presentation">
+                    <button 
+                      className="nav-link" 
+                      id="credentials-tab" 
+                      data-bs-toggle="tab" 
+                      data-bs-target="#credentials-tab-pane" 
+                      type="button"
+                    >
+                      <i className="fas fa-key me-2"></i>Credentials
+                    </button>
+                  </li>
+                  <li className="nav-item" role="presentation">
+                    <button 
+                      className="nav-link" 
+                      id="webhook-tab" 
+                      data-bs-toggle="tab" 
+                      data-bs-target="#webhook-tab-pane" 
+                      type="button"
+                    >
+                      <i className="fas fa-link me-2"></i>Webhook
+                    </button>
+                  </li>
+                </ul>
+
+                {/* Tab Content */}
+                <div className="tab-content pt-4" id="configTabsContent">
+                  {/* Configuration Tab */}
+                  <div className="tab-pane fade show active" id="config-tab-pane">
+                    <div className="row g-3">
+                      <div className="col-12">
+                        <label htmlFor="apiEndpoint" className="form-label fw-semibold">API Endpoint</label>
+                        <input
+                          type="url"
+                          className="form-control"
+                          id="apiEndpoint"
+                          value={configData.apiEndpoint || ''}
+                          onChange={(e) => setConfigData({...configData, apiEndpoint: e.target.value})}
+                          placeholder="https://api.example.com"
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label htmlFor="timeout" className="form-label fw-semibold">Timeout (seconds)</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          id="timeout"
+                          value={configData.timeout || '30'}
+                          onChange={(e) => setConfigData({...configData, timeout: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label htmlFor="retryAttempts" className="form-label fw-semibold">Retry Attempts</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          id="retryAttempts"
+                          value={configData.retryAttempts || '3'}
+                          onChange={(e) => setConfigData({...configData, retryAttempts: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-12">
+                        <div className="form-check form-switch">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="enableLogging"
+                            checked={configData.enableLogging || false}
+                            onChange={(e) => setConfigData({...configData, enableLogging: e.target.checked})}
+                          />
+                          <label className="form-check-label fw-semibold" htmlFor="enableLogging">
+                            Enable Debug Logging
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Credentials Tab */}
+                  <div className="tab-pane fade" id="credentials-tab-pane">
+                    <div className="row g-3">
+                      <div className="col-12">
+                        <label htmlFor="apiKey" className="form-label fw-semibold">API Key</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          id="apiKey"
+                          value={credentialsData.apiKey || ''}
+                          onChange={(e) => setCredentialsData({...credentialsData, apiKey: e.target.value})}
+                          placeholder="Enter your API key"
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label htmlFor="clientId" className="form-label fw-semibold">Client ID</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="clientId"
+                          value={credentialsData.clientId || ''}
+                          onChange={(e) => setCredentialsData({...credentialsData, clientId: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label htmlFor="clientSecret" className="form-label fw-semibold">Client Secret</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          id="clientSecret"
+                          value={credentialsData.clientSecret || ''}
+                          onChange={(e) => setCredentialsData({...credentialsData, clientSecret: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Webhook Tab */}
+                  <div className="tab-pane fade" id="webhook-tab-pane">
+                    <div className="row g-3">
+                      <div className="col-12">
+                        <label htmlFor="webhookUrl" className="form-label fw-semibold">Webhook URL</label>
+                        <div className="input-group">
+                          <input
+                            type="url"
+                            className="form-control"
+                            id="webhookUrl"
+                            value={selectedIntegration.webhookUrl}
+                            disabled
+                          />
+                          <button className="btn btn-outline-secondary" type="button">
+                            <i className="fas fa-copy"></i>
+                          </button>
+                        </div>
+                        <div className="form-text">
+                          Use this URL to receive webhook events from the integration
+                        </div>
+                      </div>
+                      <div className="col-12">
+                        <label htmlFor="webhookSecret" className="form-label fw-semibold">Webhook Secret</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          id="webhookSecret"
+                          value={credentialsData.webhookSecret || ''}
+                          onChange={(e) => setCredentialsData({...credentialsData, webhookSecret: e.target.value})}
+                          placeholder="Optional webhook signature verification"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowConfigModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-shopify"
+                  onClick={handleSaveConfiguration}
+                  disabled={updateIntegrationMutation.isPending}
+                >
+                  {updateIntegrationMutation.isPending ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-save me-2"></i>
+                      Save Configuration
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        .integration-card {
+          transition: all 0.3s ease;
+          border: 1px solid #e0e6ed;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .integration-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+          border-color: var(--shopify-green);
+        }
+
+        .integration-icon {
+          transition: all 0.3s ease;
+        }
+
+        .integration-card:hover .integration-icon {
+          transform: scale(1.1);
+        }
+
+        .nav-pills .nav-link {
+          border-radius: 25px;
+          transition: all 0.3s ease;
+        }
+
+        .nav-pills .nav-link:hover {
+          background-color: var(--shopify-green-light);
+          color: var(--shopify-green);
+        }
+
+        .nav-pills .nav-link.active {
+          background-color: var(--shopify-green);
+          color: white;
+        }
+
+        .animate-slide-in {
+          animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

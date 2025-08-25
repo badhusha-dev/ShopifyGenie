@@ -1,43 +1,6 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown,
-  RefreshCw,
-  Download,
-  Calendar,
-  Wallet,
-  CreditCard,
-  AlertCircle,
-  CheckCircle2,
-  Filter
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { KpiCard } from '../components/ui/kpi-card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '../components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../components/ui/dialog';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { useToast } from '../hooks/use-toast';
+import AnimatedKPICard from '@/components/ui/AnimatedKPICard';
 import { 
   LineChart, 
   Line, 
@@ -89,11 +52,11 @@ interface Payout {
 
 const Reports: React.FC = () => {
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
-  const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const [adjustmentAmount, setAdjustmentAmount] = useState('');
   const [adjustmentReason, setAdjustmentReason] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Sample data - replace with actual API calls
@@ -123,458 +86,554 @@ const Reports: React.FC = () => {
 
   const { data: refunds = [] } = useQuery({
     queryKey: ['refunds'],
-    queryFn: async (): Promise<Refund[]> => {
-      // Mock data - replace with actual API call
+    queryFn: async () => {
+      // Mock data for demo
       return [
         {
           id: '1',
           orderId: 'ORD-001',
-          amount: 99.99,
+          amount: 299.99,
           reason: 'Defective product',
-          status: 'pending',
+          status: 'pending' as const,
           requestDate: '2024-01-15',
           customerName: 'John Doe'
         },
         {
           id: '2',
           orderId: 'ORD-002',
-          amount: 149.99,
-          reason: 'Changed mind',
-          status: 'approved',
+          amount: 149.50,
+          reason: 'Wrong size',
+          status: 'approved' as const,
           requestDate: '2024-01-14',
           customerName: 'Jane Smith'
         }
-      ];
+      ] as Refund[];
     }
   });
 
   const { data: wallets = [] } = useQuery({
     queryKey: ['wallets'],
-    queryFn: async (): Promise<Wallet[]> => {
-      // Mock data - replace with actual API call
+    queryFn: async () => {
+      // Mock data for demo
       return [
         {
           id: '1',
-          customerName: 'John Doe',
-          balance: 25.50,
+          customerName: 'Alice Johnson',
+          balance: 156.75,
           currency: 'USD',
           lastActivity: '2024-01-15'
         },
         {
           id: '2',
-          customerName: 'Jane Smith',
-          balance: 150.00,
+          customerName: 'Bob Wilson',
+          balance: 89.30,
           currency: 'USD',
           lastActivity: '2024-01-14'
         }
-      ];
+      ] as Wallet[];
     }
   });
 
   const { data: payouts = [] } = useQuery({
     queryKey: ['payouts'],
-    queryFn: async (): Promise<Payout[]> => {
-      // Mock data - replace with actual API call
+    queryFn: async () => {
+      // Mock data for demo
       return [
         {
           id: '1',
-          amount: 5000,
-          vendor: 'TechSupply Co',
+          amount: 2500.00,
+          vendor: 'Tech Supplier Co.',
           dueDate: '2024-01-20',
-          status: 'pending',
-          description: 'Electronics inventory'
+          status: 'pending' as const,
+          description: 'Monthly inventory payment'
         },
         {
           id: '2',
-          amount: 2500,
-          vendor: 'Fashion Hub',
+          amount: 1200.00,
+          vendor: 'Logistics Partner',
           dueDate: '2024-01-18',
-          status: 'overdue',
-          description: 'Clothing inventory'
+          status: 'paid' as const,
+          description: 'Shipping services'
         }
-      ];
-    }
-  });
-
-  const updateRefundMutation = useMutation({
-    mutationFn: async ({ refundId, status }: { refundId: string; status: string }) => {
-      // Mock API call
-      return Promise.resolve();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['refunds'] });
-      toast({
-        title: "Success",
-        description: "Refund status updated successfully",
-      });
+      ] as Payout[];
     }
   });
 
   const adjustWalletMutation = useMutation({
     mutationFn: async ({ walletId, amount, reason }: { walletId: string; amount: number; reason: string }) => {
-      // Mock API call
-      return Promise.resolve();
+      const response = await fetch(`/api/wallets/${walletId}/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, reason })
+      });
+      if (!response.ok) throw new Error('Failed to adjust wallet');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
-      setIsWalletDialogOpen(false);
+      setShowWalletModal(false);
+      setSelectedWallet(null);
       setAdjustmentAmount('');
       setAdjustmentReason('');
-      toast({
-        title: "Success",
-        description: "Wallet balance adjusted successfully",
-      });
     }
   });
 
-  const markPayoutPaidMutation = useMutation({
-    mutationFn: async (payoutId: string) => {
-      // Mock API call
-      return Promise.resolve();
+  const handleWalletAdjustment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedWallet) {
+      adjustWalletMutation.mutate({
+        walletId: selectedWallet.id,
+        amount: parseFloat(adjustmentAmount),
+        reason: adjustmentReason
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badgeClasses = {
+      pending: 'bg-warning text-dark',
+      approved: 'bg-success',
+      rejected: 'bg-danger',
+      paid: 'bg-success',
+      overdue: 'bg-danger'
+    };
+    return <span className={`badge ${badgeClasses[status as keyof typeof badgeClasses] || 'bg-secondary'}`}>
+      {status}
+    </span>;
+  };
+
+  const kpiData = [
+    {
+      title: 'Total Revenue',
+      value: `$${financeMetrics.totalRevenue.toLocaleString()}`,
+      change: `+${financeMetrics.revenueGrowth}%`,
+      changeType: 'positive' as const,
+      icon: 'fas fa-dollar-sign',
+      gradient: 'shopify' as const
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payouts'] });
-      toast({
-        title: "Success",
-        description: "Payout marked as paid",
-      });
+    {
+      title: 'Cost of Goods Sold',
+      value: `$${financeMetrics.totalCOGS.toLocaleString()}`,
+      change: '+8.2%',
+      changeType: 'neutral' as const,
+      icon: 'fas fa-shopping-cart',
+      gradient: 'blue' as const
+    },
+    {
+      title: 'Gross Margin',
+      value: `${financeMetrics.grossMargin}%`,
+      change: `${financeMetrics.marginGrowth > 0 ? '+' : ''}${financeMetrics.marginGrowth}%`,
+      changeType: financeMetrics.marginGrowth > 0 ? 'positive' : 'negative' as const,
+      icon: 'fas fa-chart-line',
+      gradient: 'purple' as const
+    },
+    {
+      title: 'Refund Rate',
+      value: `${financeMetrics.refundRate}%`,
+      change: '-0.3%',
+      changeType: 'positive' as const,
+      icon: 'fas fa-undo-alt',
+      gradient: 'coral' as const
     }
-  });
-
-  const handleWalletAdjustment = () => {
-    if (!selectedWallet || !adjustmentAmount) return;
-    
-    adjustWalletMutation.mutate({
-      walletId: selectedWallet.id,
-      amount: parseFloat(adjustmentAmount),
-      reason: adjustmentReason
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': case 'paid': return 'bg-emerald-100 text-emerald-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved': case 'paid': return <CheckCircle2 className="w-4 h-4" />;
-      case 'rejected': case 'overdue': return <AlertCircle className="w-4 h-4" />;
-      default: return <RefreshCw className="w-4 h-4" />;
-    }
-  };
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="container-fluid animate-fade-in-up">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Finance Dashboard</h1>
-          <p className="text-gray-600">Monitor your financial performance and manage transactions</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-start">
+            <div>
+              <h1 className="h3 fw-bold text-dark mb-2">
+                <i className="fas fa-chart-line me-2 text-success"></i>
+                Finance Dashboard
+              </h1>
+              <p className="text-muted mb-0">Monitor your business financial performance</p>
+            </div>
+            <div className="d-flex gap-2">
+              <button className="btn btn-outline-secondary">
+                <i className="fas fa-download me-2"></i>
+                Export Report
+              </button>
+              <button className="btn btn-shopify">
+                <i className="fas fa-sync-alt me-2"></i>
+                Refresh Data
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard
-          title="Total Revenue"
-          value={`$${financeMetrics.totalRevenue.toLocaleString()}`}
-          change={`+${financeMetrics.revenueGrowth}%`}
-          changeType="positive"
-          icon={DollarSign}
-          gradient="coral"
-        />
-        <KpiCard
-          title="Cost of Goods Sold"
-          value={`$${financeMetrics.totalCOGS.toLocaleString()}`}
-          icon={TrendingDown}
-          gradient="blue"
-        />
-        <KpiCard
-          title="Gross Margin"
-          value={`${financeMetrics.grossMargin}%`}
-          change={`${financeMetrics.marginGrowth}%`}
-          changeType="negative"
-          icon={TrendingUp}
-          gradient="emerald"
-        />
-        <KpiCard
-          title="Refund Rate"
-          value={`${financeMetrics.refundRate}%`}
-          icon={RefreshCw}
-          gradient="purple"
-        />
+      <div className="row g-4 mb-4">
+        {kpiData.map((kpi, index) => (
+          <div key={index} className="col-xl-3 col-lg-6">
+            <AnimatedKPICard {...kpi} />
+          </div>
+        ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle>Revenue vs COGS</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueVsCOGSData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="revenue" stroke="#FF6B6B" strokeWidth={2} />
-                <Line type="monotone" dataKey="cogs" stroke="#3498DB" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle>Category Margins</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryMarginData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}%`}
-                >
-                  {categoryMarginData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* Navigation Tabs */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <ul className="nav nav-tabs nav-fill" id="financeTab" role="tablist">
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+                type="button"
+              >
+                <i className="fas fa-chart-bar me-2"></i>
+                Financial Overview
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'refunds' ? 'active' : ''}`}
+                onClick={() => setActiveTab('refunds')}
+                type="button"
+              >
+                <i className="fas fa-undo me-2"></i>
+                Refunds ({refunds.length})
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'wallets' ? 'active' : ''}`}
+                onClick={() => setActiveTab('wallets')}
+                type="button"
+              >
+                <i className="fas fa-wallet me-2"></i>
+                Wallets ({wallets.length})
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'payouts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('payouts')}
+                type="button"
+              >
+                <i className="fas fa-money-check me-2"></i>
+                Payouts ({payouts.length})
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
 
-      {/* Finance Tables */}
-      <Tabs defaultValue="refunds" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="refunds">Refunds</TabsTrigger>
-          <TabsTrigger value="wallets">Customer Wallets</TabsTrigger>
-          <TabsTrigger value="payouts">Vendor Payouts</TabsTrigger>
-        </TabsList>
+      {/* Tab Content */}
+      <div className="tab-content">
+        {/* Financial Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="row g-4">
+            {/* Revenue vs COGS Chart */}
+            <div className="col-lg-8">
+              <div className="modern-card p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="fw-bold text-dark mb-0">
+                    <i className="fas fa-chart-area me-2 text-primary"></i>
+                    Revenue vs Cost of Goods Sold
+                  </h5>
+                  <span className="badge bg-info-subtle text-info px-3 py-2">
+                    Last 5 Months
+                  </span>
+                </div>
+                <div style={{height: '350px'}}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={revenueVsCOGSData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="month" stroke="#666" fontSize={12} />
+                      <YAxis stroke="#666" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
+                        }} 
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke="var(--shopify-green)" 
+                        strokeWidth={3}
+                        name="Revenue"
+                        dot={{ fill: 'var(--shopify-green)', strokeWidth: 2, r: 5 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="cogs" 
+                        stroke="var(--coral-accent)" 
+                        strokeWidth={3}
+                        name="COGS"
+                        dot={{ fill: 'var(--coral-accent)', strokeWidth: 2, r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
 
-        <TabsContent value="refunds">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="w-5 h-5" />
-                Refund Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {refunds.map((refund) => (
-                    <TableRow key={refund.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">{refund.orderId}</TableCell>
-                      <TableCell>{refund.customerName}</TableCell>
-                      <TableCell>${refund.amount}</TableCell>
-                      <TableCell>{refund.reason}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(refund.status)}>
-                          {getStatusIcon(refund.status)}
-                          <span className="ml-1">{refund.status}</span>
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {refund.status === 'pending' && (
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => updateRefundMutation.mutate({ refundId: refund.id, status: 'approved' })}
-                            >
-                              Approve
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => updateRefundMutation.mutate({ refundId: refund.id, status: 'rejected' })}
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            {/* Category Margins Chart */}
+            <div className="col-lg-4">
+              <div className="modern-card p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="fw-bold text-dark mb-0">
+                    <i className="fas fa-chart-pie me-2 text-warning"></i>
+                    Category Margins
+                  </h5>
+                </div>
+                <div style={{height: '350px'}}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryMarginData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}%`}
+                      >
+                        {categoryMarginData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <TabsContent value="wallets">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
-                Customer Wallets
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Balance</TableHead>
-                    <TableHead>Currency</TableHead>
-                    <TableHead>Last Activity</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {wallets.map((wallet) => (
-                    <TableRow key={wallet.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">{wallet.customerName}</TableCell>
-                      <TableCell>${wallet.balance.toFixed(2)}</TableCell>
-                      <TableCell>{wallet.currency}</TableCell>
-                      <TableCell>{new Date(wallet.lastActivity).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Dialog open={isWalletDialogOpen} onOpenChange={setIsWalletDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => setSelectedWallet(wallet)}
-                            >
-                              Adjust
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Adjust Wallet Balance</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label>Customer: {selectedWallet?.customerName}</Label>
-                                <p className="text-sm text-gray-500">Current Balance: ${selectedWallet?.balance.toFixed(2)}</p>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="amount">Adjustment Amount</Label>
-                                <Input
-                                  id="amount"
-                                  type="number"
-                                  step="0.01"
-                                  value={adjustmentAmount}
-                                  onChange={(e) => setAdjustmentAmount(e.target.value)}
-                                  placeholder="Enter amount (positive to add, negative to subtract)"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="reason">Reason</Label>
-                                <Input
-                                  id="reason"
-                                  value={adjustmentReason}
-                                  onChange={(e) => setAdjustmentReason(e.target.value)}
-                                  placeholder="Reason for adjustment"
-                                />
-                              </div>
-                              <div className="flex justify-end space-x-2">
-                                <Button variant="outline" onClick={() => setIsWalletDialogOpen(false)}>
-                                  Cancel
-                                </Button>
-                                <Button onClick={handleWalletAdjustment} className="bg-coral-600 hover:bg-coral-700">
-                                  Apply Adjustment
-                                </Button>
-                              </div>
+        {/* Refunds Tab */}
+        {activeTab === 'refunds' && (
+          <div className="row">
+            <div className="col-12">
+              <div className="modern-card">
+                <div className="table-responsive">
+                  <table className="table modern-table table-hover mb-0">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Request Date</th>
+                        <th>Status</th>
+                        <th className="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {refunds.map((refund) => (
+                        <tr key={refund.id}>
+                          <td className="fw-semibold">{refund.orderId}</td>
+                          <td>{refund.customerName}</td>
+                          <td className="fw-bold text-success">${refund.amount.toFixed(2)}</td>
+                          <td>{refund.reason}</td>
+                          <td>{new Date(refund.requestDate).toLocaleDateString()}</td>
+                          <td>{getStatusBadge(refund.status)}</td>
+                          <td className="text-end">
+                            <div className="btn-group btn-group-sm">
+                              {refund.status === 'pending' && (
+                                <>
+                                  <button className="btn btn-outline-success">
+                                    <i className="fas fa-check"></i>
+                                  </button>
+                                  <button className="btn btn-outline-danger">
+                                    <i className="fas fa-times"></i>
+                                  </button>
+                                </>
+                              )}
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <TabsContent value="payouts">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                Vendor Payouts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payouts.map((payout) => (
-                    <TableRow key={payout.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">{payout.vendor}</TableCell>
-                      <TableCell>${payout.amount.toLocaleString()}</TableCell>
-                      <TableCell>{new Date(payout.dueDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{payout.description}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(payout.status)}>
-                          {getStatusIcon(payout.status)}
-                          <span className="ml-1">{payout.status}</span>
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {payout.status !== 'paid' && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => markPayoutPaidMutation.mutate(payout.id)}
-                          >
-                            Mark as Paid
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        {/* Wallets Tab */}
+        {activeTab === 'wallets' && (
+          <div className="row">
+            <div className="col-12">
+              <div className="modern-card">
+                <div className="table-responsive">
+                  <table className="table modern-table table-hover mb-0">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Balance</th>
+                        <th>Currency</th>
+                        <th>Last Activity</th>
+                        <th className="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {wallets.map((wallet) => (
+                        <tr key={wallet.id}>
+                          <td className="fw-semibold">{wallet.customerName}</td>
+                          <td className="fw-bold text-primary">${wallet.balance.toFixed(2)}</td>
+                          <td>{wallet.currency}</td>
+                          <td>{new Date(wallet.lastActivity).toLocaleDateString()}</td>
+                          <td className="text-end">
+                            <button 
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => {
+                                setSelectedWallet(wallet);
+                                setShowWalletModal(true);
+                              }}
+                            >
+                              <i className="fas fa-edit me-1"></i>
+                              Adjust
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payouts Tab */}
+        {activeTab === 'payouts' && (
+          <div className="row">
+            <div className="col-12">
+              <div className="modern-card">
+                <div className="table-responsive">
+                  <table className="table modern-table table-hover mb-0">
+                    <thead>
+                      <tr>
+                        <th>Vendor</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th className="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payouts.map((payout) => (
+                        <tr key={payout.id}>
+                          <td className="fw-semibold">{payout.vendor}</td>
+                          <td className="fw-bold text-warning">${payout.amount.toFixed(2)}</td>
+                          <td>{new Date(payout.dueDate).toLocaleDateString()}</td>
+                          <td>{payout.description}</td>
+                          <td>{getStatusBadge(payout.status)}</td>
+                          <td className="text-end">
+                            {payout.status === 'pending' && (
+                              <button className="btn btn-sm btn-shopify">
+                                <i className="fas fa-credit-card me-1"></i>
+                                Pay Now
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Wallet Adjustment Modal */}
+      {showWalletModal && selectedWallet && (
+        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Adjust Wallet Balance - {selectedWallet.customerName}
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowWalletModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleWalletAdjustment}>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label htmlFor="currentBalance" className="form-label fw-semibold">Current Balance</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="currentBalance"
+                      value={`$${selectedWallet.balance.toFixed(2)}`}
+                      disabled
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="adjustmentAmount" className="form-label fw-semibold">Adjustment Amount</label>
+                    <div className="input-group">
+                      <span className="input-group-text">$</span>
+                      <input
+                        type="number"
+                        className="form-control"
+                        id="adjustmentAmount"
+                        step="0.01"
+                        value={adjustmentAmount}
+                        onChange={(e) => setAdjustmentAmount(e.target.value)}
+                        placeholder="Enter positive or negative amount"
+                        required
+                      />
+                    </div>
+                    <div className="form-text">
+                      Use positive values to add funds, negative values to deduct funds
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="adjustmentReason" className="form-label fw-semibold">Reason</label>
+                    <textarea
+                      className="form-control"
+                      id="adjustmentReason"
+                      rows={3}
+                      value={adjustmentReason}
+                      onChange={(e) => setAdjustmentReason(e.target.value)}
+                      placeholder="Explain the reason for this adjustment"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setShowWalletModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-shopify"
+                    disabled={adjustWalletMutation.isPending}
+                  >
+                    {adjustWalletMutation.isPending ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Processing...
+                      </>
+                    ) : (
+                      'Apply Adjustment'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

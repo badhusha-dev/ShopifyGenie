@@ -1,45 +1,5 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Package, 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  AlertTriangle
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Badge } from '../components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '../components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Label } from '../components/ui/label';
-import { Switch } from '../components/ui/switch';
-import { useToast } from '../hooks/use-toast';
 
 interface Product {
   id: string;
@@ -55,7 +15,7 @@ const Inventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showLowStock, setShowLowStock] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -65,7 +25,6 @@ const Inventory: React.FC = () => {
     status: 'active' as 'active' | 'draft'
   });
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
@@ -89,19 +48,11 @@ const Inventory: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      setIsDialogOpen(false);
+      setShowModal(false);
       resetForm();
-      toast({
-        title: "Success",
-        description: "Product created successfully",
-      });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create product",
-        variant: "destructive",
-      });
+      console.error('Failed to create product');
     }
   });
 
@@ -117,12 +68,11 @@ const Inventory: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      setIsDialogOpen(false);
+      setShowModal(false);
       resetForm();
-      toast({
-        title: "Success",
-        description: "Product updated successfully",
-      });
+    },
+    onError: () => {
+      console.error('Failed to update product');
     }
   });
 
@@ -136,18 +86,10 @@ const Inventory: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: "Success",
-        description: "Product deleted successfully",
-      });
+    },
+    onError: () => {
+      console.error('Failed to delete product');
     }
-  });
-
-  const filteredProducts = products.filter((product: Product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLowStock = !showLowStock || product.stock <= product.lowStockThreshold;
-    return matchesSearch && matchesLowStock;
   });
 
   const resetForm = () => {
@@ -172,7 +114,7 @@ const Inventory: React.FC = () => {
       lowStockThreshold: product.lowStockThreshold.toString(),
       status: product.status
     });
-    setIsDialogOpen(true);
+    setShowModal(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -191,228 +133,374 @@ const Inventory: React.FC = () => {
     }
   };
 
-  const getStockStatus = (product: Product) => {
-    if (product.stock === 0) return { label: 'Out of stock', variant: 'destructive' as const };
-    if (product.stock <= product.lowStockThreshold) return { label: 'Low stock', variant: 'secondary' as const };
-    return { label: 'In stock', variant: 'default' as const };
+  const getStockBadge = (product: Product) => {
+    if (product.stock === 0) {
+      return <span className="badge bg-danger">Out of Stock</span>;
+    } else if (product.stock <= product.lowStockThreshold) {
+      return <span className="badge bg-warning text-dark">Low Stock</span>;
+    }
+    return <span className="badge bg-success">In Stock</span>;
   };
+
+  const filteredProducts = products.filter((product: Product) => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = !showLowStock || product.stock <= product.lowStockThreshold;
+    return matchesSearch && matchesFilter;
+  });
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+      <div className="container-fluid">
+        <div className="row g-4">
+          <div className="col-12">
+            <div className="placeholder-glow">
+              <span className="placeholder col-4 mb-3"></span>
+              <span className="placeholder w-100" style={{height: '400px'}}></span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container-fluid animate-fade-in-up">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-          <p className="text-gray-600">Manage your products and stock levels</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm} className="bg-coral-600 hover:bg-coral-700">
-              <Plus className="w-4 h-4 mr-2" />
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-start">
+            <div>
+              <h1 className="h3 fw-bold text-dark mb-2">
+                <i className="fas fa-boxes me-2 text-primary"></i>
+                Inventory Management
+              </h1>
+              <p className="text-muted mb-0">Manage your products and stock levels</p>
+            </div>
+            <button
+              className="btn btn-shopify d-flex align-items-center"
+              onClick={() => {
+                resetForm();
+                setShowModal(true);
+              }}
+            >
+              <i className="fas fa-plus me-2"></i>
               Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedProduct ? 'Edit Product' : 'Add New Product'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="general">General</TabsTrigger>
-                  <TabsTrigger value="pricing">Pricing</TabsTrigger>
-                  <TabsTrigger value="stock">Stock</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="general" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Product Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="status"
-                      checked={formData.status === 'active'}
-                      onCheckedChange={(checked) => setFormData({...formData, status: checked ? 'active' : 'draft'})}
-                    />
-                    <Label htmlFor="status">Active</Label>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="pricing" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price ($)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
-                      required
-                    />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="stock" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="stock">Stock Quantity</Label>
-                    <Input
-                      id="stock"
-                      type="number"
-                      value={formData.stock}
-                      onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
-                    <Input
-                      id="lowStockThreshold"
-                      type="number"
-                      value={formData.lowStockThreshold}
-                      onChange={(e) => setFormData({...formData, lowStockThreshold: e.target.value})}
-                      required
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
-              
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-coral-600 hover:bg-coral-700">
-                  {selectedProduct ? 'Update' : 'Create'} Product
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Filters */}
-      <Card className="rounded-xl">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="lowStock"
-                checked={showLowStock}
-                onCheckedChange={setShowLowStock}
-              />
-              <Label htmlFor="lowStock" className="flex items-center space-x-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <span>Low Stock Only</span>
-              </Label>
+      {/* Filter Bar */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="modern-card p-4">
+            <div className="row g-3 align-items-center">
+              <div className="col-md-6">
+                <div className="position-relative">
+                  <i className="fas fa-search position-absolute text-muted" 
+                     style={{left: '12px', top: '50%', transform: 'translateY(-50%)'}}></i>
+                  <input
+                    type="text"
+                    className="form-control ps-5"
+                    placeholder="Search products by name or category..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{borderRadius: '12px'}}
+                  />
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="form-check form-switch">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="lowStockFilter"
+                    checked={showLowStock}
+                    onChange={(e) => setShowLowStock(e.target.checked)}
+                  />
+                  <label className="form-check-label fw-medium" htmlFor="lowStockFilter">
+                    <i className="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Low Stock Only
+                  </label>
+                </div>
+              </div>
+              <div className="col-md-3 text-end">
+                <span className="badge bg-info-subtle text-info px-3 py-2">
+                  {filteredProducts.length} Products
+                </span>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Products Table */}
-      <Card className="rounded-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            Products ({filteredProducts.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-gray-50">
-              <TableRow>
-                <TableHead className="font-medium">Product</TableHead>
-                <TableHead className="font-medium">Category</TableHead>
-                <TableHead className="font-medium">Price</TableHead>
-                <TableHead className="font-medium">Stock</TableHead>
-                <TableHead className="font-medium">Status</TableHead>
-                <TableHead className="font-medium">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product: Product) => {
-                const stockStatus = getStockStatus(product);
-                return (
-                  <TableRow key={product.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span>{product.stock}</span>
-                        <Badge variant={stockStatus.variant} className="text-xs">
-                          {stockStatus.label}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                        {product.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(product)}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => deleteProductMutation.mutate(product.id)}
-                            className="text-red-600"
+      <div className="row">
+        <div className="col-12">
+          <div className="modern-card">
+            <div className="table-responsive">
+              <table className="table modern-table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th>Stock Status</th>
+                    <th className="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((product: Product) => (
+                    <tr key={product.id}>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3" 
+                               style={{width: '40px', height: '40px'}}>
+                            <i className="fas fa-box text-primary"></i>
+                          </div>
+                          <div>
+                            <div className="fw-semibold">{product.name}</div>
+                            <small className="text-muted">ID: {product.id.slice(0, 8)}</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{product.category}</td>
+                      <td className="fw-semibold">${product.price.toFixed(2)}</td>
+                      <td>
+                        <span className="fw-bold">
+                          {product.stock}
+                        </span>
+                        <small className="text-muted d-block">
+                          Threshold: {product.lowStockThreshold}
+                        </small>
+                      </td>
+                      <td>
+                        <span className={`badge ${product.status === 'active' ? 'bg-success' : 'bg-secondary'}`}>
+                          {product.status}
+                        </span>
+                      </td>
+                      <td>{getStockBadge(product)}</td>
+                      <td className="text-end">
+                        <div className="dropdown">
+                          <button
+                            className="btn btn-sm btn-outline-secondary rounded-circle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            style={{width: '32px', height: '32px'}}
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                            <i className="fas fa-ellipsis-h"></i>
+                          </button>
+                          <ul className="dropdown-menu dropdown-menu-end">
+                            <li>
+                              <button 
+                                className="dropdown-item" 
+                                onClick={() => handleEdit(product)}
+                              >
+                                <i className="fas fa-edit me-2"></i>Edit
+                              </button>
+                            </li>
+                            <li><hr className="dropdown-divider" /></li>
+                            <li>
+                              <button 
+                                className="dropdown-item text-danger"
+                                onClick={() => deleteProductMutation.mutate(product.id)}
+                              >
+                                <i className="fas fa-trash me-2"></i>Delete
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add/Edit Product Modal */}
+      {showModal && (
+        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  {selectedProduct ? 'Edit Product' : 'Add New Product'}
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="modal-body">
+                  {/* Bootstrap Nav Tabs */}
+                  <ul className="nav nav-tabs" id="productTabs" role="tablist">
+                    <li className="nav-item" role="presentation">
+                      <button 
+                        className="nav-link active" 
+                        id="general-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#general-tab-pane" 
+                        type="button"
+                      >
+                        <i className="fas fa-info-circle me-2"></i>General
+                      </button>
+                    </li>
+                    <li className="nav-item" role="presentation">
+                      <button 
+                        className="nav-link" 
+                        id="pricing-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#pricing-tab-pane" 
+                        type="button"
+                      >
+                        <i className="fas fa-dollar-sign me-2"></i>Pricing
+                      </button>
+                    </li>
+                    <li className="nav-item" role="presentation">
+                      <button 
+                        className="nav-link" 
+                        id="stock-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#stock-tab-pane" 
+                        type="button"
+                      >
+                        <i className="fas fa-warehouse me-2"></i>Stock
+                      </button>
+                    </li>
+                  </ul>
+
+                  {/* Tab Content */}
+                  <div className="tab-content pt-4" id="productTabsContent">
+                    {/* General Tab */}
+                    <div className="tab-pane fade show active" id="general-tab-pane">
+                      <div className="row g-3">
+                        <div className="col-12">
+                          <label htmlFor="name" className="form-label fw-semibold">Product Name</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="col-12">
+                          <label htmlFor="category" className="form-label fw-semibold">Category</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="category"
+                            value={formData.category}
+                            onChange={(e) => setFormData({...formData, category: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="col-12">
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="status"
+                              checked={formData.status === 'active'}
+                              onChange={(e) => setFormData({...formData, status: e.target.checked ? 'active' : 'draft'})}
+                            />
+                            <label className="form-check-label fw-semibold" htmlFor="status">
+                              Active Product
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pricing Tab */}
+                    <div className="tab-pane fade" id="pricing-tab-pane">
+                      <div className="row g-3">
+                        <div className="col-12">
+                          <label htmlFor="price" className="form-label fw-semibold">Price ($)</label>
+                          <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input
+                              type="number"
+                              className="form-control"
+                              id="price"
+                              step="0.01"
+                              value={formData.price}
+                              onChange={(e) => setFormData({...formData, price: e.target.value})}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stock Tab */}
+                    <div className="tab-pane fade" id="stock-tab-pane">
+                      <div className="row g-3">
+                        <div className="col-md-6">
+                          <label htmlFor="stock" className="form-label fw-semibold">Stock Quantity</label>
+                          <input
+                            type="number"
+                            className="form-control"
+                            id="stock"
+                            value={formData.stock}
+                            onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="col-md-6">
+                          <label htmlFor="lowStockThreshold" className="form-label fw-semibold">Low Stock Threshold</label>
+                          <input
+                            type="number"
+                            className="form-control"
+                            id="lowStockThreshold"
+                            value={formData.lowStockThreshold}
+                            onChange={(e) => setFormData({...formData, lowStockThreshold: e.target.value})}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-shopify"
+                    disabled={createProductMutation.isPending || updateProductMutation.isPending}
+                  >
+                    {createProductMutation.isPending || updateProductMutation.isPending ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        {selectedProduct ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        {selectedProduct ? 'Update' : 'Create'} Product
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
