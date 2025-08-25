@@ -245,9 +245,9 @@ const Customers: React.FC = () => {
   // Filter and sort customers
   const filteredAndSortedCustomers = useMemo(() => {
     let filtered = customers.filter((customer: Customer) => {
-      const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesTier = selectedTierFilter === 'all' || customer.tier === selectedTierFilter;
+      const matchesSearch = (customer.name && customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesTier = selectedTierFilter === 'all' || (customer.tier && customer.tier === selectedTierFilter);
       const isActive = customer.lastOrderDate && new Date(customer.lastOrderDate) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
       const matchesStatus = selectedStatusFilter === 'all' || 
         (selectedStatusFilter === 'active' && isActive) ||
@@ -269,8 +269,10 @@ const Customers: React.FC = () => {
         bValue = b.loyaltyPoints || 0;
       }
       
-      if (typeof aValue === 'string') {
+      if (typeof aValue === 'string' && aValue) {
         aValue = aValue.toLowerCase();
+      }
+      if (typeof bValue === 'string' && bValue) {
         bValue = bValue.toLowerCase();
       }
       
@@ -306,6 +308,7 @@ const Customers: React.FC = () => {
   };
 
   const getInitials = (name: string) => {
+    if (!name) return '??';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
@@ -316,11 +319,11 @@ const Customers: React.FC = () => {
       gold: '#FFD700',
       platinum: '#E5E4E2'
     };
-    return colors[tier.toLowerCase() as keyof typeof colors] || colors.bronze;
+    return colors[(tier && tier.toLowerCase()) as keyof typeof colors] || colors.bronze;
   };
 
   const getTierBadgeClass = (tier: string) => {
-    switch (tier.toLowerCase()) {
+    switch (tier && tier.toLowerCase()) {
       case 'bronze': return 'bg-amber-100 text-amber-800';
       case 'silver': return 'bg-gray-100 text-gray-800';
       case 'gold': return 'bg-yellow-100 text-yellow-800';
@@ -368,7 +371,7 @@ const Customers: React.FC = () => {
   const topCustomersData = filteredAndSortedCustomers
     .slice(0, 10)
     .map((customer: Customer) => ({
-      name: customer.name.split(' ')[0],
+      name: customer.name ? customer.name.split(' ')[0] : 'Unknown',
       orders: customer.ordersCount || 0,
       value: parseFloat(customer.totalSpent || '0')
     }));
@@ -746,7 +749,7 @@ const Customers: React.FC = () => {
                       dataKey="value"
                       label={({ name, value }) => `${name}: ${value}`}
                     >
-                      {loyaltyDistributionData.map((entry, index) => (
+                      {loyaltyDistributionData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
