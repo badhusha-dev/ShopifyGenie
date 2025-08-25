@@ -1,0 +1,62 @@
+You are a senior frontend engineer. Refactor my ShopifyApp frontend (React 18 + TypeScript + Tailwind CSS + shadcn/ui + lucide-react icons + JWT + RBAC) into a modern Shopify-inspired UI, based on the following wireframe and design system:
+
+Wireframe (structure to follow)
+- Global Layout:
+  - Top navbar with: [☰ Sidebar Toggle] ShopifyApp Logo | Right: [🌐 Lang Switcher] [🔔 Notifications] [👤 User Menu]
+  - Collapsible sidebar with grouped items:
+    ▸ Dashboard
+    ▸ Inventory
+    ▸ Customers
+    ▸ Loyalty
+    ▸ Subscriptions
+    ▸ Vendors
+    ▸ Intelligence
+       - Inventory Intelligence
+       - Accounts & Finance
+    ▸ Settings
+       - System
+       - Integrations
+
+- Dashboard:
+  - Top row: KPI cards (Revenue, Orders, Customers, Loyalty Points)
+  - Middle row: Charts (Sales Trends line chart, Top Categories bar chart)
+  - Bottom row: Recent Orders Table
+
+- Inventory:
+  - Filters (search, category dropdown, low-stock toggle)
+  - Modern DataTable (striped rows, sticky header, hover states)
+  - Add/Edit Modal with tabs: General | Pricing | Stock
+
+- Finance Dashboard:
+  - KPI Cards: Revenue, COGS, Gross Margin, Refund %
+  - Charts: Revenue vs COGS (line), Category Margin (pie)
+  - Tables: Refunds (flag option), Wallets (adjust modal), Payouts (status badges + mark-paid button)
+
+- System Settings:
+  - Tabbed layout: General | Notifications | Security | Audit Logs
+  - Cards for each tab with forms, settings, and Audit Logs table
+
+- Integrations:
+  - Grid of cards: Stripe, SendGrid, Twilio, QuickBooks
+  - Each card shows logo, status badge, and Connect/Test button
+
+Design System
+- Color palette: white backgrounds, light gray surfaces, coral (#FF6B6B) accent, emerald (#2ECC71) success, slate gray text
+- Typography: Inter font, clean and modern
+- Components: Rounded-xl cards, soft shadows, hover transitions
+- Toast notifications: shadcn/ui <Toast />
+- Icons: lucide-react
+- Mobile responsive (stacked layout, sidebar collapses)
+- Optional Dark Mode toggle
+
+Requirements
+- Do not remove functionality, only restyle and restructure UI
+- Use shadcn/ui components (Card, Table, Tabs, Dialog, Toast, Badge, Dropdown)
+- Use Tailwind for layout, spacing, colors
+- Keep RBAC-based visibility (hide pages/actions if not permitted)
+- Ensure PWA responsiveness and offline-ready layout
+
+Deliverables
+- Updated layout components (Sidebar, Navbar, MainContent)
+- Restyled Dashboard, Inventory, Finance, Settings, Integrations pages
+- Reusable components (KPI Card, DataTable, ChartContainer, Modal, Tabs, Toast)
