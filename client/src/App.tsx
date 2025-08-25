@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { AuthProvider } from './contexts/AuthContext';
 import { PermissionProvider } from './contexts/PermissionContext';
+import { ThemeProvider } from './contexts/ThemeContext'; // Import ThemeProvider
 import { useAuth } from './contexts/AuthContext';
 import { Sidebar } from './components/Sidebar';
 import TopNav from './components/TopNav';
@@ -28,6 +28,9 @@ import UserManagement from './pages/UserManagement';
 import RolePermissionManagement from './pages/RolePermissionManagement';
 import Integrations from './pages/Integrations';
 import NotFound from './pages/not-found';
+
+// Design Tokens
+import './design/tokens.scss'; // Import design tokens
 
 const AppContent = () => {
   const { user, isLoading } = useAuth();
@@ -80,7 +83,7 @@ const AppContent = () => {
               </main>
             </>
           } />
-          
+
           <Route path="/inventory" element={
             <>
               <TopNav 
@@ -297,14 +300,17 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <PermissionProvider>
-          <Router>
-            <div className="app">
-              <AppContent />
-              <Toaster />
-            </div>
-          </Router>
+          <ThemeProvider> {/* Wrap with ThemeProvider */}
+            <Router>
+              <div className="app">
+                <AppContent />
+                <Toaster />
+              </div>
+            </Router>
+          </ThemeProvider>
         </PermissionProvider>
       </AuthProvider>
+      {/* Removed ReactQueryDevtools and Toaster from here as they are now in AppContent */}
     </QueryClientProvider>
   );
 }

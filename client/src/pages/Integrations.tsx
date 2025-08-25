@@ -166,11 +166,11 @@ const Integrations: React.FC = () => {
               <p className="text-muted mb-0">Connect and manage your third-party services</p>
             </div>
             <div className="d-flex gap-2">
-              <button className="btn btn-outline-secondary">
+              <button className="btn btn-outline-secondary btn-ripple">
                 <i className="fas fa-sync-alt me-2"></i>
                 Sync All
               </button>
-              <button className="btn btn-shopify">
+              <button className="btn btn-shopify btn-ripple">
                 <i className="fas fa-plus me-2"></i>
                 Add Integration
               </button>
@@ -296,14 +296,14 @@ const Integrations: React.FC = () => {
 
               <div className="d-flex gap-2 mt-auto">
                 <button 
-                  className="btn btn-outline-primary btn-sm flex-fill"
+                  className="btn btn-outline-primary btn-sm flex-fill btn-ripple"
                   onClick={() => handleConfigureIntegration(integration)}
                 >
                   <i className="fas fa-cog me-1"></i>
                   Configure
                 </button>
                 <button 
-                  className="btn btn-outline-secondary btn-sm"
+                  className="btn btn-outline-secondary btn-sm btn-ripple"
                   onClick={() => testIntegrationMutation.mutate(integration.id)}
                   disabled={testIntegrationMutation.isPending}
                 >
@@ -313,7 +313,7 @@ const Integrations: React.FC = () => {
                     <i className="fas fa-vial"></i>
                   )}
                 </button>
-                <button className="btn btn-outline-info btn-sm">
+                <button className="btn btn-outline-info btn-sm btn-ripple">
                   <i className="fas fa-external-link-alt"></i>
                 </button>
               </div>
@@ -529,14 +529,14 @@ const Integrations: React.FC = () => {
               <div className="modal-footer">
                 <button 
                   type="button" 
-                  className="btn btn-secondary" 
+                  className="btn btn-secondary btn-ripple" 
                   onClick={() => setShowConfigModal(false)}
                 >
                   Cancel
                 </button>
                 <button 
                   type="button" 
-                  className="btn btn-shopify"
+                  className="btn btn-shopify btn-ripple"
                   onClick={handleSaveConfiguration}
                   disabled={updateIntegrationMutation.isPending}
                 >

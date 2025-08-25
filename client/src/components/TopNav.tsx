@@ -1,6 +1,8 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface TopNavProps {
   title: string;
@@ -16,6 +18,7 @@ const TopNav: React.FC<TopNavProps> = ({
   showSearch = true 
 }) => {
   const { user, logout } = useAuth();
+  const { isDark, toggleDarkMode } = useTheme();
   const [notifications] = useState(3); // Mock notification count
 
   return (
@@ -31,7 +34,7 @@ const TopNav: React.FC<TopNavProps> = ({
           >
             <i className="fas fa-bars"></i>
           </button>
-          
+
           <div>
             <h1 className="h4 mb-0 fw-bold text-dark">{title}</h1>
             {subtitle && (
@@ -57,40 +60,35 @@ const TopNav: React.FC<TopNavProps> = ({
         )}
 
         {/* Right Section */}
-        <div className="d-flex align-items-center">
-          {/* Language Switcher */}
-          <div className="dropdown me-2">
-            <button
-              className="btn btn-outline-secondary rounded-circle"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              style={{width: '40px', height: '40px'}}
-            >
-              <i className="fas fa-globe"></i>
-            </button>
-            <ul className="dropdown-menu dropdown-menu-end">
-              <li><button className="dropdown-item" type="button">🇺🇸 English</button></li>
-              <li><button className="dropdown-item" type="button">🇪🇸 Español</button></li>
-              <li><button className="dropdown-item" type="button">🇫🇷 Français</button></li>
-            </ul>
-          </div>
+        <div className="d-flex align-items-center gap-3">
+          <LanguageSwitcher />
+
+          {/* Dark Mode Toggle */}
+          <button 
+            className="btn btn-outline-secondary btn-sm btn-ripple"
+            onClick={toggleDarkMode}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <i className={`fas ${isDark ? 'fa-sun' : 'fa-moon'}`}></i>
+          </button>
 
           {/* Notifications */}
-          <div className="position-relative me-2">
-            <button
-              className="btn btn-outline-secondary rounded-circle position-relative"
-              type="button"
-              style={{width: '40px', height: '40px'}}
-            >
+          <div className="dropdown">
+            <button className="btn btn-outline-secondary btn-sm position-relative btn-ripple" type="button" data-bs-toggle="dropdown">
               <i className="fas fa-bell"></i>
-              {notifications > 0 && (
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                  {notifications}
-                  <span className="visually-hidden">unread messages</span>
-                </span>
-              )}
+              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                3
+                <span className="visually-hidden">unread messages</span>
+              </span>
             </button>
+            <ul className="dropdown-menu dropdown-menu-end">
+              <li><h6 className="dropdown-header">Recent Notifications</h6></li>
+              <li><a className="dropdown-item" href="#"><i className="fas fa-info-circle me-2 text-info"></i>New customer registered</a></li>
+              <li><a className="dropdown-item" href="#"><i className="fas fa-exclamation-triangle me-2 text-warning"></i>Low stock alert: Product ABC</a></li>
+              <li><a className="dropdown-item" href="#"><i className="fas fa-check-circle me-2 text-success"></i>Order #1234 completed</a></li>
+              <li><hr className="dropdown-divider" /></li>
+              <li><a className="dropdown-item text-center" href="#">View all notifications</a></li>
+            </ul>
           </div>
 
           {/* User Menu */}

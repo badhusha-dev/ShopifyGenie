@@ -1,0 +1,232 @@
+
+// Design Tokens - Centralized Design System
+// Colors
+:root {
+  // Theme Palettes
+  --theme-emerald-50: #ecfdf5;
+  --theme-emerald-100: #d1fae5;
+  --theme-emerald-500: #10b981;
+  --theme-emerald-600: #059669;
+  --theme-emerald-700: #047857;
+  --theme-emerald-900: #064e3b;
+
+  --theme-blue-50: #eff6ff;
+  --theme-blue-100: #dbeafe;
+  --theme-blue-500: #3b82f6;
+  --theme-blue-600: #2563eb;
+  --theme-blue-700: #1d4ed8;
+  --theme-blue-900: #1e3a8a;
+
+  --theme-purple-50: #faf5ff;
+  --theme-purple-100: #f3e8ff;
+  --theme-purple-500: #a855f7;
+  --theme-purple-600: #9333ea;
+  --theme-purple-700: #7c3aed;
+  --theme-purple-900: #581c87;
+
+  --theme-coral-50: #fef2f2;
+  --theme-coral-100: #fee2e2;
+  --theme-coral-500: #ef4444;
+  --theme-coral-600: #dc2626;
+  --theme-coral-700: #b91c1c;
+  --theme-coral-900: #7f1d1d;
+
+  // Shopify Green (default)
+  --shopify-green: #00a86b;
+  --shopify-green-light: #5fb85f;
+  --shopify-green-dark: #008a58;
+
+  // Spacing
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  // Border Radius
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  // Shadows
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  // Animation Durations
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  // Z-Index
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+// Theme-specific overrides
+[data-bs-theme="dark"] {
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+// Animation Keyframes
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes lift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
+}
+
+// Utility Classes
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) ease;
+}
+
+.animate-slide-down {
+  animation: slideDown var(--duration-normal) ease;
+}
+
+.animate-slide-up {
+  animation: slideUp var(--duration-normal) ease;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--duration-normal) ease;
+}
+
+.animate-lift {
+  animation: lift var(--duration-normal) ease;
+}
+
+// Ripple Effect
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width var(--duration-fast) ease, height var(--duration-fast) ease;
+}
+
+.btn-ripple:active::before {
+  width: 300px;
+  height: 300px;
+  animation: ripple var(--duration-normal) ease;
+}
+
+// Card Hover Effects
+.card-hover {
+  transition: transform var(--duration-normal) ease, box-shadow var(--duration-normal) ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+// Row Expand Animation
+.row-expand-enter {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--duration-normal) ease;
+}
+
+.row-expand-enter.show {
+  max-height: 500px;
+}
+
+// Theme Color Classes
+.theme-emerald {
+  --bs-primary: var(--theme-emerald-600);
+  --bs-primary-rgb: 5, 150, 105;
+}
+
+.theme-blue {
+  --bs-primary: var(--theme-blue-600);
+  --bs-primary-rgb: 37, 99, 235;
+}
+
+.theme-purple {
+  --bs-primary: var(--theme-purple-600);
+  --bs-primary-rgb: 147, 51, 234;
+}
+
+.theme-coral {
+  --bs-primary: var(--theme-coral-600);
+  --bs-primary-rgb: 220, 38, 38;
+}

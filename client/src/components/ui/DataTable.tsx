@@ -1,339 +1,257 @@
-import React, { useState, useMemo } from 'react';
 
-interface Column<T> {
-  key: keyof T | string;
+import React, { useState } from 'react';
+import { designTokens } from '../../design/tokens';
+
+export interface Column {
+  key: string;
   label: string;
   sortable?: boolean;
-  render?: (value: any, row: T, index: number) => React.ReactNode;
+  render?: (value: any, row: any) => React.ReactNode;
   width?: string;
-  align?: 'left' | 'center' | 'right';
 }
 
-interface DataTableProps<T> {
-  data: T[];
-  columns: Column<T>[];
-  searchable?: boolean;
-  searchPlaceholder?: string;
-  pageSize?: number;
+interface DataTableProps {
+  columns: Column[];
+  data: any[];
+  expandable?: boolean;
+  renderExpandedRow?: (row: any) => React.ReactNode;
+  onSort?: (key: string, direction: 'asc' | 'desc') => void;
   loading?: boolean;
   emptyMessage?: string;
   className?: string;
-  striped?: boolean;
-  hover?: boolean;
 }
 
-function DataTable<T extends Record<string, any>>({
-  data,
+const DataTable: React.FC<DataTableProps> = ({
   columns,
-  searchable = false,
-  searchPlaceholder = "Search...",
-  pageSize = 10,
+  data,
+  expandable = false,
+  renderExpandedRow,
+  onSort,
   loading = false,
-  emptyMessage = "No data available",
-  className = "",
-  striped = true,
-  hover = true
-}: DataTableProps<T>) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{
-    key: string;
-    direction: 'asc' | 'desc';
-  } | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  emptyMessage = 'No data available',
+  className = ''
+}) => {
+  const [sortKey, setSortKey] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  // Filter data based on search term
-  const filteredData = useMemo(() => {
-    if (!searchable || !searchTerm) return data;
-    
-    return data.filter((row) => {
-      return columns.some((column) => {
-        const value = row[column.key as keyof T];
-        return String(value).toLowerCase().includes(searchTerm.toLowerCase());
-      });
-    });
-  }, [data, searchTerm, columns, searchable]);
+  const handleSort = (key: string) => {
+    if (!onSort) return;
 
-  // Sort data
-  const sortedData = useMemo(() => {
-    if (!sortConfig) return filteredData;
-
-    return [...filteredData].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-
-      if (aValue < bValue) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  }, [filteredData, sortConfig]);
-
-  // Paginate data
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return sortedData.slice(startIndex, endIndex);
-  }, [sortedData, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(sortedData.length / pageSize);
-
-  const handleSort = (columnKey: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    
-    if (sortConfig && sortConfig.key === columnKey && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    
-    setSortConfig({ key: columnKey, direction });
+    const newDirection = sortKey === key && sortDirection === 'asc' ? 'desc' : 'asc';
+    setSortKey(key);
+    setSortDirection(newDirection);
+    onSort(key, newDirection);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const toggleRowExpansion = (rowId: string) => {
+    const newExpandedRows = new Set(expandedRows);
+    if (newExpandedRows.has(rowId)) {
+      newExpandedRows.delete(rowId);
+    } else {
+      newExpandedRows.add(rowId);
+    }
+    setExpandedRows(newExpandedRows);
   };
 
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
-    const pages = [];
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-    if (endPage - startPage + 1 < maxVisible) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    return (
-      <nav className="d-flex justify-content-between align-items-center mt-4">
-        <div className="text-muted small">
-          Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, sortedData.length)} of {sortedData.length} entries
-        </div>
-        <ul className="pagination pagination-sm mb-0">
-          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-            <button
-              className="page-link"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <i className="fas fa-chevron-left"></i>
-            </button>
-          </li>
-          {pages.map((page) => (
-            <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
-              <button
-                className="page-link"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </button>
-            </li>
-          ))}
-          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-            <button
-              className="page-link"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <i className="fas fa-chevron-right"></i>
-            </button>
-          </li>
-        </ul>
-      </nav>
-    );
-  };
+  const isRowExpanded = (rowId: string) => expandedRows.has(rowId);
 
   if (loading) {
     return (
-      <div className="modern-card">
-        <div className="table-responsive">
-          <table className="table modern-table mb-0">
-            <thead>
-              <tr>
-                {columns.map((column, index) => (
-                  <th key={index}>
+      <div className={`table-responsive ${className}`}>
+        <table className="table table-hover">
+          <thead className="table-light">
+            <tr>
+              {expandable && <th style={{ width: '50px' }}></th>}
+              {columns.map((column) => (
+                <th key={column.key} style={{ width: column.width }}>
+                  <div className="placeholder-glow">
+                    <span className="placeholder col-8"></span>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(5)].map((_, index) => (
+              <tr key={index}>
+                {expandable && <td></td>}
+                {columns.map((column) => (
+                  <td key={column.key}>
                     <div className="placeholder-glow">
-                      <span className="placeholder col-8"></span>
+                      <span className="placeholder col-10"></span>
                     </div>
-                  </th>
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {[...Array(5)].map((_, index) => (
-                <tr key={index}>
-                  {columns.map((_, colIndex) => (
-                    <td key={colIndex}>
-                      <div className="placeholder-glow">
-                        <span className="placeholder col-6"></span>
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="text-center py-5">
+        <i className="fas fa-inbox text-muted mb-3" style={{ fontSize: '3rem' }}></i>
+        <p className="text-muted">{emptyMessage}</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className={`data-table-container ${className}`}>
-        {searchable && (
-          <div className="row mb-3">
-            <div className="col-md-6">
-              <div className="position-relative">
-                <i className="fas fa-search position-absolute text-muted search-icon"></i>
-                <input
-                  type="text"
-                  className="form-control ps-5"
-                  placeholder={searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="col-md-6 text-end">
-              <span className="text-muted small">
-                {sortedData.length} result{sortedData.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="modern-card">
-          <div className="table-responsive">
-            <table className={`table modern-table mb-0 ${striped ? 'table-striped' : ''} ${hover ? 'table-hover' : ''}`}>
-              <thead>
-                <tr>
-                  {columns.map((column, index) => (
-                    <th
-                      key={index}
-                      style={{ 
-                        width: column.width,
-                        textAlign: column.align || 'left',
-                        cursor: column.sortable ? 'pointer' : 'default'
-                      }}
-                      onClick={() => column.sortable && handleSort(column.key as string)}
-                      className={column.sortable ? 'sortable-header' : ''}
-                    >
-                      <div className="d-flex align-items-center justify-content-between">
-                        <span>{column.label}</span>
-                        {column.sortable && (
-                          <div className="sort-icons">
-                            <i className={`fas fa-sort${
-                              sortConfig?.key === column.key
-                                ? sortConfig.direction === 'asc'
-                                  ? '-up'
-                                  : '-down'
-                                : ''
-                            } text-muted`}></i>
-                          </div>
-                        )}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedData.length === 0 ? (
-                  <tr>
-                    <td colSpan={columns.length} className="text-center py-5 text-muted">
-                      <i className="fas fa-inbox mb-3" style={{fontSize: '3rem'}}></i>
-                      <div>{emptyMessage}</div>
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedData.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="table-row">
-                      {columns.map((column, colIndex) => (
-                        <td
-                          key={colIndex}
-                          style={{ textAlign: column.align || 'left' }}
+      <div className={`table-responsive ${className}`}>
+        <table className="table table-hover modern-table">
+          <thead className="table-light">
+            <tr>
+              {expandable && (
+                <th style={{ width: '50px' }} className="text-center">
+                  <i className="fas fa-expand-arrows-alt text-muted"></i>
+                </th>
+              )}
+              {columns.map((column) => (
+                <th 
+                  key={column.key} 
+                  style={{ width: column.width }}
+                  className={column.sortable ? 'sortable-header' : ''}
+                  onClick={() => column.sortable && handleSort(column.key)}
+                >
+                  <div className="d-flex align-items-center justify-content-between">
+                    <span className="fw-semibold">{column.label}</span>
+                    {column.sortable && (
+                      <i className={`fas ${
+                        sortKey === column.key 
+                          ? sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down'
+                          : 'fa-sort'
+                      } text-muted ms-2`}></i>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, index) => {
+              const rowId = row.id || index.toString();
+              const isExpanded = isRowExpanded(rowId);
+              
+              return (
+                <React.Fragment key={rowId}>
+                  <tr className={`table-row ${isExpanded ? 'expanded' : ''}`}>
+                    {expandable && (
+                      <td className="text-center">
+                        <button
+                          className="btn btn-link btn-sm p-0 btn-ripple"
+                          onClick={() => toggleRowExpansion(rowId)}
+                          aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
                         >
-                          {column.render
-                            ? column.render(row[column.key as keyof T], row, rowIndex)
-                            : String(row[column.key as keyof T] || '')
-                          }
-                        </td>
-                      ))}
+                          <i className={`fas ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-muted`}></i>
+                        </button>
+                      </td>
+                    )}
+                    {columns.map((column) => (
+                      <td key={column.key}>
+                        {column.render ? column.render(row[column.key], row) : row[column.key]}
+                      </td>
+                    ))}
+                  </tr>
+                  {expandable && isExpanded && renderExpandedRow && (
+                    <tr className="expanded-row">
+                      <td colSpan={columns.length + 1} className="p-0">
+                        <div className="row-expand-content">
+                          {renderExpandedRow(row)}
+                        </div>
+                      </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {renderPagination()}
-        </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* Embedded styles */}
       <style jsx>{`
-        .search-icon {
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          z-index: 5;
+        .modern-table {
+          border: none;
+          box-shadow: var(--shadow-sm);
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+        }
+
+        .modern-table thead th {
+          border-bottom: 2px solid var(--bs-border-color);
+          background: var(--bs-gray-50);
+          font-weight: 600;
+          padding: var(--spacing-md) var(--spacing-lg);
         }
 
         .sortable-header {
-          transition: all 0.2s ease;
+          cursor: pointer;
+          user-select: none;
+          transition: background-color var(--duration-fast) ease;
         }
 
         .sortable-header:hover {
-          background-color: var(--shopify-green-light) !important;
-          color: var(--shopify-green) !important;
-        }
-
-        .sort-icons {
-          opacity: 0.5;
-          transition: opacity 0.2s ease;
-        }
-
-        .sortable-header:hover .sort-icons {
-          opacity: 1;
+          background-color: var(--bs-gray-100);
         }
 
         .table-row {
-          transition: all 0.2s ease;
+          transition: all var(--duration-fast) ease;
+          cursor: ${expandable ? 'pointer' : 'default'};
         }
 
         .table-row:hover {
-          background-color: var(--shopify-green-light) !important;
+          background-color: var(--bs-gray-50);
+          transform: translateY(-1px);
         }
 
-        .pagination .page-link {
-          border-radius: 8px;
-          margin: 0 2px;
-          border: 1px solid #dee2e6;
-          color: var(--shopify-green);
+        .table-row.expanded {
+          background-color: var(--bs-primary-bg-subtle);
+          border-left: 3px solid var(--bs-primary);
         }
 
-        .pagination .page-link:hover {
-          background-color: var(--shopify-green-light);
-          border-color: var(--shopify-green);
+        .expanded-row {
+          background-color: var(--bs-gray-25);
         }
 
-        .pagination .page-item.active .page-link {
-          background-color: var(--shopify-green);
-          border-color: var(--shopify-green);
+        .row-expand-content {
+          padding: var(--spacing-lg);
+          animation: slideDown var(--duration-normal) ease;
+          border-top: 1px solid var(--bs-border-color);
+          background: var(--bs-body-bg);
         }
 
-        .pagination .page-item.disabled .page-link {
-          color: #6c757d;
-          pointer-events: none;
+        /* Dark mode adjustments */
+        [data-bs-theme="dark"] .modern-table thead th {
+          background: var(--bs-gray-800);
+        }
+
+        [data-bs-theme="dark"] .sortable-header:hover {
+          background-color: var(--bs-gray-700);
+        }
+
+        [data-bs-theme="dark"] .table-row:hover {
+          background-color: var(--bs-gray-800);
+        }
+
+        [data-bs-theme="dark"] .table-row.expanded {
+          background-color: rgba(var(--bs-primary-rgb), 0.1);
+        }
+
+        [data-bs-theme="dark"] .expanded-row {
+          background-color: var(--bs-gray-900);
+        }
+
+        [data-bs-theme="dark"] .row-expand-content {
+          background: var(--bs-gray-900);
+          border-top-color: var(--bs-gray-700);
         }
       `}</style>
     </>
   );
-}
+};
 
 export default DataTable;

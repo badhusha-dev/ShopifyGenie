@@ -14,24 +14,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password required" });
       }
-      
+
       const user = await storage.getUserByEmail(email);
       if (!user || !user.password) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-      
+
       const isValidPassword = await AuthService.validatePassword(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-      
+
       const { password: _, ...userWithoutPassword } = user;
       const token = AuthService.generateToken(userWithoutPassword);
-      
+
       res.json({ 
         user: userWithoutPassword, 
         token,
@@ -46,16 +46,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { name, email, password, role = 'customer' } = req.body;
-      
+
       if (!name || !email || !password) {
         return res.status(400).json({ error: "Name, email, and password required" });
       }
-      
+
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(409).json({ error: "User already exists with this email" });
       }
-      
+
       const hashedPassword = await AuthService.hashPassword(password);
       const user = await storage.createUser({
         name,
@@ -63,10 +63,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         role: role as 'admin' | 'staff' | 'customer'
       });
-      
+
       const { password: _, ...userWithoutPassword } = user;
       const token = AuthService.generateToken(userWithoutPassword);
-      
+
       res.status(201).json({ 
         user: userWithoutPassword, 
         token,
@@ -107,16 +107,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/users", authenticateToken, requireSuperAdmin, async (req, res) => {
     try {
       const { name, email, password, role } = req.body;
-      
+
       if (!name || !email || !password || !role) {
         return res.status(400).json({ error: "All fields are required" });
       }
-      
+
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(409).json({ error: "User already exists with this email" });
       }
-      
+
       const hashedPassword = await AuthService.hashPassword(password);
       const user = await storage.createUser({
         name,
@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: role as 'superadmin' | 'admin' | 'staff' | 'customer',
         shopDomain: (req as AuthRequest).user?.shopDomain
       });
-      
+
       const { password: _, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
     } catch (error) {
@@ -140,17 +140,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { name, email, role, password } = req.body;
       const currentUser = (req as AuthRequest).user!;
-      
+
       // Only Super Admin can change roles or update other Super Admins
       const targetUser = await storage.getUserById(id);
       if (targetUser?.role === 'superadmin' && currentUser.role !== 'superadmin') {
         return res.status(403).json({ error: "Only Super Admin can modify Super Admin accounts" });
       }
-      
+
       if (role && role !== targetUser?.role && currentUser.role !== 'superadmin') {
         return res.status(403).json({ error: "Only Super Admin can change user roles" });
       }
-      
+
       const updates: any = { name, email };
       if (currentUser.role === 'superadmin' && role) {
         updates.role = role;
@@ -158,12 +158,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (password) {
         updates.password = await AuthService.hashPassword(password);
       }
-      
+
       const user = await storage.updateUser(id, updates);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error('Update user error:', error);
@@ -175,17 +175,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/users/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       // Prevent deletion of own account
       if (id === (req as AuthRequest).user?.id) {
         return res.status(400).json({ error: "Cannot delete your own account" });
       }
-      
+
       const success = await storage.deleteUser(id);
       if (!success) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       console.error('Delete user error:', error);
@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (session && session.accessToken) {
         saveShopSession(session.shop, session.accessToken);
         console.log(`Shop ${session.shop} authenticated successfully`);
-        
+
         // Redirect to main app
         res.redirect('/');
       } else {
@@ -460,7 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertOrderSchema.parse(req.body);
       const order = await storage.createOrder(validatedData);
-      
+
       // Process loyalty points ($1 spent = 1 point)
       if (order.customerId) {
         const pointsEarned = Math.floor(parseFloat(order.total));
@@ -555,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // TODO: Verify webhook signature in production
       const shopifyOrder = req.body;
-      
+
       // Find or create customer
       let customer = await storage.getCustomerByEmail(shopifyOrder.email);
       if (!customer) {
@@ -624,7 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!customer && order.email) {
           customer = await storage.getCustomerByEmail(order.email);
         }
-        
+
         if (!customer) {
           customer = await storage.createCustomer({
             shopifyId: order.customer.id.toString(),
@@ -673,21 +673,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customer/redeem-points", async (req, res) => {
     try {
       const { customerId, points, description } = req.body;
-      
+
       const customer = await storage.getCustomer(customerId);
       if (!customer) {
         return res.status(404).json({ error: "Customer not found" });
       }
-      
+
       if (customer.loyaltyPoints < points) {
         return res.status(400).json({ error: "Insufficient points" });
       }
-      
+
       // Deduct points from customer
       await storage.updateCustomer(customerId, {
         loyaltyPoints: customer.loyaltyPoints - points
       });
-      
+
       // Create redemption transaction
       await storage.createLoyaltyTransaction({
         customerId,
@@ -695,7 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "redeemed",
         description: description || `Redeemed ${points} points for discount`
       });
-      
+
       res.json({ success: true, newBalance: customer.loyaltyPoints - points });
     } catch (error) {
       res.status(500).json({ error: "Failed to redeem points" });
@@ -706,15 +706,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const customer = await storage.getCustomer(customerId);
-      
+
       if (!customer) {
         return res.status(404).json({ error: "Customer not found" });
       }
-      
+
       const orders = await storage.getOrdersByCustomer(customerId);
       const subscriptions = await storage.getSubscriptionsByCustomer(customerId);
       const loyaltyTransactions = await storage.getLoyaltyTransactionsByCustomer(customerId);
-      
+
       res.json({
         customer,
         orders,
@@ -733,10 +733,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const limit = parseInt(req.query.limit as string) || 5;
-      
+
       const { aiRecommendations } = await import("./ai-recommendations");
       const recommendations = await aiRecommendations.generateRecommendations(customerId, limit);
-      
+
       res.json(recommendations);
     } catch (error) {
       res.status(500).json({ error: "Failed to generate recommendations" });
@@ -747,10 +747,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/abandoned-cart/track", async (req, res) => {
     try {
       const { customerId, items } = req.body;
-      
+
       const { abandonedCartService } = await import("./abandoned-cart");
       const cart = await abandonedCartService.trackAbandonedCart(customerId, items);
-      
+
       res.json(cart);
     } catch (error) {
       res.status(500).json({ error: "Failed to track abandoned cart" });
@@ -761,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { abandonedCartService } = await import("./abandoned-cart");
       const stats = await abandonedCartService.getRecoveryStats();
-      
+
       res.json(stats);
     } catch (error) {
       res.status(500).json({ error: "Failed to get cart stats" });
@@ -772,10 +772,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { cartId } = req.params;
       const { attempt } = req.body;
-      
+
       const { abandonedCartService } = await import("./abandoned-cart");
       const result = await abandonedCartService.sendRecoveryEmail(cartId, attempt);
-      
+
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to send recovery email" });
@@ -787,7 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { loyaltyTiers } = await import("./loyalty-tiers");
       const tiers = loyaltyTiers.getAllTiers();
-      
+
       res.json(tiers);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch loyalty tiers" });
@@ -797,10 +797,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/loyalty/customer-tier/:customerId", async (req, res) => {
     try {
       const { customerId } = req.params;
-      
+
       const { loyaltyTiers } = await import("./loyalty-tiers");
       const tierInfo = await loyaltyTiers.getCustomerTierInfo(customerId);
-      
+
       res.json(tierInfo);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch customer tier info" });
@@ -811,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { loyaltyTiers } = await import("./loyalty-tiers");
       const distribution = await loyaltyTiers.getTierDistribution();
-      
+
       res.json(distribution);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tier distribution" });
@@ -862,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { batchId, adjustmentType, newQuantity, reason } = req.body;
       const { inventoryService } = await import("./inventory-service");
-      
+
       const batch = await storage.getInventoryBatch(batchId);
       if (!batch) return res.status(404).json({ error: "Batch not found" });
 
@@ -887,13 +887,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { productId, warehouseId, days } = req.query;
       const { inventoryService } = await import("./inventory-service");
-      
+
       const auditTrail = await inventoryService.getStockAuditTrail(
         productId as string,
         warehouseId as string,
         parseInt(days as string) || 30
       );
-      
+
       res.json(auditTrail);
     } catch (error) {
       res.status(500).json({ error: "Failed to get audit trail" });
@@ -904,7 +904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { productId, warehouseId, quantity, reference, referenceType } = req.body;
       const { inventoryService } = await import("./inventory-service");
-      
+
       const consumed = await inventoryService.consumeStock(
         productId,
         warehouseId,
@@ -913,7 +913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referenceType,
         'system' // TODO: Get from auth
       );
-      
+
       res.json(consumed);
     } catch (error) {
       res.status(500).json({ error: "Failed to consume stock: " + (error as Error).message });
@@ -988,7 +988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { poData, items } = req.body;
       const { vendorService } = await import("./vendor-service");
-      
+
       const result = await vendorService.createPurchaseOrder(poData, items);
       res.status(201).json(result);
     } catch (error) {
@@ -1001,14 +1001,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { receivedItems, warehouseId } = req.body;
       const { vendorService } = await import("./vendor-service");
-      
+
       const result = await vendorService.receivePurchaseOrder(
         id,
         receivedItems,
         warehouseId,
         'admin' // TODO: Get from auth
       );
-      
+
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to receive purchase order" });
@@ -1020,12 +1020,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { vendorId, days } = req.query;
       const { vendorService } = await import("./vendor-service");
-      
+
       const analytics = await vendorService.getVendorAnalytics(
         vendorId as string,
         parseInt(days as string) || 90
       );
-      
+
       res.json(analytics);
     } catch (error) {
       res.status(500).json({ error: "Failed to get vendor analytics" });
@@ -1036,7 +1036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { warehouseId } = req.query;
       const { vendorService } = await import("./vendor-service");
-      
+
       const recommendations = await vendorService.getPurchaseOrderRecommendations(warehouseId as string);
       res.json(recommendations);
     } catch (error) {
@@ -1049,7 +1049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const paymentData = req.body;
       const { vendorService } = await import("./vendor-service");
-      
+
       const payment = await vendorService.recordPayment(paymentData);
       res.status(201).json(payment);
     } catch (error) {
@@ -1061,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/ai/sales-forecast", async (req, res) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
-      
+
       // Simple AI forecasting based on historical data
       const orders = await storage.getOrders();
       const recentOrders = orders.filter(order => {
@@ -1072,11 +1072,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const totalRevenue = recentOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
       const avgDailyRevenue = totalRevenue / 30;
-      
+
       // Apply growth trend and seasonal factors
       const growthRate = 1.05; // 5% growth
       const seasonalMultiplier = 1.1; // 10% seasonal boost
-      
+
       const forecastRevenue = avgDailyRevenue * days * growthRate * seasonalMultiplier;
       const confidence = Math.min(85 + (recentOrders.length / 10), 95);
 
@@ -1100,21 +1100,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/ai/business-insights", async (req, res) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
-      
+
       const orders = await storage.getOrders();
       const customers = await storage.getCustomers();
       const products = await storage.getProducts();
-      
+
       // Calculate business health score
       const recentOrders = orders.filter(order => {
         const orderDate = new Date(order.createdAt);
         const daysAgo = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24);
         return daysAgo <= days;
       });
-      
+
       const totalRevenue = recentOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
       const avgOrderValue = recentOrders.length ? totalRevenue / recentOrders.length : 0;
-      
+
       // Customer metrics
       const customerOrderCounts = recentOrders.reduce((acc, order) => {
         if (order.customerId) {
@@ -1122,21 +1122,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         return acc;
       }, {} as Record<string, number>);
-      
+
       const repeatCustomers = Object.values(customerOrderCounts).filter(count => count > 1).length;
       const repeatRate = customers.length ? (repeatCustomers / customers.length) * 100 : 0;
-      
+
       // Product metrics
       const lowStockProducts = products.filter(p => p.stock < 10).length;
       const stockHealthScore = products.length ? ((products.length - lowStockProducts) / products.length) * 100 : 100;
-      
+
       // Calculate overall health score (weighted average)
       const healthScore = Math.round(
         (stockHealthScore * 0.3) + 
         (Math.min(repeatRate * 2, 100) * 0.3) + 
         (Math.min(avgOrderValue / 50 * 100, 100) * 0.4)
       );
-      
+
       res.json({
         healthScore,
         metrics: {
@@ -1245,7 +1245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!['admin', 'staff', 'customer'].includes(role)) {
         return res.status(400).json({ error: "Invalid role" });
       }
-      
+
       const permissions = await storage.getRolePermissions(role);
       res.json({ role, permissions });
     } catch (error) {
@@ -1258,15 +1258,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { role } = req.params;
       const { permissions } = req.body;
-      
+
       if (!['admin', 'staff', 'customer'].includes(role)) {
         return res.status(400).json({ error: "Invalid role" });
       }
-      
+
       if (!permissions || typeof permissions !== 'object') {
         return res.status(400).json({ error: "Invalid permissions data" });
       }
-      
+
       await storage.updateRolePermissions(role, permissions);
       res.json({ message: "Role permissions updated successfully" });
     } catch (error) {
@@ -1279,7 +1279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/role/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
-      
+
       // Mock role mapping - in real app would come from auth/database
       const roleMap: Record<string, string> = {
         'admin': 'admin',
@@ -1287,7 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'customer-demo': 'customer',
         'customer': 'customer'
       };
-      
+
       const role = roleMap[userId] || 'customer';
       res.json({ role, userId });
     } catch (error) {
@@ -1300,11 +1300,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { role } = req.params;
       const alerts = [];
-      
+
       const lowStockProducts = await storage.getLowStockProducts();
       const subscriptions = await storage.getSubscriptions();
       const orders = await storage.getOrders();
-      
+
       // Stock alerts for admin and staff
       if (role === 'admin' || role === 'staff') {
         if (lowStockProducts.length > 0) {
@@ -1314,14 +1314,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             action: 'View Inventory'
           });
         }
-        
+
         // Subscription expiration alerts
         const expiringSoon = subscriptions.filter(s => {
           const nextBilling = new Date(s.nextBillingDate);
           const daysLeft = Math.ceil((nextBilling.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
           return daysLeft <= 7 && s.status === 'active';
         });
-        
+
         if (expiringSoon.length > 0) {
           alerts.push({
             type: 'info',
@@ -1329,7 +1329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             action: 'Review Subscriptions'
           });
         }
-        
+
         // New orders for admin
         if (role === 'admin' && orders.length > 0) {
           const recentOrders = orders.filter(o => {
@@ -1337,7 +1337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const hoursAgo = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60);
             return hoursAgo <= 24;
           });
-          
+
           if (recentOrders.length > 0) {
             alerts.push({
               type: 'success',
@@ -1347,7 +1347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       res.json(alerts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch alerts" });
@@ -1359,22 +1359,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const products = await storage.getProducts();
       const orders = await storage.getOrders();
-      
+
       const forecast = products.map(product => {
         // Calculate average daily sales from order history
         const productOrders = orders.filter(order => {
           // This is simplified - in real app would track order line items
           return order.createdAt >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
         });
-        
+
         const totalSold = product.sold || 0;
         const dailySales = totalSold / 30; // Simplified average
         const daysLeft = dailySales > 0 ? Math.ceil(product.stock / dailySales) : 999;
-        
+
         let status = 'good';
         if (daysLeft < 7) status = 'critical';
         else if (daysLeft < 14) status = 'warning';
-        
+
         return {
           id: product.id,
           name: product.name,
@@ -1384,7 +1384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status
         };
       });
-      
+
       res.json(forecast);
     } catch (error) {
       res.status(500).json({ error: "Failed to generate forecast" });
@@ -1394,6 +1394,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount system and integration routes
   app.use('/api/system', authenticateToken, systemRoutes);
   app.use('/api/integrations', authenticateToken, integrationsRoutes);
+
+  // System Settings endpoint
+  app.get("/api/system/settings", authenticateToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+    try {
+      const settings = await storage.getSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+      res.status(500).json({ error: 'Failed to fetch system settings' });
+    }
+  });
+
+  // Theme Settings endpoint
+  app.put("/api/system/theme", authenticateToken, requireRole(['superadmin']), async (req, res) => {
+    try {
+      const { theme } = req.body;
+      if (!['emerald', 'blue', 'purple', 'coral'].includes(theme)) {
+        return res.status(400).json({ error: 'Invalid theme' });
+      }
+
+      // In a real app, you'd save this to the database
+      // For now, we'll just return success
+      res.json({ success: true, theme });
+    } catch (error) {
+      console.error('Error updating theme:', error);
+      res.status(500).json({ error: 'Failed to update theme' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

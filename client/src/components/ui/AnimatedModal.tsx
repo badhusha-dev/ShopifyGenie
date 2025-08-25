@@ -78,22 +78,22 @@ const AnimatedModal: React.FC<AnimatedModalProps> = ({
           height: 100%;
           background-color: rgba(0, 0, 0, 0.5);
           backdrop-filter: blur(4px);
-          z-index: 1055;
+          z-index: var(--z-modal-backdrop, 1040);
           display: flex;
           align-items: center;
           justify-content: center;
-          animation: backdropFadeIn 0.3s ease;
+          animation: fadeIn var(--duration-normal, 300ms) ease;
         }
 
         .animated-modal-dialog {
           margin: 0;
-          animation: modalSlideIn 0.4s ease;
+          animation: scaleIn var(--duration-slow, 500ms) ease;
         }
 
         .animated-modal-content {
           border: none;
-          border-radius: 16px;
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+          border-radius: var(--radius-2xl, 1.5rem);
+          box-shadow: var(--shadow-xl);
           overflow: hidden;
         }
 
@@ -101,12 +101,13 @@ const AnimatedModal: React.FC<AnimatedModalProps> = ({
           background: linear-gradient(135deg, var(--shopify-green-light) 0%, var(--shopify-green) 100%);
           color: white;
           border-bottom: none;
-          padding: 1.5rem;
+          padding: var(--spacing-lg, 1.5rem);
         }
 
         .modal-header .btn-close {
           filter: invert(1);
           opacity: 0.8;
+          transition: opacity var(--duration-fast, 150ms) ease;
         }
 
         .modal-header .btn-close:hover {
@@ -114,44 +115,33 @@ const AnimatedModal: React.FC<AnimatedModalProps> = ({
         }
 
         .modal-body {
-          padding: 2rem;
+          padding: var(--spacing-xl, 2rem);
         }
 
         .modal-footer {
-          border-top: 1px solid #e0e6ed;
-          padding: 1.5rem;
-          background-color: #f8f9fa;
+          border-top: 1px solid var(--bs-border-color);
+          padding: var(--spacing-lg, 1.5rem);
+          background-color: var(--bs-tertiary-bg);
         }
 
-        @keyframes backdropFadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+        /* Dark mode adjustments */
+        [data-bs-theme="dark"] .animated-modal-backdrop {
+          background-color: rgba(0, 0, 0, 0.7);
         }
 
-        @keyframes modalSlideIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9) translateY(-50px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
+        [data-bs-theme="dark"] .animated-modal-content {
+          box-shadow: var(--shadow-xl);
         }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
           .animated-modal-dialog {
-            margin: 1rem;
+            margin: var(--spacing-md, 1rem);
             width: calc(100% - 2rem);
           }
           
           .modal-body {
-            padding: 1.5rem;
+            padding: var(--spacing-lg, 1.5rem);
           }
         }
       `}</style>

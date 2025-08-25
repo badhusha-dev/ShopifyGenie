@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
+import { apiRequest } from '../lib/queryClient';
+import ThemeSettings from '../components/ThemeSettings';
 
 interface Setting {
   id: string;
@@ -27,14 +31,14 @@ const SystemSettings: React.FC = () => {
       const response = await fetch('/api/system/settings');
       if (!response.ok) throw new Error('Failed to fetch settings');
       const data = await response.json();
-      
+
       // Convert to settings object
       const settingsObj: Record<string, string> = {};
       data.forEach((setting: Setting) => {
         settingsObj[setting.key] = setting.value;
       });
       setSettings(settingsObj);
-      
+
       return data;
     }
   });
@@ -124,7 +128,7 @@ const SystemSettings: React.FC = () => {
               </h1>
               <p className="text-muted mb-0">Configure system preferences and monitor activity</p>
             </div>
-            <button 
+            <button
               className="btn btn-shopify d-flex align-items-center"
               onClick={handleSaveSettings}
               disabled={updateSettingsMutation.isPending}
@@ -150,7 +154,7 @@ const SystemSettings: React.FC = () => {
         <div className="col-12">
           <ul className="nav nav-tabs nav-fill" id="settingsTab" role="tablist">
             <li className="nav-item" role="presentation">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'general' ? 'active' : ''}`}
                 onClick={() => setActiveTab('general')}
                 type="button"
@@ -160,7 +164,7 @@ const SystemSettings: React.FC = () => {
               </button>
             </li>
             <li className="nav-item" role="presentation">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'notifications' ? 'active' : ''}`}
                 onClick={() => setActiveTab('notifications')}
                 type="button"
@@ -170,7 +174,7 @@ const SystemSettings: React.FC = () => {
               </button>
             </li>
             <li className="nav-item" role="presentation">
-              <button 
+              <button
                 className={`nav-link ${activeTab === 'security' ? 'active' : ''}`}
                 onClick={() => setActiveTab('security')}
                 type="button"
@@ -180,7 +184,17 @@ const SystemSettings: React.FC = () => {
               </button>
             </li>
             <li className="nav-item" role="presentation">
-              <button 
+              <button
+                className={`nav-link ${activeTab === 'theme' ? 'active' : ''}`}
+                onClick={() => setActiveTab('theme')}
+                type="button"
+              >
+                <i className="fas fa-palette me-2"></i>
+                Theme Settings
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button
                 className={`nav-link ${activeTab === 'audit' ? 'active' : ''}`}
                 onClick={() => setActiveTab('audit')}
                 type="button"
@@ -530,6 +544,15 @@ const SystemSettings: React.FC = () => {
           </div>
         )}
 
+        {/* Theme Settings Tab */}
+        {activeTab === 'theme' && (
+          <div className="row g-4 animate-slide-in">
+            <div className="col-12">
+              <ThemeSettings />
+            </div>
+          </div>
+        )}
+
         {/* Audit Logs Tab */}
         {activeTab === 'audit' && (
           <div className="row animate-slide-in">
@@ -557,7 +580,7 @@ const SystemSettings: React.FC = () => {
                           </td>
                           <td>
                             <div className="d-flex align-items-center">
-                              <div className="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-2" 
+                              <div className="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-2"
                                    style={{width: '32px', height: '32px'}}>
                                 <i className="fas fa-user text-primary"></i>
                               </div>
