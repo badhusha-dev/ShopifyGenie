@@ -1,0 +1,48 @@
+You are a senior frontend engineer. Enhance my ShopifyApp (React 18 + TypeScript + Bootstrap 5.3 + JWT + RBAC + Chart.js) with advanced design system features.
+
+Goal
+Add dark mode support, theme customization (accent colors), micro-interactions (ripples, row expand), and centralize all design tokens.
+
+Features to Add
+
+1. 🌙 Dark Mode (Bootstrap 5.3 utilities)
+   - Enable global dark mode toggle in navbar (light/dark icons).
+   - Use Bootstrap’s `data-bs-theme="dark"` attribute to switch themes.
+   - Ensure all components (Navbar, Sidebar, Cards, Tables, Modals) adapt automatically.
+   - Persist user preference in localStorage.
+
+2. 🎨 Theme Customizer (Super Admin only)
+   - Add “Theme Settings” tab under System Settings.
+   - Super Admin can pick accent color palette (green/emerald, blue, purple, coral).
+   - Store chosen theme in DB and apply globally.
+   - Update Bootstrap CSS variables dynamically using a `<style>` injection approach:
+     --bs-primary, --bs-gradient-start, --bs-gradient-end.
+   - Provide preview before saving.
+
+3. ✨ Micro-Interactions
+   - Add ripple effect to buttons (Bootstrap-compatible JS or CSS keyframes).
+   - Add row expand animation in DataTable (accordion-style reveal for row details).
+   - Smooth hover transitions on KPI Cards and Integration Cards.
+
+4. 🎛️ Exportable Design Tokens
+   - Create `/src/design/tokens.scss` (or `.ts` for React constants) containing:
+     * Color palettes (emerald, blue, purple, coral).
+     * Gradient definitions.
+     * Animation keyframes (fade, slide, ripple, lift).
+     * Spacing & border radius values.
+   - Ensure all reusable components (AnimatedCard, KPI Card, Modal, DataTable) import tokens instead of hardcoded values.
+   - Allow easy export of tokens for design docs or future theming.
+
+Requirements
+- Use only Bootstrap 5.3 utilities + SCSS variables + custom CSS for animations.
+- Keep existing RBAC and functionality intact.
+- Dark Mode + Theme Customizer must not break responsiveness.
+- All micro-interactions should be subtle, professional, Shopify-grade.
+
+Deliverables
+- Updated Navbar with Dark Mode toggle.
+- System Settings → new “Theme Settings” tab for Super Admin.
+- Ripple-enabled Bootstrap buttons.
+- Expandable DataTable rows with animation.
+- Centralized `/src/design/tokens.scss` file with exportable design tokens.
+- Updated components (KPI Cards, Modals, DataTable, Integration Cards) to consume tokens.
