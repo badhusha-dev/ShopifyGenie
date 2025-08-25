@@ -36,10 +36,12 @@ const AppContent = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="d-flex align-items-center justify-content-center vh-100">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your workspace...</p>
+          <div className="spinner-border text-success mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="text-muted">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -57,17 +59,12 @@ const AppContent = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="d-flex" style={{minHeight: '100vh'}}>
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
-        sidebarCollapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0"
-      )}>
-        <Sidebar collapsed={false} />
-      </aside>
+      <Sidebar collapsed={sidebarCollapsed} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <Routes>
           <Route path="/" element={
             <>
@@ -76,8 +73,8 @@ const AppContent = () => {
                 subtitle="Overview of your business metrics"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <Home />
                 </div>
               </main>
@@ -91,8 +88,8 @@ const AppContent = () => {
                 subtitle="Manage your products and stock levels"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <Inventory />
                 </div>
               </main>
@@ -106,8 +103,8 @@ const AppContent = () => {
                 subtitle="AI-powered inventory insights and forecasting"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <AdvancedInventory />
                 </div>
               </main>
@@ -121,8 +118,8 @@ const AppContent = () => {
                 subtitle="Manage customer relationships and data"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <Customers />
                 </div>
               </main>
@@ -136,8 +133,8 @@ const AppContent = () => {
                 subtitle="Customer-facing dashboard and account management"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <CustomerPortal />
                 </div>
               </main>
@@ -151,8 +148,8 @@ const AppContent = () => {
                 subtitle="Manage customer loyalty and rewards"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <Loyalty />
                 </div>
               </main>
@@ -166,8 +163,8 @@ const AppContent = () => {
                 subtitle="Manage recurring subscriptions and billing"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <Subscriptions />
                 </div>
               </main>
@@ -181,8 +178,8 @@ const AppContent = () => {
                 subtitle="Manage suppliers and vendor relationships"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <VendorManagement />
                 </div>
               </main>
@@ -196,8 +193,8 @@ const AppContent = () => {
                 subtitle="AI-powered business recommendations and analytics"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <AIRecommendations />
                 </div>
               </main>
@@ -211,8 +208,8 @@ const AppContent = () => {
                 subtitle="Financial analytics and business reports"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <Reports />
                 </div>
               </main>
@@ -226,8 +223,8 @@ const AppContent = () => {
                 subtitle="Configure system preferences and settings"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <SystemSettings />
                 </div>
               </main>
@@ -241,8 +238,8 @@ const AppContent = () => {
                 subtitle="Manage system users and access"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <UserManagement />
                 </div>
               </main>
@@ -256,8 +253,8 @@ const AppContent = () => {
                 subtitle="Configure user roles and access permissions"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <RolePermissionManagement />
                 </div>
               </main>
@@ -271,8 +268,8 @@ const AppContent = () => {
                 subtitle="Connect third-party services and tools"
                 onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
-              <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-4 py-6">
+              <main className="flex-fill">
+                <div className="container-fluid p-4 animate-fade-in-up">
                   <Integrations />
                 </div>
               </main>
@@ -286,7 +283,8 @@ const AppContent = () => {
       {/* Mobile overlay */}
       {!sidebarCollapsed && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none"
+          style={{zIndex: 1035}}
           onClick={() => setSidebarCollapsed(true)}
         />
       )}

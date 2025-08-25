@@ -1,0 +1,50 @@
+You are a senior frontend engineer. Refactor my ShopifyApp frontend (React 18 + TypeScript + Bootstrap 5 + JWT + RBAC + Shopify API integration) to use a **modern Bootstrap-based design** with animations and Shopify-inspired visuals.
+
+Goal
+Transform existing "dumb" Bootstrap pages into a **professional, animated, responsive web app** while keeping Bootstrap as the main framework.
+
+Changes to Apply
+1. Global Layout
+   - Modern top navbar with brand logo, language switcher, notifications dropdown, and profile menu.
+   - Collapsible sidebar with grouped items (Dashboard, Inventory, Customers, Loyalty, Subscriptions, Vendors, Intelligence, Settings).
+   - Sidebar uses Bootstrap collapse/accordion with smooth animation.
+
+2. Dashboard
+   - KPI Cards: gradient backgrounds, Bootstrap cards with icons, hover scale effect.
+   - Charts: integrate Chart.js with animated transitions.
+   - Recent Orders Table: striped, hover, sticky header, fade-in animation.
+
+3. Inventory
+   - Filter bar styled with Bootstrap input groups + dropdowns.
+   - Modern DataTable with hover effects, subtle row animations.
+   - Add/Edit Modal: use Bootstrap Tabs (General | Pricing | Stock), animated slide-in.
+
+4. Finance Dashboard
+   - KPI Cards: Revenue, COGS, Margins, Refund % with animated counters.
+   - Charts: Bootstrap grid + Chart.js line/pie/bar with fade-in animations.
+   - Refunds/Wallets/Payouts tables with Bootstrap badges for status + animated modal actions.
+
+5. System Settings
+   - Bootstrap Nav Tabs with smooth fade transitions between General | Notifications | Security | Audit Logs.
+   - Audit Logs Table with colored badges/icons for actions.
+
+6. Integrations
+   - Grid of Bootstrap cards for Stripe, SendGrid, Twilio, QuickBooks.
+   - Each card: service logo, status badge, and “Connect/Test” button with hover animations.
+
+7. UI Polish
+   - Use Bootstrap utilities: rounded corners, shadows, spacing for modern look.
+   - Animate.css or Bootstrap’s built-in transitions for fade, slide, bounce effects.
+   - Toast notifications with fade-in/out animation.
+   - Ensure all layouts are responsive (Bootstrap grid system).
+
+Requirements
+- Keep existing functionality, only enhance styles/animations.
+- Use Bootstrap 5 components only (no Tailwind).
+- Add smooth transitions for sidebar, modals, tabs, and cards.
+- Maintain RBAC-based visibility rules for pages/actions.
+
+Deliverables
+- Updated global layout (Navbar + Sidebar).
+- Restyled Dashboard, Inventory, Finance, Settings, Integrations pages using Bootstrap 5.
+- Reusable Bootstrap components (AnimatedCard, KPI Card, AnimatedModal, DataTable).

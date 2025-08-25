@@ -1,21 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  DollarSign, 
-  ShoppingCart, 
-  Users, 
-  Package,
-  TrendingUp,
-  AlertTriangle,
-  Heart,
-  CreditCard
-} from 'lucide-react';
-import { KpiCard } from '@/components/ui/kpi-card';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import AnimatedKPICard from '@/components/ui/AnimatedKPICard';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 const Dashboard = () => {
@@ -83,15 +69,15 @@ const Dashboard = () => {
       value: '$24,580',
       change: '+12.5%',
       changeType: 'positive' as const,
-      icon: DollarSign,
-      gradient: 'emerald' as const
+      icon: 'fas fa-dollar-sign',
+      gradient: 'shopify' as const
     },
     {
       title: 'Total Orders',
       value: '1,205',
       change: '+8.3%',
       changeType: 'positive' as const,
-      icon: ShoppingCart,
+      icon: 'fas fa-shopping-cart',
       gradient: 'blue' as const
     },
     {
@@ -99,7 +85,7 @@ const Dashboard = () => {
       value: '849',
       change: '+15.2%',
       changeType: 'positive' as const,
-      icon: Users,
+      icon: 'fas fa-users',
       gradient: 'purple' as const
     },
     {
@@ -107,7 +93,7 @@ const Dashboard = () => {
       value: '2,847',
       change: '-3.1%',
       changeType: 'negative' as const,
-      icon: Package,
+      icon: 'fas fa-boxes',
       gradient: 'coral' as const
     }
   ];
@@ -131,212 +117,239 @@ const Dashboard = () => {
 
   if (statsLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="container-fluid">
+        <div className="row g-4 mb-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-16 mb-2" />
-                <Skeleton className="h-4 w-12" />
-              </CardContent>
-            </Card>
+            <div key={i} className="col-xl-3 col-lg-6">
+              <div className="modern-card p-4">
+                <div className="placeholder-glow">
+                  <span className="placeholder col-6 mb-2"></span>
+                  <span className="placeholder col-4 mb-2 bg-secondary"></span>
+                  <span className="placeholder col-3"></span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-64 w-full" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-64 w-full" />
-            </CardContent>
-          </Card>
+        <div className="row g-4">
+          <div className="col-lg-8">
+            <div className="modern-card p-4">
+              <div className="placeholder-glow">
+                <span className="placeholder col-4 mb-3"></span>
+                <span className="placeholder w-100" style={{height: '300px'}}></span>
+              </div>
+            </div>
+          </div>
+          <div className="col-lg-4">
+            <div className="modern-card p-4">
+              <div className="placeholder-glow">
+                <span className="placeholder col-6 mb-3"></span>
+                <span className="placeholder w-100" style={{height: '300px'}}></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container-fluid">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-coral-500 to-emerald-500 rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">
-          Welcome back, {user?.name}! 👋
-        </h1>
-        <p className="text-coral-100">
-          Here's what's happening with your business today.
-        </p>
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="modern-card bg-gradient-shopify text-white p-4 animate-fade-in-up">
+            <div className="d-flex align-items-center">
+              <div className="me-3">
+                <div 
+                  className="rounded-circle d-flex align-items-center justify-content-center bg-white bg-opacity-20"
+                  style={{width: '60px', height: '60px'}}
+                >
+                  <i className="fas fa-chart-line fa-lg text-white"></i>
+                </div>
+              </div>
+              <div>
+                <h2 className="h3 fw-bold mb-1">Welcome back, {user?.name}! 👋</h2>
+                <p className="mb-0 text-white-50">Here's what's happening with your business today.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="row g-4 mb-4">
         {mockKPIData.map((kpi, index) => (
-          <KpiCard key={index} {...kpi} />
+          <div key={index} className="col-xl-3 col-lg-6">
+            <AnimatedKPICard {...kpi} />
+          </div>
         ))}
       </div>
 
       {/* Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="row g-4 mb-4">
         {/* Sales Trends Chart */}
-        <Card className="rounded-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold">Sales Trends</CardTitle>
-              <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+        <div className="col-lg-8">
+          <div className="modern-card p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold text-dark mb-0">
+                <i className="fas fa-chart-line me-2 text-success"></i>
+                Sales Trends
+              </h5>
+              <span className="badge bg-success-subtle text-success px-3 py-2">
                 Last 7 days
-              </Badge>
+              </span>
             </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockSalesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" stroke="#666" />
-                <YAxis stroke="#666" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }} 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="sales" 
-                  stroke="#10b981" 
-                  strokeWidth={3}
-                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: '#059669' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+            <div style={{height: '300px'}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={mockSalesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="date" stroke="#666" fontSize={12} />
+                  <YAxis stroke="#666" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
+                    }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="sales" 
+                    stroke="var(--shopify-green)" 
+                    strokeWidth={3}
+                    dot={{ fill: 'var(--shopify-green)', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'var(--shopify-dark-green)' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
 
         {/* Loyalty Distribution Chart */}
-        <Card className="rounded-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold">Customer Loyalty Tiers</CardTitle>
-              <Heart className="h-5 w-5 text-coral-500" />
+        <div className="col-lg-4">
+          <div className="modern-card p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold text-dark mb-0">
+                <i className="fas fa-heart me-2 text-danger"></i>
+                Customer Loyalty Tiers
+              </h5>
             </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={mockLoyaltyTiers}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {mockLoyaltyTiers.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+            <div style={{height: '300px'}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={mockLoyaltyTiers}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {mockLoyaltyTiers.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions & Alerts */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="row g-4">
         {/* Quick Actions */}
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start bg-coral-500 hover:bg-coral-600">
-              <Package className="mr-2 h-4 w-4" />
-              Add New Product
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <Users className="mr-2 h-4 w-4" />
-              Manage Customers
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <CreditCard className="mr-2 h-4 w-4" />
-              Process Orders
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="col-lg-4">
+          <div className="modern-card p-4">
+            <h5 className="fw-bold text-dark mb-3">
+              <i className="fas fa-bolt me-2 text-warning"></i>
+              Quick Actions
+            </h5>
+            <div className="d-grid gap-2">
+              <button className="btn btn-coral d-flex align-items-center justify-content-start">
+                <i className="fas fa-plus me-2"></i>
+                Add New Product
+              </button>
+              <button className="btn btn-outline-secondary d-flex align-items-center justify-content-start">
+                <i className="fas fa-users me-2"></i>
+                Manage Customers
+              </button>
+              <button className="btn btn-outline-secondary d-flex align-items-center justify-content-start">
+                <i className="fas fa-credit-card me-2"></i>
+                Process Orders
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Alerts */}
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center">
-              <AlertTriangle className="mr-2 h-5 w-5 text-amber-500" />
+        <div className="col-lg-4">
+          <div className="modern-card p-4">
+            <h5 className="fw-bold text-dark mb-3 d-flex align-items-center">
+              <i className="fas fa-exclamation-triangle me-2 text-warning"></i>
               Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg">
-              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-amber-800">Low Stock Alert</p>
-                <p className="text-xs text-amber-600">5 products below threshold</p>
+            </h5>
+            <div className="d-flex flex-column gap-3">
+              <div className="d-flex align-items-center p-3 bg-warning-subtle rounded-3">
+                <div className="bg-warning rounded-circle me-3" style={{width: '8px', height: '8px'}}></div>
+                <div className="flex-fill">
+                  <p className="small fw-semibold text-warning-emphasis mb-0">Low Stock Alert</p>
+                  <p className="small text-warning mb-0">5 products below threshold</p>
+                </div>
+              </div>
+              <div className="d-flex align-items-center p-3 bg-info-subtle rounded-3">
+                <div className="bg-info rounded-circle me-3" style={{width: '8px', height: '8px'}}></div>
+                <div className="flex-fill">
+                  <p className="small fw-semibold text-info-emphasis mb-0">New Orders</p>
+                  <p className="small text-info mb-0">12 orders pending review</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-blue-800">New Orders</p>
-                <p className="text-xs text-blue-600">12 orders pending review</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Recent Activity */}
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
+        <div className="col-lg-4">
+          <div className="modern-card p-4">
+            <h5 className="fw-bold text-dark mb-3">
+              <i className="fas fa-clock me-2 text-primary"></i>
+              Recent Activity
+            </h5>
+            <div className="d-flex flex-column gap-3">
+              <div className="d-flex align-items-center">
+                <div className="bg-success-subtle rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '35px', height: '35px'}}>
+                  <i className="fas fa-chart-line text-success"></i>
+                </div>
+                <div className="flex-fill">
+                  <p className="small fw-semibold mb-0">Sale completed</p>
+                  <p className="small text-muted mb-0">Order #1234 - $156.00</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Sale completed</p>
-                <p className="text-xs text-gray-500">Order #1234 - $156.00</p>
+              <div className="d-flex align-items-center">
+                <div className="bg-info-subtle rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '35px', height: '35px'}}>
+                  <i className="fas fa-users text-info"></i>
+                </div>
+                <div className="flex-fill">
+                  <p className="small fw-semibold mb-0">New customer</p>
+                  <p className="small text-muted mb-0">John Doe joined</p>
+                </div>
+              </div>
+              <div className="d-flex align-items-center">
+                <div className="bg-coral-accent bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '35px', height: '35px'}}>
+                  <i className="fas fa-boxes text-coral-accent"></i>
+                </div>
+                <div className="flex-fill">
+                  <p className="small fw-semibold mb-0">Inventory updated</p>
+                  <p className="small text-muted mb-0">50 items restocked</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <Users className="w-4 h-4 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">New customer</p>
-                <p className="text-xs text-gray-500">John Doe joined</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-coral-100 rounded-full flex items-center justify-center">
-                <Package className="w-4 h-4 text-coral-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Inventory updated</p>
-                <p className="text-xs text-gray-500">50 items restocked</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
