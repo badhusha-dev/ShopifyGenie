@@ -277,6 +277,302 @@ export class MemStorage implements IStorage {
   private fiscalPeriods: Map<string, FiscalPeriod> = new Map();
   private accountBalances: Map<string, AccountBalance> = new Map();
 
+  constructor() {
+    this.seedData();
+    this.seedPermissions();
+    this.seedAccountingData();
+  }
+
+  private async seedAccountingData() {
+    // Seed Chart of Accounts
+    const chartOfAccounts = [
+      { id: '1000', code: '1000', name: 'Cash and Cash Equivalents', type: 'Asset', category: 'Current' },
+      { id: '1100', code: '1100', name: 'Accounts Receivable', type: 'Asset', category: 'Current' },
+      { id: '1200', code: '1200', name: 'Inventory', type: 'Asset', category: 'Current' },
+      { id: '1300', code: '1300', name: 'Prepaid Expenses', type: 'Asset', category: 'Current' },
+      { id: '1500', code: '1500', name: 'Equipment', type: 'Asset', category: 'Fixed' },
+      { id: '1510', code: '1510', name: 'Accumulated Depreciation - Equipment', type: 'Contra-Asset', category: 'Fixed' },
+      { id: '1600', code: '1600', name: 'Building', type: 'Asset', category: 'Fixed' },
+      { id: '1700', code: '1700', name: 'Land', type: 'Asset', category: 'Fixed' },
+      { id: '2000', code: '2000', name: 'Accounts Payable', type: 'Liability', category: 'Current' },
+      { id: '2100', code: '2100', name: 'Accrued Expenses', type: 'Liability', category: 'Current' },
+      { id: '2200', code: '2200', name: 'Short-term Debt', type: 'Liability', category: 'Current' },
+      { id: '2300', code: '2300', name: 'Payroll Liabilities', type: 'Liability', category: 'Current' },
+      { id: '2400', code: '2400', name: 'Sales Tax Payable', type: 'Liability', category: 'Current' },
+      { id: '2500', code: '2500', name: 'Long-term Debt', type: 'Liability', category: 'Long-Term' },
+      { id: '2600', code: '2600', name: 'Mortgage Payable', type: 'Liability', category: 'Long-Term' },
+      { id: '3000', code: '3000', name: 'Owner\'s Equity', type: 'Equity', category: 'Equity' },
+      { id: '3100', code: '3100', name: 'Retained Earnings', type: 'Equity', category: 'Equity' },
+      { id: '3200', code: '3200', name: 'Common Stock', type: 'Equity', category: 'Equity' },
+      { id: '4000', code: '4000', name: 'Sales Revenue', type: 'Revenue', category: 'Operating' },
+      { id: '4100', code: '4100', name: 'Service Revenue', type: 'Revenue', category: 'Operating' },
+      { id: '4200', code: '4200', name: 'Interest Income', type: 'Revenue', category: 'Non-Operating' },
+      { id: '5000', code: '5000', name: 'Cost of Goods Sold', type: 'Expense', category: 'Operating' },
+      { id: '6000', code: '6000', name: 'Salaries & Wages', type: 'Expense', category: 'Operating' },
+      { id: '6100', code: '6100', name: 'Rent Expense', type: 'Expense', category: 'Operating' },
+      { id: '6200', code: '6200', name: 'Marketing & Advertising', type: 'Expense', category: 'Operating' },
+      { id: '6300', code: '6300', name: 'Utilities', type: 'Expense', category: 'Operating' },
+      { id: '6400', code: '6400', name: 'Insurance', type: 'Expense', category: 'Operating' },
+      { id: '6500', code: '6500', name: 'Office Supplies', type: 'Expense', category: 'Operating' },
+      { id: '6600', code: '6600', name: 'Professional Services', type: 'Expense', category: 'Operating' },
+      { id: '6700', code: '6700', name: 'Depreciation Expense', type: 'Expense', category: 'Operating' }
+    ];
+
+    chartOfAccounts.forEach(account => {
+      this.accounts.set(account.id, {
+        ...account,
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as Account);
+    });
+
+    // Seed Journal Entries
+    const journalEntry1: JournalEntry = {
+      id: randomUUID(),
+      journalId: 'JRN-2023-001',
+      date: new Date('2023-10-01'),
+      description: 'Initial Capital Investment',
+      status: 'Posted',
+      postedBy: 'admin',
+      shopDomain: 'demo-store.myshopify.com',
+      createdAt: new Date('2023-10-01'),
+      updatedAt: new Date('2023-10-01')
+    };
+
+    const journalEntry2: JournalEntry = {
+      id: randomUUID(),
+      journalId: 'JRN-2023-002',
+      date: new Date('2023-10-15'),
+      description: 'Purchase of Inventory',
+      status: 'Posted',
+      postedBy: 'staff',
+      shopDomain: 'demo-store.myshopify.com',
+      createdAt: new Date('2023-10-15'),
+      updatedAt: new Date('2023-10-15')
+    };
+
+    this.journalEntries.set(journalEntry1.id, journalEntry1);
+    this.journalEntries.set(journalEntry2.id, journalEntry2);
+
+    // Seed Journal Entry Lines
+    const lines1: JournalEntryLine[] = [
+      {
+        id: randomUUID(),
+        journalEntryId: journalEntry1.id,
+        accountId: '1000', // Cash
+        debit: 50000,
+        credit: 0,
+        description: 'Cash investment',
+        createdAt: new Date('2023-10-01'),
+        updatedAt: new Date('2023-10-01')
+      },
+      {
+        id: randomUUID(),
+        journalEntryId: journalEntry1.id,
+        accountId: '3000', // Owner's Equity
+        debit: 0,
+        credit: 50000,
+        description: 'Owner contribution',
+        createdAt: new Date('2023-10-01'),
+        updatedAt: new Date('2023-10-01')
+      }
+    ];
+
+    const lines2: JournalEntryLine[] = [
+      {
+        id: randomUUID(),
+        journalEntryId: journalEntry2.id,
+        accountId: '1200', // Inventory
+        debit: 10000,
+        credit: 0,
+        description: 'Inventory purchase',
+        createdAt: new Date('2023-10-15'),
+        updatedAt: new Date('2023-10-15')
+      },
+      {
+        id: randomUUID(),
+        journalEntryId: journalEntry2.id,
+        accountId: '2000', // Accounts Payable
+        debit: 0,
+        credit: 10000,
+        description: 'Amount owed to vendor',
+        createdAt: new Date('2023-10-15'),
+        updatedAt: new Date('2023-10-15')
+      }
+    ];
+
+    this.journalEntryLines.set(journalEntry1.id, lines1);
+    this.journalEntryLines.set(journalEntry2.id, lines2);
+
+    // Seed Accounts Receivable
+    const receivables = [
+      {
+        id: randomUUID(),
+        customerId: Array.from(this.customers.keys())[0],
+        invoiceNumber: 'INV-2023-001',
+        invoiceDate: new Date('2023-10-20'),
+        dueDate: new Date('2023-11-19'),
+        amount: 1250.00,
+        status: 'Open',
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-10-20'),
+        updatedAt: new Date('2023-10-20')
+      },
+      {
+        id: randomUUID(),
+        customerId: Array.from(this.customers.keys())[1],
+        invoiceNumber: 'INV-2023-002',
+        invoiceDate: new Date('2023-10-25'),
+        dueDate: new Date('2023-11-24'),
+        amount: 890.25,
+        status: 'Open',
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-10-25'),
+        updatedAt: new Date('2023-10-25')
+      },
+      {
+        id: randomUUID(),
+        customerId: Array.from(this.customers.keys())[2],
+        invoiceNumber: 'INV-2023-003',
+        invoiceDate: new Date('2023-09-15'),
+        dueDate: new Date('2023-10-14'),
+        amount: 567.50,
+        status: 'Overdue',
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-09-15'),
+        updatedAt: new Date('2023-10-15')
+      }
+    ];
+
+    receivables.forEach(receivable => {
+      this.accountsReceivable.set(receivable.id, receivable as AccountsReceivable);
+    });
+
+    // Seed Accounts Payable
+    const payables = [
+      {
+        id: randomUUID(),
+        vendorId: this.vendors[0].id,
+        invoiceNumber: 'VINV-2023-001',
+        invoiceDate: new Date('2023-10-10'),
+        dueDate: new Date('2023-11-09'),
+        amount: 2500.00,
+        status: 'Open',
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-10-10'),
+        updatedAt: new Date('2023-10-10')
+      },
+      {
+        id: randomUUID(),
+        vendorId: this.vendors[0].id,
+        invoiceNumber: 'VINV-2023-002',
+        invoiceDate: new Date('2023-09-20'),
+        dueDate: new Date('2023-10-19'),
+        amount: 1800.00,
+        status: 'Overdue',
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-09-20'),
+        updatedAt: new Date('2023-10-20')
+      }
+    ];
+
+    payables.forEach(payable => {
+      this.accountsPayable.set(payable.id, payable as AccountsPayable);
+    });
+
+    // Seed Wallets
+    const customerIds = Array.from(this.customers.keys());
+    const wallets = [
+      {
+        id: randomUUID(),
+        entityType: 'customer',
+        entityId: customerIds[0],
+        balance: 125.50,
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-09-01'),
+        updatedAt: new Date('2023-10-25')
+      },
+      {
+        id: randomUUID(),
+        entityType: 'customer',
+        entityId: customerIds[1],
+        balance: 67.25,
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-08-15'),
+        updatedAt: new Date('2023-10-20')
+      },
+      {
+        id: randomUUID(),
+        entityType: 'vendor',
+        entityId: this.vendors[0].id,
+        balance: -450.00,
+        shopDomain: 'demo-store.myshopify.com',
+        createdAt: new Date('2023-09-10'),
+        updatedAt: new Date('2023-10-15')
+      }
+    ];
+
+    wallets.forEach(wallet => {
+      this.wallets.set(wallet.id, wallet as Wallet);
+    });
+
+    // Seed Wallet Transactions
+    const walletIds = Array.from(this.wallets.keys());
+    const walletTransactions = [
+      {
+        id: randomUUID(),
+        walletId: walletIds[0],
+        amount: 50.00,
+        type: 'credit',
+        description: 'Loyalty points conversion',
+        performedBy: 'customer',
+        createdAt: new Date('2023-10-01'),
+        updatedAt: new Date('2023-10-01')
+      },
+      {
+        id: randomUUID(),
+        walletId: walletIds[0],
+        amount: -25.50,
+        type: 'debit',
+        description: 'Purchase discount applied',
+        performedBy: 'system',
+        createdAt: new Date('2023-10-15'),
+        updatedAt: new Date('2023-10-15')
+      },
+      {
+        id: randomUUID(),
+        walletId: walletIds[1],
+        amount: 100.00,
+        type: 'credit',
+        description: 'Refund credit',
+        performedBy: 'admin',
+        createdAt: new Date('2023-10-10'),
+        updatedAt: new Date('2023-10-10')
+      }
+    ];
+
+    walletTransactions.forEach(transaction => {
+      const existingTransactions = this.walletTransactions.get(transaction.walletId) || [];
+      existingTransactions.push(transaction as WalletTransaction);
+      this.walletTransactions.set(transaction.walletId, existingTransactions);
+    });
+
+    // Seed Fiscal Periods
+    const fiscalPeriod = {
+      id: randomUUID(),
+      shopDomain: 'demo-store.myshopify.com',
+      startDate: new Date('2023-01-01'),
+      endDate: new Date('2023-12-31'),
+      name: 'Fiscal Year 2023',
+      status: 'Open',
+      createdAt: new Date('2023-01-01'),
+      updatedAt: new Date('2023-01-01')
+    };
+
+    this.fiscalPeriods.set(fiscalPeriod.id, fiscalPeriod as FiscalPeriod);
+  }
+
   // Permissions storage
   private permissions: any[] = [];
   private rolePermissions: any[] = [];
@@ -284,6 +580,7 @@ export class MemStorage implements IStorage {
   constructor() {
     this.seedData();
     this.seedPermissions();
+    this.seedAccountingData();
   }
 
   private async seedData() {
@@ -331,94 +628,397 @@ export class MemStorage implements IStorage {
         shopDomain: null,
       };
       await this.createUser(customerUser);
+
+      // Add more diverse users
+      const managerUser: InsertUser = {
+        name: 'Store Manager',
+        email: 'manager@shopifyapp.com',
+        password: await AuthService.hashPassword('manager123'),
+        role: 'admin',
+        permissions: null,
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(managerUser);
+
+      const accountantUser: InsertUser = {
+        name: 'Jane Accountant',
+        email: 'accountant@shopifyapp.com',
+        password: await AuthService.hashPassword('account123'),
+        role: 'staff',
+        permissions: null,
+        shopDomain: 'demo-store.myshopify.com',
+      };
+      await this.createUser(accountantUser);
     }
 
-    // Seed some initial data for demo
-    const customer1: Customer = {
-      id: randomUUID(),
-      shopifyId: "cust_001",
-      name: "John Doe",
-      email: "john@example.com",
-      loyaltyPoints: 1250,
-      totalSpent: "1430.50",
-      createdAt: new Date(),
-    };
+    // Seed comprehensive customer data
+    const customers = [
+      {
+        id: randomUUID(),
+        shopifyId: "cust_001",
+        name: "John Doe",
+        email: "john@example.com",
+        loyaltyPoints: 1250,
+        totalSpent: "1430.50",
+        createdAt: new Date('2023-01-15'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "cust_002",
+        name: "Sarah Miller",
+        email: "sarah.m@example.com",
+        loyaltyPoints: 830,
+        totalSpent: "890.25",
+        createdAt: new Date('2023-02-20'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "cust_003",
+        name: "Michael Johnson",
+        email: "michael@example.com",
+        loyaltyPoints: 2150,
+        totalSpent: "2890.75",
+        createdAt: new Date('2023-01-10'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "cust_004",
+        name: "Emily Davis",
+        email: "emily@example.com",
+        loyaltyPoints: 450,
+        totalSpent: "567.30",
+        createdAt: new Date('2023-03-05'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "cust_005",
+        name: "Robert Wilson",
+        email: "robert@example.com",
+        loyaltyPoints: 3200,
+        totalSpent: "4125.80",
+        createdAt: new Date('2022-11-22'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "cust_006",
+        name: "Lisa Anderson",
+        email: "lisa@example.com",
+        loyaltyPoints: 180,
+        totalSpent: "295.60",
+        createdAt: new Date('2023-04-12'),
+      }
+    ];
 
-    const customer2: Customer = {
-      id: randomUUID(),
-      shopifyId: "cust_002",
-      name: "Sarah Miller",
-      email: "sarah.m@example.com",
-      loyaltyPoints: 830,
-      totalSpent: "890.25",
-      createdAt: new Date(),
-    };
+    customers.forEach(customer => {
+      this.customers.set(customer.id, customer);
+    });
 
-    this.customers.set(customer1.id, customer1);
-    this.customers.set(customer2.id, customer2);
+    // Seed comprehensive product data
+    const products = [
+      {
+        id: randomUUID(),
+        shopifyId: "prod_001",
+        name: "Organic Green Tea",
+        sku: "GT-001",
+        stock: 8,
+        price: "24.99",
+        category: "Health & Wellness",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "prod_002",
+        name: "Premium Coffee Beans",
+        sku: "CB-002",
+        stock: 45,
+        price: "32.99",
+        category: "Beverages",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "prod_003",
+        name: "Handmade Soap Set",
+        sku: "HS-003",
+        stock: 5,
+        price: "19.99",
+        category: "Beauty & Care",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "prod_004",
+        name: "Wireless Bluetooth Headphones",
+        sku: "WBH-004",
+        stock: 25,
+        price: "89.99",
+        category: "Electronics",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "prod_005",
+        name: "Yoga Mat Premium",
+        sku: "YM-005",
+        stock: 15,
+        price: "45.50",
+        category: "Fitness",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "prod_006",
+        name: "Smart Water Bottle",
+        sku: "SWB-006",
+        stock: 3,
+        price: "65.00",
+        category: "Health & Wellness",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "prod_007",
+        name: "Ceramic Kitchen Knife Set",
+        sku: "CKS-007",
+        stock: 12,
+        price: "125.99",
+        category: "Kitchen",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "prod_008",
+        name: "LED Desk Lamp",
+        sku: "LDL-008",
+        stock: 22,
+        price: "78.50",
+        category: "Home & Office",
+        imageUrl: null,
+        lastUpdated: new Date(),
+      }
+    ];
 
-    const product1: Product = {
-      id: randomUUID(),
-      shopifyId: "prod_001",
-      name: "Organic Green Tea",
-      sku: "GT-001",
-      stock: 8,
-      price: "24.99",
-      category: "Health & Wellness",
-      imageUrl: null,
-      lastUpdated: new Date(),
-    };
+    products.forEach(product => {
+      this.products.set(product.id, product);
+    });
 
-    const product2: Product = {
-      id: randomUUID(),
-      shopifyId: "prod_002",
-      name: "Premium Coffee Beans",
-      sku: "CB-002",
-      stock: 45,
-      price: "32.99",
-      category: "Beverages",
-      imageUrl: null,
-      lastUpdated: new Date(),
-    };
+    // Seed orders with realistic data
+    const customerIds = Array.from(this.customers.keys());
+    const orders = [
+      {
+        id: randomUUID(),
+        shopifyId: "order_001",
+        customerId: customerIds[0],
+        total: "156.48",
+        pointsEarned: 156,
+        status: "paid",
+        createdAt: new Date('2023-10-15'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "order_002",
+        customerId: customerIds[1],
+        total: "89.99",
+        pointsEarned: 89,
+        status: "paid",
+        createdAt: new Date('2023-10-20'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "order_003",
+        customerId: customerIds[2],
+        total: "245.75",
+        pointsEarned: 245,
+        status: "pending",
+        createdAt: new Date('2023-10-25'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "order_004",
+        customerId: customerIds[0],
+        total: "67.50",
+        pointsEarned: 67,
+        status: "paid",
+        createdAt: new Date('2023-10-28'),
+      },
+      {
+        id: randomUUID(),
+        shopifyId: "order_005",
+        customerId: customerIds[3],
+        total: "198.25",
+        pointsEarned: 198,
+        status: "shipped",
+        createdAt: new Date('2023-10-30'),
+      }
+    ];
 
-    const product3: Product = {
-      id: randomUUID(),
-      shopifyId: "prod_003",
-      name: "Handmade Soap Set",
-      sku: "HS-003",
-      stock: 5,
-      price: "19.99",
-      category: "Beauty & Care",
-      imageUrl: null,
-      lastUpdated: new Date(),
-    };
+    orders.forEach(order => {
+      this.orders.set(order.id, order);
+    });
 
-    this.products.set(product1.id, product1);
-    this.products.set(product2.id, product2);
-    this.products.set(product3.id, product3);
+    // Seed subscriptions
+    const productIds = Array.from(this.products.keys());
+    const subscriptions = [
+      {
+        id: randomUUID(),
+        customerId: customerIds[0],
+        productId: productIds[0],
+        status: "active",
+        frequency: "monthly",
+        nextDelivery: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+        createdAt: new Date('2023-09-01'),
+      },
+      {
+        id: randomUUID(),
+        customerId: customerIds[1],
+        productId: productIds[1],
+        status: "paused",
+        frequency: "monthly",
+        nextDelivery: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+        createdAt: new Date('2023-08-15'),
+      },
+      {
+        id: randomUUID(),
+        customerId: customerIds[2],
+        productId: productIds[4],
+        status: "active",
+        frequency: "weekly",
+        nextDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        createdAt: new Date('2023-10-01'),
+      },
+      {
+        id: randomUUID(),
+        customerId: customerIds[4],
+        productId: productIds[2],
+        status: "cancelled",
+        frequency: "monthly",
+        nextDelivery: null,
+        createdAt: new Date('2023-07-20'),
+      }
+    ];
 
-    const subscription1: Subscription = {
-      id: randomUUID(),
-      customerId: customer1.id,
-      productId: product1.id,
-      status: "active",
-      frequency: "monthly",
-      nextDelivery: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
-      createdAt: new Date(),
-    };
+    subscriptions.forEach(subscription => {
+      this.subscriptions.set(subscription.id, subscription);
+    });
 
-    const subscription2: Subscription = {
-      id: randomUUID(),
-      customerId: customer2.id,
-      productId: product2.id,
-      status: "paused",
-      frequency: "monthly",
-      nextDelivery: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
-      createdAt: new Date(),
-    };
+    // Seed loyalty transactions
+    const loyaltyTransactions = [
+      {
+        id: randomUUID(),
+        customerId: customerIds[0],
+        orderId: orders[0].id,
+        points: 156,
+        type: 'earned' as const,
+        createdAt: new Date('2023-10-15'),
+      },
+      {
+        id: randomUUID(),
+        customerId: customerIds[0],
+        orderId: null,
+        points: -50,
+        type: 'redeemed' as const,
+        createdAt: new Date('2023-10-16'),
+      },
+      {
+        id: randomUUID(),
+        customerId: customerIds[1],
+        orderId: orders[1].id,
+        points: 89,
+        type: 'earned' as const,
+        createdAt: new Date('2023-10-20'),
+      },
+      {
+        id: randomUUID(),
+        customerId: customerIds[2],
+        orderId: orders[2].id,
+        points: 245,
+        type: 'earned' as const,
+        createdAt: new Date('2023-10-25'),
+      }
+    ];
 
-    this.subscriptions.set(subscription1.id, subscription1);
-    this.subscriptions.set(subscription2.id, subscription2);
+    loyaltyTransactions.forEach(transaction => {
+      this.loyaltyTransactions.set(transaction.id, transaction);
+    });
+
+    // Seed inventory batches
+    this.inventoryBatches = [
+      {
+        id: randomUUID(),
+        productId: productIds[0],
+        warehouseId: this.warehouses[0].id,
+        batchNumber: "GT001-2023-10",
+        quantity: 100,
+        remainingQuantity: 8,
+        expiryDate: new Date('2024-06-15'),
+        createdAt: new Date('2023-10-01'),
+      },
+      {
+        id: randomUUID(),
+        productId: productIds[1],
+        warehouseId: this.warehouses[0].id,
+        batchNumber: "CB002-2023-09",
+        quantity: 200,
+        remainingQuantity: 45,
+        expiryDate: new Date('2024-12-31'),
+        createdAt: new Date('2023-09-15'),
+      },
+      {
+        id: randomUUID(),
+        productId: productIds[2],
+        warehouseId: this.warehouses[0].id,
+        batchNumber: "HS003-2023-10",
+        quantity: 50,
+        remainingQuantity: 5,
+        expiryDate: new Date('2024-03-20'),
+        createdAt: new Date('2023-10-10'),
+      }
+    ];
+
+    // Seed purchase orders
+    this.purchaseOrders = [
+      {
+        id: randomUUID(),
+        vendorId: this.vendors[0].id,
+        orderNumber: "PO-2023-001",
+        status: "Delivered",
+        orderDate: new Date('2023-10-01'),
+        expectedDelivery: new Date('2023-10-15'),
+        totalCost: "2500.00",
+        createdAt: new Date('2023-10-01'),
+      },
+      {
+        id: randomUUID(),
+        vendorId: this.vendors[0].id,
+        orderNumber: "PO-2023-002",
+        status: "Sent",
+        orderDate: new Date('2023-10-20'),
+        expectedDelivery: new Date('2023-11-05'),
+        totalCost: "1800.00",
+        createdAt: new Date('2023-10-20'),
+      }
+    ];
+
+    // Seed vendor payments
+    this.vendorPayments = [
+      {
+        id: randomUUID(),
+        vendorId: this.vendors[0].id,
+        purchaseOrderId: this.purchaseOrders[0].id,
+        amount: "2500.00",
+        paymentDate: new Date('2023-10-16'),
+        paymentMethod: "Bank Transfer",
+        reference: "PAY-2023-001",
+        createdAt: new Date('2023-10-16'),
+      }
+    ];
   }
 
   private async seedPermissions() {
@@ -1428,6 +2028,40 @@ export class MemStorage implements IStorage {
         status: daysLeft < 7 ? 'critical' : daysLeft < 14 ? 'warning' : 'good'
       };
     });
+  }
+
+  async getSystemSettings() {
+    // Mock system settings
+    return {
+      general: {
+        companyName: 'Demo Store Inc.',
+        companyEmail: 'info@demo-store.com',
+        companyAddress: '123 Business St, Commerce City, BC 12345',
+        timezone: 'America/New_York',
+        currency: 'USD',
+        dateFormat: 'MM/DD/YYYY',
+        fiscalYearStart: 'January'
+      },
+      notifications: {
+        emailNotifications: true,
+        pushNotifications: false,
+        smsNotifications: false,
+        lowStockThreshold: 10,
+        orderNotifications: true
+      },
+      integrations: {
+        shopifyConnected: true,
+        stripeConnected: false,
+        mailchimpConnected: false,
+        googleAnalyticsConnected: true
+      },
+      security: {
+        twoFactorEnabled: false,
+        sessionTimeout: 30,
+        passwordExpiry: 90,
+        loginAttempts: 5
+      }
+    };
   }
 
   async getVendorAnalytics() {
