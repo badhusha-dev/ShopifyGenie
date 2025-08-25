@@ -1,0 +1,48 @@
+You are a senior frontend engineer. Refactor the UI of my ShopifyApp (React 18 + TypeScript + Tailwind CSS + shadcn/ui + JWT + RBAC + Shopify API integration) to use a **modern, professional, Shopify-inspired design system**.
+
+Goal
+- Upgrade current Bootstrap-heavy layouts into clean Tailwind + shadcn/ui components.
+- Ensure a **light theme with subtle shadows, rounded corners, white space, and coral/emerald accents**.
+- Keep design responsive and mobile-friendly (PWA-ready).
+
+Changes to Apply
+1. **Global Layout**
+   - Redesign sidebar and top navbar with shadcn/ui + icons (lucide-react).
+   - Add collapsible sidebar with grouped sections: Dashboard, Inventory, Customers, Loyalty, Subscriptions, Vendors, Intelligence, Finance, Settings.
+   - Use sticky header with quick actions (notifications, language switcher, profile dropdown).
+
+2. **Dashboard**
+   - KPI cards: large numbers, icons, gradient highlights.
+   - Interactive charts with Recharts, clean tooltips.
+   - Two-column responsive grid for widgets.
+
+3. **Tables & Forms**
+   - Replace Bootstrap tables with shadcn/ui DataTable (striped rows, hover states, sticky header).
+   - Add filters/search as chips above the table.
+   - Forms: use shadcn/ui Form + Input + Dialogs for Add/Edit (with validation feedback).
+
+4. **System Settings & Integrations**
+   - Tabbed layout with shadcn/ui Tabs.
+   - Cards for integrations (Stripe, Twilio, SendGrid, QuickBooks) with logos + connect button.
+   - Audit logs table with filters and icons for actions.
+
+5. **Customer & Finance Pages**
+   - Customer profile: avatar, loyalty points card, tier badge.
+   - Finance dashboard: KPI cards (Revenue, COGS, Margins, Refunds %), bar/pie charts, payout table with status badges.
+   - Wallet adjustment modal with clean form.
+
+6. **UI Polish**
+   - Rounded-xl cards, soft shadows, modern typography (Inter or Shopify-like font).
+   - Toast notifications with shadcn/ui.
+   - Dark mode support (optional toggle).
+
+Requirements
+- Do not remove functionality, only improve layout and style.
+- Use Tailwind + shadcn/ui as primary UI, Bootstrap only if absolutely needed.
+- Keep role-based access intact (RBAC).
+- Ensure mobile responsiveness for all pages.
+
+Deliverables
+- Updated global layout (sidebar + header).
+- Restyled Dashboard, Inventory, Customers, Finance, Settings, Integrations pages.
+- Reusable UI components (Card, KPI, DataTable, Modal, Tabs, Toast).
