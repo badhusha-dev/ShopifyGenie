@@ -182,7 +182,7 @@ const AppContent = () => {
           
           {/* Catch-all route for 404 - MUST BE LAST */}
           <Route path="*">
-            {() => <div data-testid="not-found-page"><NotFound /></div>}
+            {() => <NotFound />}
           </Route>
         </Route>
       </div>

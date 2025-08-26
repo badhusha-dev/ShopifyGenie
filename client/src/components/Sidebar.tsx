@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '../contexts/AuthContext';
@@ -48,7 +47,7 @@ const menuItems = [
   {
     title: 'AI Insights',
     icon: 'fas fa-brain',
-    href: '/ai-recommendations',
+    href: '/ai-insights',
     roles: ['superadmin', 'admin', 'staff']
   },
   {
@@ -189,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
         <nav>
           {filteredMenuItems.map((item) => {
             const isActive = location === item.href;
-            
+
             return (
               <div key={item.href} className="sidebar-nav-item">
                 <Link 
