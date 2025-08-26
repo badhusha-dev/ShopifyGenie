@@ -1,8 +1,17 @@
 # 📊 ShopifyApp Accounting Module Documentation
 
+*Updated for Replit Environment - January 2025*
+
 ## Overview
 
 The ShopifyApp Accounting Module provides comprehensive financial management capabilities following standard double-entry bookkeeping principles. This system enables businesses to track their financial transactions, generate reports, and maintain accurate accounting records.
+
+## 🚀 **Replit Ready Features**
+- ✅ **Real-time Database**: PostgreSQL integration with Drizzle ORM
+- ✅ **API Documentation**: Swagger interface at `/api-docs`
+- ✅ **Live Data Sync**: WebSocket support for real-time updates  
+- ✅ **Seed Data**: Pre-populated sample accounting data for testing
+- ✅ **Role-based Access**: Complete permission system implementation
 
 ### Key Features
 
@@ -16,6 +25,27 @@ The ShopifyApp Accounting Module provides comprehensive financial management cap
 - **Role-Based Access Control**: SuperAdmin/Admin can modify; Staff view-only
 
 ---
+
+## 🚀 Quick Access in Replit
+
+### Accessing Accounting Features
+1. **Login**: Use `admin@shopifyapp.com` / `admin123` for full access
+2. **Navigation**: Use the sidebar to access accounting modules:
+   - **Chart of Accounts**: `/accounting/chart-of-accounts` 
+   - **General Ledger**: `/accounting/general-ledger`
+   - **Journal Entries**: `/accounting/journal-entries`
+   - **Accounts Receivable**: `/accounting/accounts-receivable`
+   - **Accounts Payable**: `/accounting/accounts-payable`
+   - **Wallets**: `/accounting/wallets`
+   - **Financial Reports**: `/accounting/financial-reports`
+
+### API Endpoints
+All accounting data is accessible via REST APIs documented at `/api-docs`:
+- **GET** `/api/accounts` - Chart of accounts
+- **GET** `/api/journal-entries` - All journal entries  
+- **GET** `/api/accounts-receivable` - Customer invoices
+- **GET** `/api/accounts-payable` - Vendor bills
+- **GET** `/api/wallets` - Customer/vendor credit balances
 
 ## 🏦 Chart of Accounts Structure
 

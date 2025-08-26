@@ -1,11 +1,22 @@
 
 # ShopifyApp - Complete Business Management Suite
 
-A comprehensive Shopify App built with React 18, TypeScript, Express.js, and modern web technologies for complete e-commerce business management including inventory, loyalty, AI insights, vendor management, and accounting features.
+A comprehensive business management application built with React 18, TypeScript, Express.js, and modern web technologies for complete e-commerce business management including inventory, loyalty, AI insights, vendor management, and accounting features.
+
+## 🚀 **Replit Environment Ready** - Updated January 2025 ✅
+
+This application has been successfully migrated and optimized for the Replit environment:
+- ✅ **Express + Vite Integration**: Unified server running on port 5000
+- ✅ **Hot Module Replacement**: Development server with live reloading
+- ✅ **WebSocket Support**: Real-time features enabled
+- ✅ **Progressive Web App**: PWA capabilities for offline usage
+- ✅ **Database Integration**: PostgreSQL with Drizzle ORM
+- ✅ **Authentication System**: JWT-based user authentication
+- ✅ **API Documentation**: Swagger/OpenAPI documentation at `/api-docs`
 
 ## 🎨 Modern UI Design System - COMPLETED ✅
 
-**Complete UI/UX Overhaul with shadcn/ui (January 2024)**
+**Complete UI/UX Overhaul with shadcn/ui (Updated January 2025)**
 - ✅ **Modern Component Library**: Full shadcn/ui integration with Radix UI primitives
 - ✅ **Tailwind CSS Design System**: Utility-first styling with custom design tokens
 - ✅ **Responsive Layout**: Mobile-first approach with collapsible sidebar navigation
@@ -15,6 +26,7 @@ A comprehensive Shopify App built with React 18, TypeScript, Express.js, and mod
 - ✅ **Toast Notification System**: Real-time user feedback with shadcn/ui toast
 - ✅ **Progressive Web App**: PWA-ready with service worker and manifest
 - ✅ **Dark/Light Theme Support**: Theme context with system preference detection
+- ✅ **Replit Optimization**: Optimized for Replit development environment
 
 ## 🚀 Current Feature Status
 
@@ -165,24 +177,35 @@ A comprehensive Shopify App built with React 18, TypeScript, Express.js, and mod
 
 ## 🚀 Quick Start Guide
 
-### Prerequisites
-- Node.js 18+ installed
-- Shopify Partner account (for integration)
-- Modern web browser with ES2020+ support
+### For Replit Environment (Ready to Use)
 
-### Installation & Setup
+The application is already configured and ready to run in Replit:
 
-1. **Clone and Install Dependencies**
+1. **Start Development Server**
+   - Click the "Run" button or use the "Start application" workflow
+   - The server will start automatically on port 5000
+
+2. **Access Application**
+   - Frontend: Use the webview or navigate to your Replit app URL  
+   - API Documentation: `/api-docs` (Swagger interface)
+   - WebSocket: `ws://0.0.0.0:5000/ws`
+
+3. **Default Login Credentials**
+   - Email: `admin@shopifyapp.com`
+   - Password: `admin123`
+   - Role: Super Admin (full access)
+
+### For Local Development
+
+1. **Prerequisites**
+   - Node.js 18+ installed
+   - Modern web browser with ES2020+ support
+
+2. **Clone and Install Dependencies**
    ```bash
    git clone <repository-url>
    cd shopify-app
    npm install
-   ```
-
-2. **Environment Configuration**
-   ```bash
-   cp .env.example .env
-   # Configure your environment variables
    ```
 
 3. **Start Development Server**

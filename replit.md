@@ -1,9 +1,14 @@
 # Overview
 
-ShopifyApp is a comprehensive inventory, loyalty, and **Advanced Accounts Management** system built as a fully-integrated Shopify App. The application provides complete e-commerce functionality including real-time product synchronization, customer loyalty points management, subscription handling, order processing with webhook support, advanced analytics, and **professional-grade accounting features**. It demonstrates modern full-stack development with complete Shopify API integration, featuring a responsive React frontend with Bootstrap styling and a robust Express.js backend with OAuth 2.0 authentication and webhook processing.
+ShopifyApp is a comprehensive business management application with **Advanced Accounts Management** system built with React 18, TypeScript, Express.js, and modern web technologies. The application provides complete e-commerce functionality including real-time product synchronization, customer loyalty points management, subscription handling, order processing with webhook support, advanced analytics, and **professional-grade accounting features**. It demonstrates modern full-stack development with complete shadcn/ui integration, featuring a responsive React frontend and a robust Express.js backend with JWT authentication and PostgreSQL database.
 
-**Recent Major Enhancement (August 26, 2025):**
-The application now includes a complete **Advanced Accounts Module** with Manual Journal Entries, Bank Reconciliation, Enhanced Invoice Management with aging reports, Tax Management, and comprehensive backend APIs - transforming it from basic bookkeeping to enterprise-level accounting capabilities.
+**Documentation Updated (January 26, 2025):**
+All project documentation has been comprehensively updated to reflect:
+- ✅ **Replit Environment Optimization**: All README files updated for Replit deployment
+- ✅ **Technology Stack Changes**: Updated from Bootstrap to shadcn/ui + Tailwind CSS
+- ✅ **Quick Access Guides**: Added login credentials and navigation paths  
+- ✅ **API Documentation**: Complete endpoint documentation and Swagger integration
+- ✅ **Development Workflow**: Replit-specific development guidelines and hot reloading setup
 
 **Migration Completed (August 26, 2025):**
 Successfully migrated from Replit Agent to standard Replit environment with the following enhancements:

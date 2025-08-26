@@ -1,56 +1,76 @@
 # ShopifyApp Design System Documentation
 
-A comprehensive, modern design system built with Bootstrap 5.3, featuring Shopify-inspired aesthetics, advanced animations, and enterprise-grade accounting interfaces.
+*Updated for Replit Environment - January 2025*
+
+A comprehensive, modern design system built with shadcn/ui and Tailwind CSS, featuring modern aesthetics, advanced animations, and enterprise-grade accounting interfaces optimized for the Replit development environment.
 
 ## 🎨 Design Philosophy
 
-Our design system combines the accessibility and robustness of Bootstrap 5.3 with Shopify's modern design language, creating a cohesive, professional experience for e-commerce and accounting applications.
+Our design system combines the accessibility and robustness of shadcn/ui with Tailwind CSS, creating a cohesive, professional experience for e-commerce and accounting applications that works seamlessly in both Replit and production environments.
 
 ### Core Principles
 
-- **Accessibility First**: Full compliance with WCAG 2.1 standards
-- **Performance Optimized**: Minimal CSS, optimized animations, efficient rendering
+- **Accessibility First**: Full compliance with WCAG 2.1 standards via Radix UI primitives
+- **Performance Optimized**: Tailwind CSS utility-first approach with minimal bundle size
 - **Mobile Responsive**: Mobile-first design with seamless desktop scaling
-- **Brand Consistency**: Shopify-inspired color palette and typography
-- **Component Reusability**: Modular, composable design patterns
+- **Modern UI/UX**: Contemporary design patterns with smooth animations
+- **Component Reusability**: Modular, composable design patterns using shadcn/ui
+- **Replit Optimized**: Fast development cycles with hot module replacement
+
+## 🚀 **Replit Environment Features**
+- ✅ **Live Development**: Hot module replacement for instant design updates
+- ✅ **Component Library**: Complete shadcn/ui integration with Radix UI
+- ✅ **Responsive Testing**: Real-time responsive design testing in webview
+- ✅ **Theme Support**: Built-in dark/light mode switching
+- ✅ **Animation System**: Framer Motion integration for smooth transitions
 
 ---
 
 ## 🎨 Color Palette
 
-### Primary Colors
+### shadcn/ui + Tailwind CSS Colors
+
+The design system uses a modern color palette built on CSS custom properties with automatic dark mode support:
 
 ```css
 :root {
-  /* Shopify Green - Primary Brand */
-  --shopify-green: #00A651;
-  --shopify-green-light: #E8F5E8;
-  --shopify-green-dark: #008A43;
-  
-  /* Supporting Colors */
-  --coral-accent: #FF6B6B;
-  --coral-light: #FFE8E8;
-  --coral-dark: #E55555;
-  
-  /* Neutral Palette */
-  --gray-50: #F8F9FA;
-  --gray-100: #E9ECEF;
-  --gray-200: #DEE2E6;
-  --gray-300: #CED4DA;
-  --gray-400: #ADB5BD;
-  --gray-500: #6C757D;
-  --gray-600: #495057;
-  --gray-700: #343A40;
-  --gray-800: #212529;
-  --gray-900: #000000;
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 84% 4.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  /* ... dark mode variants */
 }
 ```
 
 ### Color Usage Guidelines
 
-- **Primary Green**: Call-to-action buttons, active states, progress indicators
-- **Coral Accent**: Warning states, delete actions, attention-grabbing elements
-- **Gray Scale**: Text hierarchy, borders, backgrounds, subtle UI elements
+- **Primary**: Main brand color, primary CTAs, active navigation
+- **Secondary**: Secondary actions, subtle highlights  
+- **Accent**: Interactive elements, hover states
+- **Destructive**: Error states, deletion confirmations
+- **Muted**: Subtle text, secondary information
+- **Border**: Dividers, input borders, card outlines
 
 ---
 
@@ -67,16 +87,31 @@ body {
 
 ### Typography Scale
 
-| Style | Size | Line Height | Weight | Use Case |
-|-------|------|-------------|---------|----------|
-| Display | 2.5rem (40px) | 1.2 | 700 | Page headers, hero titles |
-| H1 | 2rem (32px) | 1.25 | 600 | Section titles |
-| H2 | 1.5rem (24px) | 1.3 | 600 | Subsection headers |
-| H3 | 1.25rem (20px) | 1.4 | 600 | Card titles |
-| Body Large | 1.125rem (18px) | 1.5 | 400 | Important text |
-| Body | 1rem (16px) | 1.5 | 400 | Default text |
-| Small | 0.875rem (14px) | 1.4 | 400 | Secondary info |
-| Caption | 0.75rem (12px) | 1.3 | 400 | Labels, metadata |
+Built on Tailwind's type scale with semantic shadcn/ui classes:
+
+| Tailwind Class | shadcn/ui Class | Use Case |
+|---------------|----------------|----------|
+| `text-4xl` | `scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl` | Page headers |
+| `text-3xl` | `scroll-m-20 text-3xl font-semibold tracking-tight` | Section titles |
+| `text-2xl` | `scroll-m-20 text-2xl font-semibold tracking-tight` | Subsection headers |
+| `text-xl` | `scroll-m-20 text-xl font-semibold tracking-tight` | Card titles |
+| `text-lg` | `text-lg font-semibold` | Important text |
+| `text-base` | `leading-7` | Default body text |
+| `text-sm` | `text-sm text-muted-foreground` | Secondary info |
+| `text-xs` | `text-xs text-muted-foreground` | Labels, metadata |
+
+## 🛠️ Development Workflow in Replit
+
+### Hot Development Setup
+1. **Component Development**: All shadcn/ui components are in `client/src/components/ui/`
+2. **Custom Components**: Business logic components in `client/src/components/`
+3. **Live Preview**: Changes reflect immediately in the webview
+4. **Theme Testing**: Toggle dark/light modes via the theme provider
+
+### Design Token Management
+- **CSS Variables**: Defined in `client/src/index.css` 
+- **Tailwind Config**: Extended in `tailwind.config.ts`
+- **Component Styling**: Uses cn() utility for conditional classes
 
 ---
 
