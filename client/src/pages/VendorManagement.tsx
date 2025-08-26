@@ -10,6 +10,8 @@ interface Vendor {
   email: string;
   phone: string;
   contactPerson: string;
+  address?: string;
+  paymentTerms?: number;
   outstandingDues: string;
   totalSpent: string;
   isActive: boolean;
@@ -28,8 +30,8 @@ interface PurchaseOrder {
 
 const VendorManagement = () => {
   const [activeTab, setActiveTab] = useState('vendors');
-  const [vendorModal, setVendorModal] = useState({ show: false, vendor: null });
-  const [poModal, setPOModal] = useState({ show: false, po: null });
+  const [vendorModal, setVendorModal] = useState<{ show: boolean; vendor: Vendor | null }>({ show: false, vendor: null });
+  const [poModal, setPOModal] = useState<{ show: boolean; po: PurchaseOrder | null }>({ show: false, po: null });
 
   const { data: vendors } = useQuery<Vendor[]>({
     queryKey: ['/api/vendors'],

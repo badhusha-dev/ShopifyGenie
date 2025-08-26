@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Router, Route, Switch } from 'wouter';
+import { Route } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { AuthProvider } from './contexts/AuthContext';
@@ -97,7 +97,6 @@ const AppContent = () => {
 
       {/* Main Content */}
       <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        <Switch>
           <Route path="/">
             {() => renderPage("Dashboard", "Overview of your business metrics", Home)}
           </Route>
@@ -176,7 +175,6 @@ const AppContent = () => {
           <Route>
             {() => <NotFound />}
           </Route>
-        </Switch>
       </div>
 
       {/* Mobile overlay */}
@@ -198,14 +196,12 @@ function App() {
         <AuthProvider>
           <PermissionProvider>
             <ThemeProvider>
-              <Router>
-                <div className="app">
-                  <SafeComponent>
-                    <AppContent />
-                  </SafeComponent>
-                  <Toaster />
-                </div>
-              </Router>
+              <div className="app">
+                <SafeComponent>
+                  <AppContent />
+                </SafeComponent>
+                <Toaster />
+              </div>
             </ThemeProvider>
           </PermissionProvider>
         </AuthProvider>

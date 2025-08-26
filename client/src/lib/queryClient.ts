@@ -7,7 +7,7 @@ window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault();
 });
 
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:3001/api' : '/api';
+const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:5000/api' : '/api';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -56,7 +56,8 @@ export const getQueryFn: <T>(options: {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = API_BASE_URL + queryKey.join("");
+    const res = await fetch(url, {
       headers,
       credentials: "include",
     });

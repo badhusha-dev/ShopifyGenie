@@ -2464,6 +2464,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vendor Management Routes
+  /**
+   * @swagger
+   * /api/vendors:
+   *   get:
+   *     tags: [Vendors]
+   *     summary: Get all vendors
+   *     responses:
+   *       200:
+   *         description: List of vendors
+   */
+  app.get("/api/vendors", authenticateToken, async (req, res) => {
+    try {
+      const vendors = await storage.getVendors();
+      res.json(vendors);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendors" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/vendors/{id}:
+   *   get:
+   *     tags: [Vendors]
+   *     summary: Get vendor by ID
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Vendor details
+   */
+  app.get("/api/vendors/:id", authenticateToken, async (req, res) => {
+    try {
+      const vendor = await storage.getVendor(req.params.id);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+      res.json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendor" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/vendors:
+   *   post:
+   *     tags: [Vendors]
+   *     summary: Create new vendor
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - name
+   *             properties:
+   *               name:
+   *                 type: string
+   *               email:
+   *                 type: string
+   *               phone:
+   *                 type: string
+   *               contactPerson:
+   *                 type: string
+   *               address:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: Vendor created successfully
+   */
+  app.post("/api/vendors", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const vendor = await storage.createVendor(req.body);
+      res.status(201).json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create vendor" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/vendors/{id}:
+   *   put:
+   *     tags: [Vendors]
+   *     summary: Update vendor
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *     responses:
+   *       200:
+   *         description: Vendor updated successfully
+   */
+  app.put("/api/vendors/:id", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const vendor = await storage.updateVendor(req.params.id, req.body);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+      res.json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update vendor" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/purchase-orders:
+   *   get:
+   *     tags: [Vendors]
+   *     summary: Get all purchase orders
+   *     responses:
+   *       200:
+   *         description: List of purchase orders
+   */
+  app.get("/api/purchase-orders", authenticateToken, async (req, res) => {
+    try {
+      const orders = await storage.getPurchaseOrders();
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch purchase orders" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/purchase-orders:
+   *   post:
+   *     tags: [Vendors]
+   *     summary: Create new purchase order
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - vendorId
+   *               - totalAmount
+   *             properties:
+   *               vendorId:
+   *                 type: string
+   *               totalAmount:
+   *                 type: number
+   *               orderDate:
+   *                 type: string
+   *               expectedDelivery:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: Purchase order created successfully
+   */
+  app.post("/api/purchase-orders", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const order = await storage.createPurchaseOrder(req.body);
+      res.status(201).json(order);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create purchase order" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/vendor-analytics:
+   *   get:
+   *     tags: [Vendors]
+   *     summary: Get vendor analytics
+   *     responses:
+   *       200:
+   *         description: Vendor analytics data
+   */
+  app.get("/api/vendor-analytics", authenticateToken, async (req, res) => {
+    try {
+      const analytics = await storage.getVendorAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendor analytics" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/purchase-order-recommendations:
+   *   get:
+   *     tags: [Vendors]
+   *     summary: Get AI-powered purchase order recommendations
+   *     responses:
+   *       200:
+   *         description: Purchase order recommendations
+   */
+  app.get("/api/purchase-order-recommendations", authenticateToken, async (req, res) => {
+    try {
+      // Mock AI recommendations for now
+      res.json({
+        recommendations: [
+          {
+            vendorId: "vendor-1",
+            vendorName: "Tech Solutions Inc",
+            suggestedProducts: ["Product A", "Product B"],
+            estimatedCost: 2500,
+            priority: "high",
+            reason: "Low stock levels detected"
+          }
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recommendations" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

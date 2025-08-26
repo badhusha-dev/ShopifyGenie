@@ -103,11 +103,23 @@ export const vendors = pgTable("vendors", {
   phone: text("phone"),
   address: text("address"),
   contactPerson: text("contact_person"),
+  category: text("category"), // electronics, apparel, food, services, etc.
+  taxId: text("tax_id"),
+  currency: text("currency").default('USD'),
   paymentTerms: integer("payment_terms").default(30), // days
+  rating: integer("rating").default(5), // 1-5 stars
+  status: text("status").default('active'), // active, inactive, suspended
   isActive: boolean("is_active").default(true),
   totalSpent: decimal("total_spent", { precision: 12, scale: 2 }).default('0'),
   outstandingDues: decimal("outstanding_dues", { precision: 12, scale: 2 }).default('0'),
+  creditsBalance: decimal("credits_balance", { precision: 12, scale: 2 }).default('0'),
+  prepaymentsBalance: decimal("prepayments_balance", { precision: 12, scale: 2 }).default('0'),
+  lastOrderDate: timestamp("last_order_date"),
+  averagePaymentDays: integer("average_payment_days").default(30),
+  onTimePaymentRate: decimal("on_time_payment_rate", { precision: 5, scale: 2 }).default('100.00'), // percentage
+  disputeCount: integer("dispute_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const inventoryBatches = pgTable("inventory_batches", {
@@ -323,7 +335,10 @@ export const insertWarehouseSchema = createInsertSchema(warehouses).omit({
 export const insertVendorSchema = createInsertSchema(vendors).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
+
+
 
 export const insertInventoryBatchSchema = createInsertSchema(inventoryBatches).omit({
   id: true,
@@ -419,6 +434,8 @@ export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertVendor = z.infer<typeof insertVendorSchema>;
 export type Vendor = typeof vendors.$inferSelect;
 
+
+
 export type InsertInventoryBatch = z.infer<typeof insertInventoryBatchSchema>;
 export type InventoryBatch = typeof inventoryBatches.$inferSelect;
 
@@ -454,6 +471,64 @@ export type WebPushSubscription = typeof webPushSubscriptions.$inferSelect;
 
 export type InsertOfflineCache = z.infer<typeof insertOfflineCacheSchema>;
 export type OfflineCache = typeof offlineCache.$inferSelect;
+
+// ADVANCED VENDOR MANAGEMENT TABLES
+
+// Vendor Compliance Documents
+export const vendorDocuments = pgTable("vendor_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorId: varchar("vendor_id").references(() => vendors.id),
+  documentType: text("document_type").notNull(), // tax_certificate, insurance, license, contract, w9, etc.
+  documentName: text("document_name").notNull(),
+  documentUrl: text("document_url"), // File path or URL
+  expiryDate: timestamp("expiry_date"),
+  isRequired: boolean("is_required").default(false),
+  status: text("status").default('valid'), // valid, expired, pending, rejected
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Vendor Invoices
+export const vendorInvoices = pgTable("vendor_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorId: varchar("vendor_id").references(() => vendors.id),
+  purchaseOrderId: varchar("purchase_order_id").references(() => purchaseOrders.id),
+  invoiceNumber: text("invoice_number").notNull(),
+  invoiceDate: timestamp("invoice_date").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default('0'),
+  discountAmount: decimal("discount_amount", { precision: 12, scale: 2 }).default('0'),
+  paidAmount: decimal("paid_amount", { precision: 12, scale: 2 }).default('0'),
+  status: text("status").notNull().default('pending'), // pending, approved, paid, overdue, disputed
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  isMatched: boolean("is_matched").default(false), // 3-way matching status
+  matchedAt: timestamp("matched_at"),
+  notes: text("notes"),
+  shopDomain: text("shop_domain").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Vendor Performance Analytics
+export const vendorAnalytics = pgTable("vendor_analytics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorId: varchar("vendor_id").references(() => vendors.id),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  totalSpend: decimal("total_spend", { precision: 12, scale: 2 }).default('0'),
+  orderCount: integer("order_count").default(0),
+  onTimeDeliveryRate: decimal("on_time_delivery_rate", { precision: 5, scale: 2 }).default('100.00'),
+  qualityRating: decimal("quality_rating", { precision: 3, scale: 2 }).default('5.00'),
+  responseTime: integer("response_time").default(24), // hours
+  disputeCount: integer("dispute_count").default(0),
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 // ADVANCED ACCOUNTING MODULE TABLES
 
