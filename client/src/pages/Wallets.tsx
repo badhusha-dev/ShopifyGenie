@@ -75,7 +75,6 @@ const Wallets = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterType, setFilterType] = useState('');
   const [filterEntity, setFilterEntity] = useState('');
   
   const queryClient = useQueryClient();
