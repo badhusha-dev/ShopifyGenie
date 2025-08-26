@@ -3065,14 +3065,14 @@ export class MemStorage implements IStorage {
       companyName: 'Demo Store Inc.',
       periodStart: start,
       periodEnd: end,
-      revenue: {
-        salesRevenue: 155000,
-        serviceRevenue: 18500,
-        interestIncome: 750,
-        rentalIncome: 3600,
-        otherIncome: 1200,
-        totalRevenue: 179050
-      },
+      revenue: [
+        { accountName: "Sales Revenue", amount: 155000 },
+        { accountName: "Service Revenue", amount: 18500 },
+        { accountName: "Interest Income", amount: 750 },
+        { accountName: "Rental Income", amount: 3600 },
+        { accountName: "Other Income", amount: 1200 }
+      ],
+      totalRevenue: 179050,
       costOfGoodsSold: {
         beginningInventory: 8000,
         purchases: 92000,
@@ -3080,26 +3080,26 @@ export class MemStorage implements IStorage {
         totalCOGS: 88000
       },
       grossProfit: 91050,
-      operatingExpenses: {
-        salariesWages: 32000,
-        rentExpense: 15000,
-        marketingAdvertising: 12000,
-        utilities: 4800,
-        insurance: 3600,
-        officeSupplies: 2400,
-        professionalServices: 8500,
-        depreciationExpense: 6000,
-        travelEntertainment: 4200,
-        badDebtExpense: 1500,
-        totalOperatingExpenses: 90000
-      },
+      expenses: [
+        { accountName: "Salaries & Wages", amount: 32000 },
+        { accountName: "Rent Expense", amount: 15000 },
+        { accountName: "Marketing & Advertising", amount: 12000 },
+        { accountName: "Utilities", amount: 4800 },
+        { accountName: "Insurance", amount: 3600 },
+        { accountName: "Office Supplies", amount: 2400 },
+        { accountName: "Professional Services", amount: 8500 },
+        { accountName: "Depreciation Expense", amount: 6000 },
+        { accountName: "Travel & Entertainment", amount: 4200 },
+        { accountName: "Bad Debt Expense", amount: 1500 }
+      ],
+      totalExpenses: 90000,
       operatingIncome: 1050,
       nonOperatingExpenses: {
         interestExpense: 3600,
         bankCharges: 450,
         totalNonOperatingExpenses: 4050
       },
-      netLoss: -3000,
+      netIncome: -3000,
       ebitda: 7050
     };
   }

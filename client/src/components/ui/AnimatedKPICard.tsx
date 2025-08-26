@@ -61,7 +61,7 @@ const AnimatedKPICard: React.FC<AnimatedKPICardProps> = ({
           <i className={`${icon} fa-lg`}></i>
         </div>
       </div>
-      <style jsx>{`
+      <style>{`
         .animated-kpi-card {
           background: linear-gradient(135deg, var(--shopify-green-light) 0%, var(--shopify-green) 100%);
           border: none;
