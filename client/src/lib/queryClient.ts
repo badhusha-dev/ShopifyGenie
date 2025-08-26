@@ -1,13 +1,16 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Global error handler for unhandled promise rejections
+// Improved error logging for debugging
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  // Prevent default browser behavior (showing error in console)
-  event.preventDefault();
+  console.error('Unhandled promise rejection:', {
+    reason: event.reason,
+    promise: event.promise,
+    stack: event.reason?.stack,
+  });
+  // Let the browser handle it normally for now to see the actual errors
 });
 
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:5000/api' : '/api';
+const API_BASE_URL = '/api';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
