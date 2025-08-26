@@ -185,7 +185,7 @@ const TaxManagement = () => {
     {
       key: 'effectiveFrom',
       label: 'Effective Period',
-      render: (taxRate) => (
+      render: (value, taxRate: TaxRate) => (
         <div>
           <div>From: {new Date(taxRate.effectiveFrom).toLocaleDateString()}</div>
           {taxRate.effectiveTo && (
@@ -197,7 +197,7 @@ const TaxManagement = () => {
     {
       key: 'isActive',
       label: 'Status',
-      render: (taxRate) => (
+      render: (value, taxRate: TaxRate) => (
         <span className={`badge ${taxRate.isActive ? 'bg-success' : 'bg-secondary'}`}>
           {taxRate.isActive ? 'Active' : 'Inactive'}
         </span>
@@ -206,7 +206,7 @@ const TaxManagement = () => {
     {
       key: 'actions',
       label: 'Actions',
-      render: (taxRate) => (
+      render: (value, taxRate: TaxRate) => (
         <div className="d-flex gap-1">
           <button
             className="btn btn-outline-primary btn-sm"

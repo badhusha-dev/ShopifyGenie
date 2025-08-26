@@ -952,30 +952,3 @@ export type RecurringJournalEntry = typeof recurringJournalEntries.$inferSelect;
 
 export type InsertRecurringJournalLine = z.infer<typeof insertRecurringJournalLineSchema>;
 export type RecurringJournalLine = typeof recurringJournalLines.$inferSelect;
-
-export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
-export type JournalEntry = typeof journalEntries.$inferSelect;
-
-export type InsertJournalEntryLine = z.infer<typeof insertJournalEntryLineSchema>;
-export type JournalEntryLine = typeof journalEntryLines.$inferSelect;
-
-export type InsertGeneralLedger = z.infer<typeof insertGeneralLedgerSchema>;
-export type GeneralLedger = typeof generalLedger.$inferSelect;
-
-export type InsertAccountsReceivable = z.infer<typeof insertAccountsReceivableSchema>;
-export type AccountsReceivable = typeof accountsReceivable.$inferSelect;
-
-export type InsertAccountsPayable = z.infer<typeof insertAccountsPayableSchema>;
-export type AccountsPayable = typeof accountsPayable.$inferSelect;
-
-export type InsertWallet = z.infer<typeof insertWalletSchema>;
-export type Wallet = typeof wallets.$inferSelect;
-
-export type InsertWalletTransaction = z.infer<typeof insertWalletTransactionSchema>;
-export type WalletTransaction = typeof walletTransactions.$inferSelect;
-
-export type InsertFiscalPeriod = z.infer<typeof insertFiscalPeriodSchema>;
-export type FiscalPeriod = typeof fiscalPeriods.$inferSelect;
-
-export type InsertAccountBalance = z.infer<typeof insertAccountBalanceSchema>;
-export type AccountBalance = typeof accountBalances.$inferSelect;
