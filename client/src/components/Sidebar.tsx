@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'wouter';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -134,7 +134,7 @@ const menuItems = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   const { user, logout } = useAuth();
-  const location = useLocation();
+  const [location] = useLocation();
 
   const filteredMenuItems = menuItems.filter(item => 
     user && item.roles.includes(user.role)
@@ -189,7 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       <div className="flex-fill py-3" style={{overflowY: 'auto'}}>
         <nav>
           {filteredMenuItems.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = location === item.href;
             
             return (
               <div key={item.href} className="sidebar-nav-item">

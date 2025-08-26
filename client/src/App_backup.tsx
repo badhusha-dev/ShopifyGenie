@@ -198,14 +198,8 @@ function App() {
         <AuthProvider>
           <PermissionProvider>
             <ThemeProvider>
-              <Router>
-                <div className="app">
-                  <SafeComponent>
-                    <AppContent />
-                  </SafeComponent>
-                  <Toaster />
-                </div>
-              </Router>
+              <AppContent />
+              <Toaster />
             </ThemeProvider>
           </PermissionProvider>
         </AuthProvider>
