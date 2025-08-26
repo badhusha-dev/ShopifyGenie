@@ -216,9 +216,11 @@ const Wallets = () => {
 
   // Filter wallets
   const filteredWallets = wallets.filter((wallet: Wallet) => {
+    const entityName = wallet.entityName || '';
+    const entityEmail = wallet.entityEmail || '';
     const matchesSearch = 
-      wallet.entityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (wallet.entityEmail && wallet.entityEmail.toLowerCase().includes(searchTerm.toLowerCase()));
+      entityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entityEmail.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesType = !filterType || wallet.walletType === filterType;
     const matchesEntity = !filterEntity || wallet.entityType === filterEntity;

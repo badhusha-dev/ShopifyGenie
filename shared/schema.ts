@@ -616,6 +616,170 @@ export const accountBalances = pgTable("account_balances", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Enhanced Bank Reconciliation
+export const bankStatements = pgTable("bank_statements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bankAccountId: varchar("bank_account_id").references(() => accounts.id),
+  statementDate: timestamp("statement_date").notNull(),
+  description: text("description").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  balance: decimal("balance", { precision: 12, scale: 2 }),
+  reference: text("reference"),
+  transactionId: text("transaction_id"), // Bank's transaction ID
+  isReconciled: boolean("is_reconciled").default(false),
+  reconciledWith: varchar("reconciled_with"), // GL entry ID
+  uploadBatch: varchar("upload_batch"), // Group imports together
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const bankReconciliations = pgTable("bank_reconciliations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bankAccountId: varchar("bank_account_id").references(() => accounts.id),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  bankBalance: decimal("bank_balance", { precision: 12, scale: 2 }).notNull(),
+  bookBalance: decimal("book_balance", { precision: 12, scale: 2 }).notNull(),
+  adjustments: decimal("adjustments", { precision: 12, scale: 2 }).default('0'),
+  reconciledBalance: decimal("reconciled_balance", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default('draft'), // draft, completed
+  notes: text("notes"),
+  reconciledBy: varchar("reconciled_by").references(() => users.id),
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Enhanced Tax Management
+export const taxRates = pgTable("tax_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(), // VAT, GST, Sales Tax, etc.
+  type: text("type").notNull(), // vat, gst, sales_tax, excise
+  rate: decimal("rate", { precision: 5, scale: 4 }).notNull(), // 0.0825 for 8.25%
+  region: text("region"), // Country/State code
+  accountId: varchar("account_id").references(() => accounts.id), // Tax payable account
+  isActive: boolean("is_active").default(true),
+  effectiveFrom: timestamp("effective_from").notNull(),
+  effectiveTo: timestamp("effective_to"),
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const taxTransactions = pgTable("tax_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  taxRateId: varchar("tax_rate_id").references(() => taxRates.id),
+  sourceId: varchar("source_id").notNull(), // Order ID, Invoice ID, etc.
+  sourceType: text("source_type").notNull(), // order, invoice, refund
+  taxableAmount: decimal("taxable_amount", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).notNull(),
+  transactionDate: timestamp("transaction_date").notNull(),
+  journalEntryId: varchar("journal_entry_id").references(() => journalEntries.id),
+  shopDomain: text("shop_domain").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Enhanced Invoice Management for AR
+export const invoices = pgTable("invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  customerId: varchar("customer_id").references(() => customers.id),
+  orderId: varchar("order_id").references(() => orders.id),
+  invoiceDate: timestamp("invoice_date").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default('0'),
+  discountAmount: decimal("discount_amount", { precision: 12, scale: 2 }).default('0'),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  paidAmount: decimal("paid_amount", { precision: 12, scale: 2 }).default('0'),
+  outstandingAmount: decimal("outstanding_amount", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default('pending'), // pending, partial, paid, overdue, cancelled
+  paymentTerms: integer("payment_terms").default(30), // Days
+  notes: text("notes"),
+  journalEntryId: varchar("journal_entry_id").references(() => journalEntries.id),
+  shopDomain: text("shop_domain").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const invoiceLines = pgTable("invoice_lines", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceId: varchar("invoice_id").references(() => invoices.id),
+  productId: varchar("product_id").references(() => products.id),
+  description: text("description").notNull(),
+  quantity: integer("quantity").notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  discount: decimal("discount", { precision: 10, scale: 2 }).default('0'),
+  lineTotal: decimal("line_total", { precision: 12, scale: 2 }).notNull(),
+  taxRateId: varchar("tax_rate_id").references(() => taxRates.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Enhanced Bill Management for AP
+export const bills = pgTable("bills", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  billNumber: text("bill_number").notNull(),
+  vendorId: varchar("vendor_id").references(() => vendors.id),
+  purchaseOrderId: varchar("purchase_order_id").references(() => purchaseOrders.id),
+  billDate: timestamp("bill_date").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default('0'),
+  discountAmount: decimal("discount_amount", { precision: 12, scale: 2 }).default('0'),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  paidAmount: decimal("paid_amount", { precision: 12, scale: 2 }).default('0'),
+  outstandingAmount: decimal("outstanding_amount", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default('pending'), // pending, partial, paid, overdue, cancelled
+  paymentTerms: integer("payment_terms").default(30), // Days
+  notes: text("notes"),
+  journalEntryId: varchar("journal_entry_id").references(() => journalEntries.id),
+  shopDomain: text("shop_domain").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const billLines = pgTable("bill_lines", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  billId: varchar("bill_id").references(() => bills.id),
+  description: text("description").notNull(),
+  quantity: integer("quantity").notNull(),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull(),
+  lineTotal: decimal("line_total", { precision: 12, scale: 2 }).notNull(),
+  accountId: varchar("account_id").references(() => accounts.id), // Expense account
+  taxRateId: varchar("tax_rate_id").references(() => taxRates.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Recurring Journal Entries
+export const recurringJournalEntries = pgTable("recurring_journal_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  templateName: text("template_name").notNull(),
+  description: text("description").notNull(),
+  frequency: text("frequency").notNull(), // monthly, quarterly, yearly
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  nextRunDate: timestamp("next_run_date").notNull(),
+  lastRunDate: timestamp("last_run_date"),
+  isActive: boolean("is_active").default(true),
+  totalDebit: decimal("total_debit", { precision: 12, scale: 2 }).notNull(),
+  totalCredit: decimal("total_credit", { precision: 12, scale: 2 }).notNull(),
+  shopDomain: text("shop_domain").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const recurringJournalLines = pgTable("recurring_journal_lines", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recurringJournalId: varchar("recurring_journal_id").references(() => recurringJournalEntries.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  description: text("description"),
+  debitAmount: decimal("debit_amount", { precision: 12, scale: 2 }).default('0'),
+  creditAmount: decimal("credit_amount", { precision: 12, scale: 2 }).default('0'),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // ACCOUNTING INSERT SCHEMAS
 export const insertAccountSchema = createInsertSchema(accounts).omit({
   id: true,
@@ -673,9 +837,121 @@ export const insertAccountBalanceSchema = createInsertSchema(accountBalances).om
   updatedAt: true,
 });
 
+// New schemas for advanced features
+export const insertBankStatementSchema = createInsertSchema(bankStatements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBankReconciliationSchema = createInsertSchema(bankReconciliations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTaxRateSchema = createInsertSchema(taxRates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTaxTransactionSchema = createInsertSchema(taxTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertInvoiceLineSchema = createInsertSchema(invoiceLines).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBillSchema = createInsertSchema(bills).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBillLineSchema = createInsertSchema(billLines).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRecurringJournalEntrySchema = createInsertSchema(recurringJournalEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRecurringJournalLineSchema = createInsertSchema(recurringJournalLines).omit({
+  id: true,
+  createdAt: true,
+});
+
 // ACCOUNTING TYPES
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
 export type Account = typeof accounts.$inferSelect;
+
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+export type JournalEntry = typeof journalEntries.$inferSelect;
+
+export type InsertJournalEntryLine = z.infer<typeof insertJournalEntryLineSchema>;
+export type JournalEntryLine = typeof journalEntryLines.$inferSelect;
+
+export type InsertGeneralLedger = z.infer<typeof insertGeneralLedgerSchema>;
+export type GeneralLedger = typeof generalLedger.$inferSelect;
+
+export type InsertAccountsReceivable = z.infer<typeof insertAccountsReceivableSchema>;
+export type AccountsReceivable = typeof accountsReceivable.$inferSelect;
+
+export type InsertAccountsPayable = z.infer<typeof insertAccountsPayableSchema>;
+export type AccountsPayable = typeof accountsPayable.$inferSelect;
+
+export type InsertWallet = z.infer<typeof insertWalletSchema>;
+export type Wallet = typeof wallets.$inferSelect;
+
+export type InsertWalletTransaction = z.infer<typeof insertWalletTransactionSchema>;
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+
+export type InsertFiscalPeriod = z.infer<typeof insertFiscalPeriodSchema>;
+export type FiscalPeriod = typeof fiscalPeriods.$inferSelect;
+
+export type InsertAccountBalance = z.infer<typeof insertAccountBalanceSchema>;
+export type AccountBalance = typeof accountBalances.$inferSelect;
+
+// Advanced feature types
+export type InsertBankStatement = z.infer<typeof insertBankStatementSchema>;
+export type BankStatement = typeof bankStatements.$inferSelect;
+
+export type InsertBankReconciliation = z.infer<typeof insertBankReconciliationSchema>;
+export type BankReconciliation = typeof bankReconciliations.$inferSelect;
+
+export type InsertTaxRate = z.infer<typeof insertTaxRateSchema>;
+export type TaxRate = typeof taxRates.$inferSelect;
+
+export type InsertTaxTransaction = z.infer<typeof insertTaxTransactionSchema>;
+export type TaxTransaction = typeof taxTransactions.$inferSelect;
+
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+
+export type InsertInvoiceLine = z.infer<typeof insertInvoiceLineSchema>;
+export type InvoiceLine = typeof invoiceLines.$inferSelect;
+
+export type InsertBill = z.infer<typeof insertBillSchema>;
+export type Bill = typeof bills.$inferSelect;
+
+export type InsertBillLine = z.infer<typeof insertBillLineSchema>;
+export type BillLine = typeof billLines.$inferSelect;
+
+export type InsertRecurringJournalEntry = z.infer<typeof insertRecurringJournalEntrySchema>;
+export type RecurringJournalEntry = typeof recurringJournalEntries.$inferSelect;
+
+export type InsertRecurringJournalLine = z.infer<typeof insertRecurringJournalLineSchema>;
+export type RecurringJournalLine = typeof recurringJournalLines.$inferSelect;
 
 export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
 export type JournalEntry = typeof journalEntries.$inferSelect;

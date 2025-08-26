@@ -99,6 +99,31 @@ const menuItems = [
     href: '/financial-reports',
     roles: ['superadmin', 'admin']
   },
+  // Advanced Accounts Module
+  {
+    title: 'Manual Journal Entry',
+    icon: 'fas fa-balance-scale-right',
+    href: '/manual-journal-entry',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Bank Reconciliation',
+    icon: 'fas fa-university',
+    href: '/bank-reconciliation',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Invoice Management',
+    icon: 'fas fa-file-invoice-dollar',
+    href: '/invoice-management',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Tax Management',
+    icon: 'fas fa-percentage',
+    href: '/tax-management',
+    roles: ['superadmin', 'admin']
+  },
   {
     title: 'Settings',
     icon: 'fas fa-cog',

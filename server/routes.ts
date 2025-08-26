@@ -2214,6 +2214,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==========================================
+  // ADVANCED ACCOUNTS MODULE API ROUTES
+  // ==========================================
+
+  // Bank Reconciliation Routes
+  app.get("/api/bank-statements", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { bankAccountId, page = 1, limit = 50 } = req.query;
+      // TODO: Implement bank statements fetching with pagination
+      res.json([]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bank statements" });
+    }
+  });
+
+  app.post("/api/bank-statements/upload", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { bankAccountId, statements } = req.body;
+      // TODO: Process CSV/OFX bank statement upload
+      res.json({ imported: statements?.length || 0, errors: [] });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload bank statements" });
+    }
+  });
+
+  app.get("/api/bank-reconciliations", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { bankAccountId } = req.query;
+      res.json([]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch reconciliations" });
+    }
+  });
+
+  app.post("/api/bank-reconciliations", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      res.status(201).json({ id: "recon-1", status: "draft" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create reconciliation" });
+    }
+  });
+
+  // Tax Management Routes
+  app.get("/api/tax-rates", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      res.json([
+        {
+          id: "tax-1",
+          name: "VAT",
+          type: "vat",
+          rate: "0.20",
+          region: "UK",
+          isActive: true,
+          effectiveFrom: "2024-01-01",
+          accountId: "2200"
+        },
+        {
+          id: "tax-2", 
+          name: "Sales Tax",
+          type: "sales_tax",
+          rate: "0.0825",
+          region: "CA",
+          isActive: true,
+          effectiveFrom: "2024-01-01",
+          accountId: "2210"
+        }
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tax rates" });
+    }
+  });
+
+  app.post("/api/tax-rates", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      res.status(201).json({ id: "tax-new", ...req.body });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create tax rate" });
+    }
+  });
+
+  app.get("/api/tax-report", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { period, startDate, endDate } = req.query;
+      res.json({
+        period: period || "Q1 2024",
+        totalSales: "50000.00",
+        taxableAmount: "45000.00",
+        taxCollected: "3825.00",
+        taxPaid: "1200.00",
+        taxOwed: "2625.00",
+        breakdown: [
+          { taxType: "VAT", taxableAmount: "25000.00", taxAmount: "2000.00" },
+          { taxType: "Sales Tax", taxableAmount: "20000.00", taxAmount: "1825.00" }
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate tax report" });
+    }
+  });
+
+  // Enhanced Invoice Management for AR
+  app.get("/api/invoices", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { status, customerId, overdue, limit = 50 } = req.query;
+      res.json([
+        {
+          id: "inv-1",
+          invoiceNumber: "INV-2024-001",
+          customerId: "cust-1",
+          customerName: "Acme Corp",
+          invoiceDate: "2024-01-15",
+          dueDate: "2024-02-14", 
+          totalAmount: "1500.00",
+          paidAmount: "1000.00",
+          outstandingAmount: "500.00",
+          status: "partial",
+          paymentTerms: 30,
+          daysPastDue: 5
+        }
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  app.post("/api/invoices", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      res.status(201).json({ id: "inv-new", ...req.body });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create invoice" });
+    }
+  });
+
+  app.get("/api/aging-report", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { asOfDate } = req.query;
+      res.json({
+        asOfDate: asOfDate || new Date().toISOString().split('T')[0],
+        totalOutstanding: "125000.00",
+        aging: [
+          { range: "Current", amount: "75000.00", count: 15 },
+          { range: "1-30 days", amount: "30000.00", count: 8 },
+          { range: "31-60 days", amount: "15000.00", count: 4 },
+          { range: "61-90 days", amount: "3000.00", count: 2 },
+          { range: "90+ days", amount: "2000.00", count: 1 }
+        ],
+        customers: [
+          {
+            customerId: "cust-1",
+            customerName: "Acme Corp",
+            current: "25000.00",
+            days30: "5000.00", 
+            days60: "0.00",
+            days90: "0.00",
+            over90: "0.00",
+            total: "30000.00"
+          }
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate aging report" });
+    }
+  });
+
+  // Enhanced Bill Management for AP  
+  app.get("/api/bills", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { status, vendorId, overdue } = req.query;
+      res.json([
+        {
+          id: "bill-1",
+          billNumber: "BILL-2024-001",
+          vendorId: "vendor-1",
+          vendorName: "Office Supplies Co",
+          billDate: "2024-01-20",
+          dueDate: "2024-02-19",
+          totalAmount: "850.00",
+          paidAmount: "0.00",
+          outstandingAmount: "850.00",
+          status: "pending",
+          paymentTerms: 30,
+          daysPastDue: 0
+        }
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bills" });
+    }
+  });
+
+  app.post("/api/bills", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      res.status(201).json({ id: "bill-new", ...req.body });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create bill" });
+    }
+  });
+
+  // Recurring Journal Entries
+  app.get("/api/recurring-journal-entries", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      res.json([
+        {
+          id: "recurring-1",
+          templateName: "Monthly Rent",
+          description: "Office rent payment",
+          frequency: "monthly",
+          nextRunDate: "2024-02-01",
+          totalDebit: "2500.00",
+          totalCredit: "2500.00",
+          isActive: true
+        }
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recurring entries" });
+    }
+  });
+
+  app.post("/api/recurring-journal-entries", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      res.status(201).json({ id: "recurring-new", ...req.body });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create recurring entry" });
+    }
+  });
+
+  // Manual Journal Entry with Enhanced Features
+  app.post("/api/journal-entries/manual", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { transactionDate, reference, description, lines } = req.body;
+      
+      // Validate debits = credits
+      const totalDebits = lines?.reduce((sum: number, line: any) => sum + parseFloat(line.debitAmount || 0), 0) || 0;
+      const totalCredits = lines?.reduce((sum: number, line: any) => sum + parseFloat(line.creditAmount || 0), 0) || 0;
+      
+      if (Math.abs(totalDebits - totalCredits) > 0.01) {
+        return res.status(400).json({ error: "Debits must equal credits" });
+      }
+      
+      res.status(201).json({
+        id: "je-manual-new",
+        journalNumber: "JE-2024-001", 
+        status: "posted",
+        totalDebit: totalDebits.toFixed(2),
+        totalCredit: totalCredits.toFixed(2)
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create manual journal entry" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

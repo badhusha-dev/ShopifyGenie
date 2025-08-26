@@ -34,6 +34,10 @@ import AccountsReceivable from './pages/AccountsReceivable';
 import AccountsPayable from './pages/AccountsPayable';
 import Wallets from './pages/Wallets';
 import FinancialReports from './pages/FinancialReports';
+import ManualJournalEntry from './pages/ManualJournalEntry';
+import BankReconciliation from './pages/BankReconciliation';
+import InvoiceManagement from './pages/InvoiceManagement';
+import TaxManagement from './pages/TaxManagement';
 import NotFound from './pages/not-found';
 
 // Design Tokens
@@ -373,6 +377,59 @@ const AppContent = () => {
               />
               <main className="flex-fill">
                 <FinancialReports />
+              </main>
+            </>
+          } />
+
+          {/* Advanced Accounts Module Routes */}
+          <Route path="/manual-journal-entry" element={
+            <>
+              <TopNav 
+                title="Manual Journal Entry" 
+                subtitle="Create manual journal entries with double-entry validation"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <ManualJournalEntry />
+              </main>
+            </>
+          } />
+
+          <Route path="/bank-reconciliation" element={
+            <>
+              <TopNav 
+                title="Bank Reconciliation" 
+                subtitle="Upload and match bank statements with general ledger"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <BankReconciliation />
+              </main>
+            </>
+          } />
+
+          <Route path="/invoice-management" element={
+            <>
+              <TopNav 
+                title="Invoice Management" 
+                subtitle="Enhanced invoice management with aging reports"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <InvoiceManagement />
+              </main>
+            </>
+          } />
+
+          <Route path="/tax-management" element={
+            <>
+              <TopNav 
+                title="Tax Management" 
+                subtitle="Manage tax rates and generate tax reports"
+                onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              />
+              <main className="flex-fill">
+                <TaxManagement />
               </main>
             </>
           } />

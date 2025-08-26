@@ -116,8 +116,10 @@ const ChartOfAccounts = () => {
 
   // Filter accounts
   const filteredAccounts = accounts.filter((account: Account) => {
-    const matchesSearch = account.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         account.accountCode.toLowerCase().includes(searchTerm.toLowerCase());
+    const accountName = account.accountName || '';
+    const accountCode = account.accountCode || '';
+    const matchesSearch = accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         accountCode.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !filterType || account.accountType === filterType;
     const matchesActive = showInactive || account.isActive;
     return matchesSearch && matchesType && matchesActive;

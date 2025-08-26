@@ -14,7 +14,17 @@ import {
   type Wallet, type InsertWallet,
   type WalletTransaction, type InsertWalletTransaction,
   type FiscalPeriod, type InsertFiscalPeriod,
-  type AccountBalance, type InsertAccountBalance
+  type AccountBalance, type InsertAccountBalance,
+  type BankStatement, type InsertBankStatement,
+  type BankReconciliation, type InsertBankReconciliation,
+  type TaxRate, type InsertTaxRate,
+  type TaxTransaction, type InsertTaxTransaction,
+  type Invoice, type InsertInvoice,
+  type InvoiceLine, type InsertInvoiceLine,
+  type Bill, type InsertBill,
+  type BillLine, type InsertBillLine,
+  type RecurringJournalEntry, type InsertRecurringJournalEntry,
+  type RecurringJournalLine, type InsertRecurringJournalLine
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { ShopifyService, type ShopifyProduct, type ShopifyCustomer, type ShopifyOrder } from "./shopify";
