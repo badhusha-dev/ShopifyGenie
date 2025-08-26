@@ -94,17 +94,17 @@ export const requireRole = (roles: string[]) => {
   };
 };
 
-// Admin only middleware
-export const requireAdmin = requireRole(['admin']);
+// Admin only middleware (includes superadmin)
+export const requireAdmin = requireRole(['admin', 'superadmin']);
 
-// Staff or Admin middleware
-export const requireStaffOrAdmin = requireRole(['admin', 'staff']);
+// Staff or Admin middleware (includes superadmin)
+export const requireStaffOrAdmin = requireRole(['admin', 'staff', 'superadmin']);
 
 // Super Admin only middleware
 export const requireSuperAdmin = requireRole(['superadmin']);
 
-// Customer access middleware
-export const requireCustomer = requireRole(['admin', 'staff', 'customer']);
+// Customer access middleware (includes superadmin)
+export const requireCustomer = requireRole(['admin', 'staff', 'customer', 'superadmin']);
 
 // Permission-based middleware
 export const requirePermission = (permission: string) => {
