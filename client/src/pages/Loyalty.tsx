@@ -1,4 +1,4 @@
-import TopNav from "../components/TopNav";
+import React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { apiRequest } from "../lib/queryClient";
@@ -79,11 +79,7 @@ const Loyalty = () => {
 
   return (
     <>
-      <TopNav
-        title="Loyalty Points Management"
-        subtitle="Manage customer loyalty points and rewards program"
-      />
-      <div className="content-wrapper">
+    <div className="content-wrapper">
         {/* Loyalty Stats */}
         <div className="row mb-4">
           <div className="col-md-3">
@@ -231,6 +227,7 @@ const Loyalty = () => {
           </div>
         </div>
       </div>
+
       {/* Redeem Points Modal */}
       {showRedeemModal && selectedCustomer && (
         <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>

@@ -139,34 +139,34 @@ const AppContent = () => {
           <Route path="/integrations">
             {() => renderPage("Integrations", "Connect third-party services and tools", Integrations)}
           </Route>
-          <Route path="/chart-of-accounts">
+          <Route path="/accounting/chart-of-accounts">
             {() => renderPage("Chart of Accounts", "Manage your accounting structure and classifications", ChartOfAccounts)}
           </Route>
-          <Route path="/general-ledger">
+          <Route path="/accounting/general-ledger">
             {() => renderPage("General Ledger", "Complete record of all accounting transactions", GeneralLedger)}
           </Route>
-          <Route path="/journal-entries">
-            {() => renderPage("Journal Entries", "Create and manage manual journal entries", JournalEntries)}
+          <Route path="/accounting/journal-entries">
+            {() => renderPage("Journal Entries", "View and manage all journal entries", JournalEntries)}
           </Route>
-          <Route path="/accounts-receivable">
-            {() => renderPage("Accounts Receivable", "Manage customer invoices and aging analysis", AccountsReceivable)}
-          </Route>
-          <Route path="/accounts-payable">
-            {() => renderPage("Accounts Payable", "Manage vendor bills and aging analysis", AccountsPayable)}
-          </Route>
-          <Route path="/wallets">
-            {() => renderPage("Wallets & Credits", "Manage customer and vendor credit wallets", Wallets)}
-          </Route>
-          <Route path="/financial-reports">
-            {() => renderPage("Financial Reports", "Generate comprehensive financial statements", FinancialReports)}
-          </Route>
-          <Route path="/manual-journal-entry">
+          <Route path="/accounting/manual-journal-entry">
             {() => renderPage("Manual Journal Entry", "Create manual journal entries with double-entry validation", ManualJournalEntry)}
           </Route>
-          <Route path="/bank-reconciliation">
+          <Route path="/accounting/accounts-receivable">
+            {() => renderPage("Accounts Receivable", "Manage customer invoices and aging analysis", AccountsReceivable)}
+          </Route>
+          <Route path="/accounting/accounts-payable">
+            {() => renderPage("Accounts Payable", "Manage vendor bills and aging analysis", AccountsPayable)}
+          </Route>
+          <Route path="/accounting/wallets">
+            {() => renderPage("Wallets & Credits", "Manage customer and vendor credit wallets", Wallets)}
+          </Route>
+          <Route path="/accounting/financial-reports">
+            {() => renderPage("Financial Reports", "Generate comprehensive financial statements", FinancialReports)}
+          </Route>
+          <Route path="/accounting/bank-reconciliation">
             {() => renderPage("Bank Reconciliation", "Upload and match bank statements with general ledger", BankReconciliation)}
           </Route>
-          <Route path="/invoice-management">
+          <Route path="/accounting/invoices">
             {() => renderPage("Invoice Management", "Enhanced invoice management with aging reports", InvoiceManagement)}
           </Route>
           <Route path="/tax-management">

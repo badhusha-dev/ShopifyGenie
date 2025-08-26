@@ -1,5 +1,5 @@
 
-import TopNav from "../components/TopNav";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Customer, Product } from "@shared/schema";
 
@@ -31,13 +31,7 @@ const AIRecommendations = () => {
 
   return (
     <>
-      <TopNav
-        title="AI-Powered Insights"
-        subtitle="Smart analytics and intelligent recommendations to boost your business performance"
-      />
-      
-      {/* Feature Explanation */}
-      <div className="content-wrapper">
+    <div className="content-wrapper">
         <div className="card mb-4">
           <div className="card-body">
             <h5 className="mb-3">AI-Powered Business Intelligence</h5>
@@ -70,8 +64,7 @@ const AIRecommendations = () => {
           </div>
         </div>
       </div>
-      <div className="content-wrapper">
-        {/* AI Sales Forecast */}
+
         <div className="row mb-4">
           <div className="col-md-8">
             <div className="card">
@@ -282,7 +275,6 @@ const AIRecommendations = () => {
             </div>
           </div>
         </div>
-      </div>
     </>
   );
 };

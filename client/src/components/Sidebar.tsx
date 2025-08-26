@@ -60,62 +60,61 @@ const menuItems = [
   {
     title: 'Chart of Accounts',
     icon: 'fas fa-balance-scale',
-    href: '/chart-of-accounts',
+    href: '/accounting/chart-of-accounts',
     roles: ['superadmin', 'admin']
   },
   {
     title: 'General Ledger',
     icon: 'fas fa-book',
-    href: '/general-ledger',
+    href: '/accounting/general-ledger',
     roles: ['superadmin', 'admin']
   },
   {
     title: 'Journal Entries',
     icon: 'fas fa-pen-to-square',
-    href: '/journal-entries',
+    href: '/accounting/journal-entries',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Manual Journal Entry',
+    icon: 'fas fa-balance-scale-right',
+    href: '/accounting/manual-journal-entry',
     roles: ['superadmin', 'admin']
   },
   {
     title: 'Accounts Receivable',
     icon: 'fas fa-file-invoice-dollar',
-    href: '/accounts-receivable',
+    href: '/accounting/accounts-receivable',
     roles: ['superadmin', 'admin']
   },
   {
     title: 'Accounts Payable',
     icon: 'fas fa-file-invoice',
-    href: '/accounts-payable',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Wallets & Credits',
-    icon: 'fas fa-wallet',
-    href: '/wallets',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Financial Reports',
-    icon: 'fas fa-chart-bar',
-    href: '/financial-reports',
-    roles: ['superadmin', 'admin']
-  },
-  // Advanced Accounts Module
-  {
-    title: 'Manual Journal Entry',
-    icon: 'fas fa-balance-scale-right',
-    href: '/manual-journal-entry',
+    href: '/accounting/accounts-payable',
     roles: ['superadmin', 'admin']
   },
   {
     title: 'Bank Reconciliation',
     icon: 'fas fa-university',
-    href: '/bank-reconciliation',
+    href: '/accounting/bank-reconciliation',
     roles: ['superadmin', 'admin']
   },
   {
     title: 'Invoice Management',
     icon: 'fas fa-file-invoice-dollar',
-    href: '/invoice-management',
+    href: '/accounting/invoices',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Wallets & Credits',
+    icon: 'fas fa-wallet',
+    href: '/accounting/wallets',
+    roles: ['superadmin', 'admin']
+  },
+  {
+    title: 'Financial Reports',
+    icon: 'fas fa-chart-bar',
+    href: '/accounting/financial-reports',
     roles: ['superadmin', 'admin']
   },
   {

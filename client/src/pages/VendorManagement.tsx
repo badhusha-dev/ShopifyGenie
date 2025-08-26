@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import TopNav from '../components/TopNav';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest } from '../lib/queryClient';
 
@@ -89,13 +88,7 @@ const VendorManagement = () => {
 
   return (
     <>
-      <TopNav
-        title="Vendor Management"
-        subtitle="Complete supplier relationship management with purchase orders, payments, and performance analytics"
-      />
-      
-      {/* Feature Explanation */}
-      <div className="content-wrapper">
+    <div className="content-wrapper">
         <div className="card mb-4">
           <div className="card-body">
             <h5 className="mb-3">Complete Supplier Relationship Management</h5>
@@ -128,8 +121,7 @@ const VendorManagement = () => {
           </div>
         </div>
       </div>
-      <div className="content-wrapper">
-        {/* Summary Cards */}
+
         <div className="row mb-4">
           <div className="col-md-3">
             <div className="card">
@@ -483,7 +475,6 @@ const VendorManagement = () => {
             </div>
           </div>
         )}
-      </div>
     </>
   );
 };

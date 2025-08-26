@@ -1,6 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import TopNav from "../components/TopNav";
 import { apiRequest } from "../lib/queryClient";
 
 interface Subscription {
@@ -183,12 +182,7 @@ const Subscriptions = () => {
   };
 
   return (
-    <>
-      <TopNav 
-        title="Subscription Management" 
-        subtitle="Manage recurring orders and subscription billing"
-      />
-      <div className="content-wrapper">
+    <div className="content-wrapper">
         {/* Stats Cards */}
         <div className="row mb-4">
           <div className="col-md-3">
@@ -500,8 +494,7 @@ const Subscriptions = () => {
             </div>
           </div>
         )}
-      </div>
-    </>
+    </div>
   );
 };
 
