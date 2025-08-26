@@ -133,8 +133,8 @@ const DataTable: React.FC<DataTableProps> = ({
             </tr>
           </thead>
           <tbody>
-            {data.map((row, index) => {
-              const rowId = row.id || index.toString();
+            {data.filter(row => row).map((row, index) => {
+              const rowId = row?.id || index.toString();
               const isExpanded = isRowExpanded(rowId);
               
               return (

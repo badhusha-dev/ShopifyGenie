@@ -71,10 +71,12 @@ const BankReconciliation = () => {
       formData.append('file', file);
       formData.append('bankAccountId', selectedAccount);
       
-      return apiRequest('/api/bank-statements/upload', {
+      const response = await fetch('/api/bank-statements/upload', {
         method: 'POST',
         body: formData,
       });
+      if (!response.ok) throw new Error('Upload failed');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bank-statements'] });
@@ -85,10 +87,13 @@ const BankReconciliation = () => {
   // Match statement with GL entry
   const matchMutation = useMutation({
     mutationFn: async ({ statementId, glEntryId }: { statementId: string; glEntryId: string }) => {
-      return apiRequest(`/api/bank-reconciliations/match`, {
+      const response = await fetch(`/api/bank-reconciliations/match`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ statementId, glEntryId }),
       });
+      if (!response.ok) throw new Error('Match failed');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bank-statements'] });
@@ -122,16 +127,16 @@ const BankReconciliation = () => {
     }
   };
 
-  const statementColumns: Column<BankStatement>[] = [
+  const statementColumns: Column[] = [
     {
       key: 'statementDate',
       label: 'Date',
-      render: (statement) => new Date(statement.statementDate).toLocaleDateString()
+      render: (value, statement: BankStatement) => new Date(statement.statementDate).toLocaleDateString()
     },
     {
       key: 'description',
       label: 'Description',
-      render: (statement) => (
+      render: (value, statement: BankStatement) => (
         <div>
           <div className="fw-bold">{statement.description}</div>
           {statement.reference && (
@@ -143,7 +148,7 @@ const BankReconciliation = () => {
     {
       key: 'amount',
       label: 'Amount',
-      render: (statement) => (
+      render: (value, statement: BankStatement) => (
         <span className={parseFloat(statement.amount) >= 0 ? 'text-success' : 'text-danger'}>
           ${parseFloat(statement.amount).toFixed(2)}
         </span>
@@ -152,12 +157,12 @@ const BankReconciliation = () => {
     {
       key: 'balance',
       label: 'Balance',
-      render: (statement) => `$${parseFloat(statement.balance).toFixed(2)}`
+      render: (value, statement: BankStatement) => `$${parseFloat(statement.balance).toFixed(2)}`
     },
     {
       key: 'isReconciled',
       label: 'Status',
-      render: (statement) => (
+      render: (value, statement: BankStatement) => (
         <span className={`badge ${statement.isReconciled ? 'bg-success' : 'bg-warning'}`}>
           {statement.isReconciled ? 'Reconciled' : 'Unmatched'}
         </span>
@@ -166,7 +171,7 @@ const BankReconciliation = () => {
     {
       key: 'actions',
       label: 'Actions',
-      render: (statement) => (
+      render: (value, statement: BankStatement) => (
         <div className="d-flex gap-1">
           {!statement.isReconciled && (
             <button
@@ -189,21 +194,21 @@ const BankReconciliation = () => {
     }
   ];
 
-  const glColumns: Column<GLEntry>[] = [
+  const glColumns: Column[] = [
     {
       key: 'transactionDate',
       label: 'Date',
-      render: (entry) => new Date(entry.transactionDate).toLocaleDateString()
+      render: (value, entry: GLEntry) => new Date(entry.transactionDate).toLocaleDateString()
     },
     {
       key: 'description',
       label: 'Description',
-      render: (entry) => entry.description
+      render: (value, entry: GLEntry) => entry.description
     },
     {
       key: 'amount',
       label: 'Amount',
-      render: (entry) => {
+      render: (value, entry: GLEntry) => {
         const amount = parseFloat(entry.debitAmount) || parseFloat(entry.creditAmount);
         return (
           <span className={parseFloat(entry.debitAmount) > 0 ? 'text-success' : 'text-danger'}>
@@ -215,12 +220,12 @@ const BankReconciliation = () => {
     {
       key: 'reference',
       label: 'Reference',
-      render: (entry) => entry.reference || '-'
+      render: (value, entry: GLEntry) => entry.reference || '-'
     },
     {
       key: 'actions',
       label: 'Actions',
-      render: (entry) => (
+      render: (value, entry: GLEntry) => (
         <button
           className="btn btn-success btn-sm"
           onClick={() => handleMatch(entry.id)}
@@ -239,7 +244,7 @@ const BankReconciliation = () => {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="mb-0" style={{ color: designTokens.colors.primary }}>
+          <h2 className="mb-0" style={{ color: designTokens.colors.shopify.green }}>
             <FaBalanceScale className="me-2" />
             Bank Reconciliation
           </h2>
@@ -369,8 +374,8 @@ const BankReconciliation = () => {
                     <DataTable
                       data={statements}
                       columns={statementColumns}
-                      searchable={true}
-                      searchPlaceholder="Search statements..."
+                      loading={false}
+                      emptyMessage="No bank statements found"
                     />
                   )}
                 </div>
@@ -411,7 +416,8 @@ const BankReconciliation = () => {
                       <DataTable
                         data={matchingEntries}
                         columns={glColumns}
-                        searchable={false}
+                        loading={false}
+                        emptyMessage="No matching entries found"
                       />
                     ) : (
                       <div className="alert alert-warning">

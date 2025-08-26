@@ -89,15 +89,21 @@ const TaxManagement = () => {
   const saveTaxRateMutation = useMutation({
     mutationFn: async (data: TaxRateFormData) => {
       if (editingTaxRate) {
-        return apiRequest(`/api/tax-rates/${editingTaxRate.id}`, {
+        const response = await fetch(`/api/tax-rates/${editingTaxRate.id}`, {
           method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
+        if (!response.ok) throw new Error('Failed to update tax rate');
+        return response.json();
       } else {
-        return apiRequest('/api/tax-rates', {
+        const response = await fetch('/api/tax-rates', {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
+        if (!response.ok) throw new Error('Failed to create tax rate');
+        return response.json();
       }
     },
     onSuccess: () => {
@@ -145,11 +151,11 @@ const TaxManagement = () => {
     saveTaxRateMutation.mutate(data);
   };
 
-  const taxRateColumns: Column<TaxRate>[] = [
+  const taxRateColumns: Column[] = [
     {
       key: 'name',
       label: 'Tax Name',
-      render: (taxRate) => (
+      render: (value, taxRate: TaxRate) => (
         <div>
           <div className="fw-bold">{taxRate.name}</div>
           {taxRate.region && (
@@ -161,7 +167,7 @@ const TaxManagement = () => {
     {
       key: 'type',
       label: 'Type',
-      render: (taxRate) => (
+      render: (value, taxRate: TaxRate) => (
         <span className="badge bg-info">
           {taxRate.type.toUpperCase()}
         </span>
@@ -170,7 +176,7 @@ const TaxManagement = () => {
     {
       key: 'rate',
       label: 'Rate',
-      render: (taxRate) => (
+      render: (value, taxRate: TaxRate) => (
         <span className="fw-bold">
           {(parseFloat(taxRate.rate) * 100).toFixed(2)}%
         </span>
@@ -225,7 +231,7 @@ const TaxManagement = () => {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="mb-0" style={{ color: designTokens.colors.primary }}>
+          <h2 className="mb-0" style={{ color: designTokens.colors.shopify.green }}>
             <FaPercent className="me-2" />
             Tax Management
           </h2>
@@ -384,8 +390,8 @@ const TaxManagement = () => {
             <DataTable
               data={taxRates}
               columns={taxRateColumns}
-              searchable={true}
-              searchPlaceholder="Search tax rates..."
+              loading={false}
+              emptyMessage="No tax rates found"
             />
           )}
         </div>
