@@ -1,12 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaFileInvoice, FaSearch, FaFilter, FaCalendarAlt, FaExclamationTriangle, FaDollarSign } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaFileInvoice, FaSearch, FaFilter, FaCalendarAlt, FaExclamationTriangle, FaDollarSign, FaMoneyBillWave } from 'react-icons/fa';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import AnimatedCard from '../components/ui/AnimatedCard';
+import AnimatedModal from '../components/ui/AnimatedModal';
 import { designTokens } from '../design/tokens';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useToast } from '../hooks/use-toast';
+import ErrorBoundary from '../components/ui/ErrorBoundary';
 
 // Form Schema
 const payableSchema = z.object({
@@ -52,6 +55,13 @@ const AccountsPayable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterAging, setFilterAging] = useState('');
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const { toast } = useToast();
+  
+  // Page load animation
+  useEffect(() => {
+    setIsPageLoading(false);
+  }, []);
   
   const queryClient = useQueryClient();
 

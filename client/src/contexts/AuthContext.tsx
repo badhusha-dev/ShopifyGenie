@@ -141,8 +141,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchUser();
-  }, [token]);
+    // Only fetch user if we have a token and haven't already fetched
+    if (token && !user) {
+      fetchUser().catch((error) => {
+        console.error('Failed to fetch user during initialization:', error);
+        // Don't throw, just log and continue
+      });
+    } else if (!token) {
+      setIsLoading(false);
+    }
+  }, [token, user]);
 
   const value: AuthContextType = {
     user,

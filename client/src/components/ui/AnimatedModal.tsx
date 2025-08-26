@@ -69,7 +69,7 @@ const AnimatedModal: React.FC<AnimatedModalProps> = ({
       </div>
 
       {/* Embedded styles for animations */}
-      <style jsx>{`
+      <style>{`
         .animated-modal-backdrop {
           position: fixed;
           top: 0;

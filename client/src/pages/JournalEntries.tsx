@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaPen, FaSearch, FaFilter, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaPen, FaSearch, FaFilter, FaCheck, FaTimes, FaBook, FaBalanceScale } from 'react-icons/fa';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import AnimatedCard from '../components/ui/AnimatedCard';
+import AnimatedModal from '../components/ui/AnimatedModal';
 import { designTokens } from '../design/tokens';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useToast } from '../hooks/use-toast';
+import ErrorBoundary from '../components/ui/ErrorBoundary';
 
 // Form Schema for Journal Entry
 const journalEntryLineSchema = z.object({
@@ -61,6 +64,13 @@ const JournalEntries = () => {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const { toast } = useToast();
+  
+  // Page load animation
+  useEffect(() => {
+    setIsPageLoading(false);
+  }, []);
   
   const queryClient = useQueryClient();
 
@@ -456,22 +466,43 @@ const JournalEntries = () => {
       </AnimatedCard>
 
       {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-xl">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}
-                </h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => setShowModal(false)}
-                ></button>
-              </div>
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="modal-body">
+      <AnimatedModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}
+        size="xl"
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="journal-entry-form"
+              className="btn btn-primary"
+              disabled={saveJournalEntryMutation.isPending || !isBalanced}
+              data-testid="button-save-journal-entry"
+            >
+              {saveJournalEntryMutation.isPending ? (
+                <>
+                  <div className="spinner-border spinner-border-sm me-2" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  Saving...
+                </>
+              ) : (
+                editingEntry ? 'Update Entry' : 'Save Entry'
+              )}
+            </button>
+          </>
+        }
+      >
+        <form id="journal-entry-form" onSubmit={handleSubmit(onSubmit)}>
+          <div className="modal-body">
                   {/* Entry Header */}
                   <div className="row g-3 mb-4">
                     <div className="col-md-4">
@@ -630,37 +661,8 @@ const JournalEntries = () => {
                     )}
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={saveJournalEntryMutation.isPending || !isBalanced}
-                    data-testid="button-save-journal-entry"
-                  >
-                    {saveJournalEntryMutation.isPending ? (
-                      <>
-                        <div className="spinner-border spinner-border-sm me-2" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                        Saving...
-                      </>
-                    ) : (
-                      editingEntry ? 'Update Entry' : 'Save Entry'
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+        </form>
+      </AnimatedModal>
     </div>
   );
 };
