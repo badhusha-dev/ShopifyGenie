@@ -38,7 +38,10 @@ import ManualJournalEntry from './pages/ManualJournalEntry';
 import BankReconciliation from './pages/BankReconciliation';
 import InvoiceManagement from './pages/InvoiceManagement';
 import TaxManagement from './pages/TaxManagement';
-import NotFound from './pages/not-found';
+import NotFound from './pages/NotFound';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import SafeComponent from './components/ui/SafeComponent';
+import ErrorPage from './pages/ErrorPage';
 
 // Design Tokens
 import './design/tokens.scss'; // Import design tokens
@@ -452,21 +455,24 @@ const AppContent = () => {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <PermissionProvider>
-          <ThemeProvider> {/* Wrap with ThemeProvider */}
-            <Router>
-              <div className="app">
-                <AppContent />
-                <Toaster />
-              </div>
-            </Router>
-          </ThemeProvider>
-        </PermissionProvider>
-      </AuthProvider>
-      {/* Removed ReactQueryDevtools and Toaster from here as they are now in AppContent */}
-    </QueryClientProvider>
+    <ErrorBoundary showDetails={process.env.NODE_ENV === 'development'}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <PermissionProvider>
+            <ThemeProvider>
+              <Router>
+                <div className="app">
+                  <SafeComponent>
+                    <AppContent />
+                  </SafeComponent>
+                  <Toaster />
+                </div>
+              </Router>
+            </ThemeProvider>
+          </PermissionProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

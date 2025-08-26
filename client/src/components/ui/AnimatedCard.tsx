@@ -23,65 +23,36 @@ const AnimatedCard: React.FC<AnimatedCardProps> = ({
     none: ''
   };
 
+  const baseStyles: React.CSSProperties = {
+    transition: 'all 0.3s ease',
+    border: '1px solid #e0e6ed',
+    borderRadius: '12px',
+    background: 'white',
+    overflow: 'hidden',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+    cursor: onClick ? 'pointer' : 'default'
+  };
+
   return (
-    <>
-      <div 
-        className={`animated-card modern-card ${hover ? 'card-hover' : ''} ${gradientClasses[gradient]} ${className}`}
-        onClick={onClick}
-        style={{ cursor: onClick ? 'pointer' : 'default' }}
-      >
-        {children}
-      </div>
-
-      {/* Embedded styles for animations */}
-      <style jsx>{`
-        .animated-card {
-          transition: all 0.3s ease;
-          border: 1px solid #e0e6ed;
-          border-radius: 12px;
-          background: white;
-          overflow: hidden;
+    <div 
+      className={`animated-card modern-card ${hover ? 'card-hover' : ''} ${gradientClasses[gradient]} ${className}`}
+      onClick={onClick}
+      style={baseStyles}
+      onMouseEnter={(e) => {
+        if (hover) {
+          e.currentTarget.style.transform = 'translateY(-8px)';
+          e.currentTarget.style.boxShadow = '0 12px 35px rgba(0, 0, 0, 0.1)';
         }
-
-        .card-hover:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
-          border-color: var(--shopify-green);
+      }}
+      onMouseLeave={(e) => {
+        if (hover) {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
         }
-
-        .card-gradient-shopify {
-          background: linear-gradient(135deg, var(--shopify-green-light) 0%, var(--shopify-green) 100%);
-          color: white;
-          border-color: var(--shopify-green);
-        }
-
-        .card-gradient-blue {
-          background: linear-gradient(135deg, #e3f2fd 0%, #2196f3 100%);
-          color: white;
-          border-color: #2196f3;
-        }
-
-        .card-gradient-purple {
-          background: linear-gradient(135deg, #f3e5f5 0%, #9c27b0 100%);
-          color: white;
-          border-color: #9c27b0;
-        }
-
-        .card-gradient-coral {
-          background: linear-gradient(135deg, var(--coral-light) 0%, var(--coral-accent) 100%);
-          color: white;
-          border-color: var(--coral-accent);
-        }
-
-        .card-hover:hover .card-content {
-          transform: scale(1.02);
-        }
-
-        .card-content {
-          transition: transform 0.3s ease;
-        }
-      `}</style>
-    </>
+      }}
+    >
+      {children}
+    </div>
   );
 };
 

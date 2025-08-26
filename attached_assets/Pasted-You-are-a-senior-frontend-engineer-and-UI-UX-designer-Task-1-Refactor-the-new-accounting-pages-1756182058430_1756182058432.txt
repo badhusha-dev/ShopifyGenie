@@ -1,0 +1,107 @@
+You are a senior frontend engineer and UI/UX designer.
+
+Task
+1) Refactor the new accounting pages (Journals, Accounts Receivable, Accounts Payable, Wallets & Credits, Financial Reports, Bank Reconciliation, Taxes) to match the modern Shopify-inspired Bootstrap 5.3 animated design system.
+2) Generate a separate README-DESIGN.md file with Figma-style design documentation for consistency.
+3) IMPORTANT: Some pages are still showing errors that aren’t visible (“Still some page showing error I couldn't see.”). Do a full error hunt + fix pass:
+   - Identify routes/components that fail to mount or silently crash.
+   - Fix runtime errors, missing imports, undefined props/state, and unsafe effects.
+   - Add robust error boundaries and friendly fallback UIs.
+   - Ensure all pages render without console errors or TypeScript errors.
+
+Part A: Accounting Page Refactor
+- Apply consistent Bootstrap 5.3 utilities, gradients, and spacing.
+- Use reusable components: AnimatedCard, DataTable, AnimatedModal, BootstrapChart.
+- Ensure dark mode support via Bootstrap 5.3 `data-bs-theme`.
+- Add animations:
+  * Fade-in + slide-up on page load
+  * Ripple effect on buttons
+  * Row expand/collapse animations
+  * Smooth tab transitions
+- Replace raw tables with DataTable (search, sort, pagination).
+- Show empty states with icons and messages.
+- Add skeleton loaders while fetching data.
+- Status badges:
+  * AR: Pending (warning), Paid (success), Overdue (danger).
+  * AP: Unpaid (secondary), Paid (success), Overdue (danger).
+- Modals use gradient headers, backdrop blur, and animated open/close.
+- Reports:
+  * KPI AnimatedCards (Revenue, Expenses, Net Income, Cash Flow).
+  * Interactive Chart.js (line for P&L trends, pie for expenses by category).
+  * Drill-down: click report line → show related journal entries in modal.
+
+Part B: Design Documentation (generate `README-DESIGN.md`)
+1. 🎨 Design System
+   - Primary Colors: Emerald (#2ECC71, #27AE60), Coral (#FF6F61), Blue (#3498DB), Purple (#9B59B6).
+   - Typography: Bootstrap default + weight hierarchy (h1–h6, body).
+   - Spacing & Shadows: Bootstrap utilities + custom CSS tokens.
+
+2. 🌗 Theming
+   - Light & Dark Mode (`data-bs-theme`).
+   - Accent color customizer (SuperAdmin can switch emerald → blue, purple, coral).
+
+3. 🧩 Reusable Components
+   - AnimatedCard: hover lift + gradients.
+   - AnimatedModal: slide-in, gradient header, backdrop blur.
+   - DataTable: search, sort, pagination, responsive.
+   - BootstrapChart: Chart.js wrapper with animations.
+
+4. 🎞️ Animations & Micro-Interactions
+   - Page load: fade-in + slide-up.
+   - Buttons: ripple effect on click.
+   - Row expand: smooth height transition.
+   - Hover states: lift + shadow.
+
+5. 📱 Responsive Layouts
+   - Mobile-first.
+   - Sidebar → offcanvas on small screens.
+   - Tables → stacked card view on mobile.
+   - Charts responsive.
+
+6. 📊 Example Screens
+   - Journals Page → DataTable + Modal.
+   - AR/AP → table + status badges.
+   - Wallets → wallet cards + adjustment modal.
+   - Reports → KPI cards + P&L chart.
+   - Bank Reconciliation → file upload + match table.
+   - Taxes → summary table + chart.
+
+7. 🛠️ Developer Notes
+   - Centralized tokens for gradients, colors, animations.
+   - Bootstrap 5.3 naming conventions.
+   - Keep UI consistent across modules.
+   - Use README-DESIGN.md as the style reference.
+
+Part C: Error Hunt & Stabilization (address: “Still some page showing error I couldn't see.”)
+- Add a global ErrorBoundary component (captures render/runtime errors) with a friendly fallback and “Copy error details” button.
+- Wrap page-level routes and heavy components with ErrorBoundary.
+- Enable React StrictMode; run TypeScript checks (`tsc --noEmit`) and fix all type errors.
+- Lint & autofix (`eslint . --ext .ts,.tsx`); resolve remaining issues.
+- Add runtime guards:
+  * Null/undefined checks for props, query results, and context.
+  * Defensive coding around async data (loading/skeleton, error state, empty state).
+- Console & network diagnostics:
+  * Remove stray `console.log` noise; keep `console.error` for real failures.
+  * Standardize fetch helpers to surface HTTP errors with toasts + user-friendly messages.
+- Routing fixes:
+  * Verify all sidebar links map to valid routes; add NotFound (404) and Error (500) pages.
+  * Ensure RBAC route guards don’t block authorized pages or cause blank screens.
+- Charts & tables:
+  * Guard Chart.js datasets (no undefined/NaN); safe defaults on empty data.
+  * DataTable resilient to empty arrays and evolving schemas.
+- Dependency hygiene:
+  * Fix missing imports, mismatched versions, and incorrect peer deps.
+  * Ensure Bootstrap, Chart.js, and icons load once (no duplication).
+
+Deliverables
+- Updated accounting pages with modern Bootstrap 5.3 animated UI and dark mode support.
+- New `README-DESIGN.md` documenting the design system and example screens.
+- Error-free console on all routes; TypeScript build passes; graceful error boundaries.
+- 404/500 pages, standardized loading/empty/error states, and consistent toasts.
+
+Acceptance Checklist (must pass)
+- ✅ All accounting routes load without runtime or TypeScript errors.
+- ✅ No unhandled promise rejections; network failures show friendly toasts.
+- ✅ DataTable/Charts render with empty datasets (no crashes).
+- ✅ ErrorBoundary catch + fallback works on forced throw.
+- ✅ Dark mode + theme customizer respected on every page.

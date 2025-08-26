@@ -178,10 +178,13 @@ const AccountsPayable = () => {
 
   // Filter payables
   const filteredPayables = payables.filter((payable: AccountsPayable) => {
+    if (!payable) return false;
+    
+    const safeSearchTerm = (searchTerm || '').toLowerCase();
     const matchesSearch = 
-      payable.billNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payable.vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (payable.vendorEmail && payable.vendorEmail.toLowerCase().includes(searchTerm.toLowerCase()));
+      (payable.billNumber || '').toLowerCase().includes(safeSearchTerm) ||
+      (payable.vendorName || '').toLowerCase().includes(safeSearchTerm) ||
+      (payable.vendorEmail && payable.vendorEmail.toLowerCase().includes(safeSearchTerm));
     
     const matchesStatus = !filterStatus || payable.status === filterStatus;
     

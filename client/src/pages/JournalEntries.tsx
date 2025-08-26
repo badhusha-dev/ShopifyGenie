@@ -174,9 +174,13 @@ const JournalEntries = () => {
 
   // Filter journal entries
   const filteredEntries = journalEntries.filter((entry: JournalEntry) => {
-    const matchesSearch = entry.journalNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (entry.reference && entry.reference.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (!entry) return false;
+    
+    const safeSearchTerm = (searchTerm || '').toLowerCase();
+    const matchesSearch = 
+      (entry.journalNumber || '').toLowerCase().includes(safeSearchTerm) ||
+      (entry.description || '').toLowerCase().includes(safeSearchTerm) ||
+      (entry.reference && entry.reference.toLowerCase().includes(safeSearchTerm));
     const matchesStatus = !filterStatus || entry.status === filterStatus;
     return matchesSearch && matchesStatus;
   });

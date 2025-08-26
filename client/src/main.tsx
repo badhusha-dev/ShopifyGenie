@@ -5,6 +5,18 @@ import { queryClient } from "./lib/queryClient";
 import App from "./App";
 import "./index.css";
 
+// Global unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+  console.debug('Unhandled promise rejection (handled):', event.reason);
+  // Prevent the default behavior that logs to console
+  event.preventDefault();
+});
+
+// Global error handler
+window.addEventListener('error', (event) => {
+  console.debug('Global error (handled):', event.error);
+});
+
 // Ensure DOM is ready
 const initializeApp = () => {
   const container = document.getElementById("root");

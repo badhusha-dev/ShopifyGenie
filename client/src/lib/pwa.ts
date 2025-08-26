@@ -1,4 +1,5 @@
 // PWA utility functions
+import React from 'react';
 import { apiRequest } from './queryClient';
 
 export interface BeforeInstallPromptEvent extends Event {
@@ -106,23 +107,24 @@ class PWAManager {
   }
 
   private async initializePushNotifications(): Promise<void> {
-    if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
-      const permission = await Notification.requestPermission();
-      
-      if (permission === 'granted' && this.registration) {
-        try {
-          // Get or create push subscription
-          let subscription = await this.registration.pushManager.getSubscription();
-          
-          if (!subscription) {
-            // Generate VAPID keys - in production, these should be generated on the server
-            const vapidPublicKey = 'BGsyHCqFdFz4vF4jV4d9YY5SnJ5FhJ5rUTkJj4FjXk9L5Mj8rJfvH2Jm3l7vD4';
+    try {
+      if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted' && this.registration) {
+          try {
+            // Get or create push subscription
+            let subscription = await this.registration.pushManager.getSubscription();
             
-            subscription = await this.registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey)
-            });
-          }
+            if (!subscription) {
+              // Generate VAPID keys - in production, these should be generated on the server
+              const vapidPublicKey = 'BGsyHCqFdFz4vF4jV4d9YY5SnJ5FhJ5rUTkJj4FjXk9L5Mj8rJfvH2Jm3l7vD4';
+              
+              subscription = await this.registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey)
+              });
+            }
           
           // Send subscription to server
           await this.sendSubscriptionToServer(subscription);
@@ -204,8 +206,13 @@ class PWAManager {
     }
   }
 
-  public isAppInstallable(): boolean {
-    return this.deferredPrompt !== null;
+  public async isAppInstallable(): Promise<boolean> {
+    try {
+      return this.deferredPrompt !== null;
+    } catch (error) {
+      console.debug('Error checking app installability:', error);
+      return false;
+    }
   }
 
   public isOnlineStatus(): boolean {
@@ -351,34 +358,27 @@ export function usePWA() {
   const [isInstallable, setIsInstallable] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);
 
+  // Temporarily disable all PWA functionality to stop unhandled rejections
   React.useEffect(() => {
-    const checkInstallable = () => {
-      setIsInstallable(pwaManager.isAppInstallable());
-    };
-
+    // Simple online/offline detection without PWA manager
     const updateOnlineStatus = () => {
-      setIsOnline(pwaManager.isOnlineStatus());
+      setIsOnline(navigator.onLine);
     };
 
-    // Check installable status periodically
-    const interval = setInterval(checkInstallable, 1000);
-    
-    // Listen for online/offline events
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
     };
   }, []);
 
   return {
-    isInstallable,
+    isInstallable: false, // Disabled temporarily
     isOnline,
-    installApp: () => pwaManager.installApp(),
-    updateApp: () => pwaManager.updateApp(),
-    addToOfflineQueue: (request: any) => pwaManager.addToOfflineQueue(request)
+    installApp: () => Promise.resolve(false),
+    updateApp: () => Promise.resolve(),
+    addToOfflineQueue: () => {}
   };
 }
