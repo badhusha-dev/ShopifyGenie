@@ -97,7 +97,11 @@ const AppContent = () => {
 
       {/* Main Content */}
       <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <Route path="/" nest>
           <Route path="/">
+            {() => renderPage("Dashboard", "Overview of your business metrics", Home)}
+          </Route>
+          <Route path="/dashboard">
             {() => renderPage("Dashboard", "Overview of your business metrics", Home)}
           </Route>
           <Route path="/inventory">
@@ -122,6 +126,9 @@ const AppContent = () => {
             {() => renderPage("Vendor Management", "Manage suppliers and vendor relationships", VendorManagement)}
           </Route>
           <Route path="/ai-recommendations">
+            {() => renderPage("AI Insights", "AI-powered business recommendations and analytics", AIRecommendations)}
+          </Route>
+          <Route path="/ai-insights">
             {() => renderPage("AI Insights", "AI-powered business recommendations and analytics", AIRecommendations)}
           </Route>
           <Route path="/reports">
@@ -172,9 +179,12 @@ const AppContent = () => {
           <Route path="/tax-management">
             {() => renderPage("Tax Management", "Manage tax rates and generate tax reports", TaxManagement)}
           </Route>
-          <Route>
-            {() => <NotFound />}
+          
+          {/* Catch-all route for 404 - MUST BE LAST */}
+          <Route path="*">
+            {() => <div data-testid="not-found-page"><NotFound /></div>}
           </Route>
+        </Route>
       </div>
 
       {/* Mobile overlay */}

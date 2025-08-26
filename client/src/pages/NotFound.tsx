@@ -6,7 +6,7 @@ const NotFound: React.FC = () => {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light" data-testid="not-found-page">
       <div className="text-center">
         <div className="mb-4">
           <h1 className="display-1 fw-bold text-muted">404</h1>
