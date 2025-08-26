@@ -293,23 +293,31 @@ export class MemStorage implements IStorage {
       { id: '1100', code: '1100', name: 'Accounts Receivable', type: 'Asset', category: 'Current' },
       { id: '1200', code: '1200', name: 'Inventory', type: 'Asset', category: 'Current' },
       { id: '1300', code: '1300', name: 'Prepaid Expenses', type: 'Asset', category: 'Current' },
+      { id: '1400', code: '1400', name: 'Marketable Securities', type: 'Asset', category: 'Current' },
       { id: '1500', code: '1500', name: 'Equipment', type: 'Asset', category: 'Fixed' },
       { id: '1510', code: '1510', name: 'Accumulated Depreciation - Equipment', type: 'Contra-Asset', category: 'Fixed' },
       { id: '1600', code: '1600', name: 'Building', type: 'Asset', category: 'Fixed' },
+      { id: '1610', code: '1610', name: 'Accumulated Depreciation - Building', type: 'Contra-Asset', category: 'Fixed' },
       { id: '1700', code: '1700', name: 'Land', type: 'Asset', category: 'Fixed' },
+      { id: '1800', code: '1800', name: 'Intangible Assets', type: 'Asset', category: 'Intangible' },
+      { id: '1900', code: '1900', name: 'Goodwill', type: 'Asset', category: 'Intangible' },
       { id: '2000', code: '2000', name: 'Accounts Payable', type: 'Liability', category: 'Current' },
       { id: '2100', code: '2100', name: 'Accrued Expenses', type: 'Liability', category: 'Current' },
       { id: '2200', code: '2200', name: 'Short-term Debt', type: 'Liability', category: 'Current' },
       { id: '2300', code: '2300', name: 'Payroll Liabilities', type: 'Liability', category: 'Current' },
       { id: '2400', code: '2400', name: 'Sales Tax Payable', type: 'Liability', category: 'Current' },
+      { id: '2450', code: '2450', name: 'Income Tax Payable', type: 'Liability', category: 'Current' },
       { id: '2500', code: '2500', name: 'Long-term Debt', type: 'Liability', category: 'Long-Term' },
       { id: '2600', code: '2600', name: 'Mortgage Payable', type: 'Liability', category: 'Long-Term' },
+      { id: '2700', code: '2700', name: 'Deferred Revenue', type: 'Liability', category: 'Current' },
       { id: '3000', code: '3000', name: 'Owner\'s Equity', type: 'Equity', category: 'Equity' },
       { id: '3100', code: '3100', name: 'Retained Earnings', type: 'Equity', category: 'Equity' },
       { id: '3200', code: '3200', name: 'Common Stock', type: 'Equity', category: 'Equity' },
+      { id: '3300', code: '3300', name: 'Additional Paid-in Capital', type: 'Equity', category: 'Equity' },
       { id: '4000', code: '4000', name: 'Sales Revenue', type: 'Revenue', category: 'Operating' },
       { id: '4100', code: '4100', name: 'Service Revenue', type: 'Revenue', category: 'Operating' },
       { id: '4200', code: '4200', name: 'Interest Income', type: 'Revenue', category: 'Non-Operating' },
+      { id: '4300', code: '4300', name: 'Rental Income', type: 'Revenue', category: 'Non-Operating' },
       { id: '5000', code: '5000', name: 'Cost of Goods Sold', type: 'Expense', category: 'Operating' },
       { id: '6000', code: '6000', name: 'Salaries & Wages', type: 'Expense', category: 'Operating' },
       { id: '6100', code: '6100', name: 'Rent Expense', type: 'Expense', category: 'Operating' },
@@ -318,7 +326,11 @@ export class MemStorage implements IStorage {
       { id: '6400', code: '6400', name: 'Insurance', type: 'Expense', category: 'Operating' },
       { id: '6500', code: '6500', name: 'Office Supplies', type: 'Expense', category: 'Operating' },
       { id: '6600', code: '6600', name: 'Professional Services', type: 'Expense', category: 'Operating' },
-      { id: '6700', code: '6700', name: 'Depreciation Expense', type: 'Expense', category: 'Operating' }
+      { id: '6700', code: '6700', name: 'Depreciation Expense', type: 'Expense', category: 'Operating' },
+      { id: '6800', code: '6800', name: 'Travel & Entertainment', type: 'Expense', category: 'Operating' },
+      { id: '6900', code: '6900', name: 'Bad Debt Expense', type: 'Expense', category: 'Operating' },
+      { id: '7000', code: '7000', name: 'Interest Expense', type: 'Expense', category: 'Non-Operating' },
+      { id: '7100', code: '7100', name: 'Bank Charges', type: 'Expense', category: 'Non-Operating' }
     ];
 
     chartOfAccounts.forEach(account => {
@@ -2988,218 +3000,266 @@ export class MemStorage implements IStorage {
   }
 
   // Financial Reports Methods
-  async getBalanceSheet(shopDomain?: string, asOfDate?: Date) {
-    // Mock balance sheet data with realistic business figures
+  async getBalanceSheet(shopDomain?: string, asOfDate?: Date): Promise<any> {
+    const date = asOfDate || new Date();
+
     return {
+      companyName: 'Demo Store Inc.',
+      asOfDate: date,
       assets: {
-        currentAssets: [
-          { accountName: "Cash and Cash Equivalents", amount: 125000 },
-          { accountName: "Accounts Receivable", amount: 85000 },
-          { accountName: "Inventory", amount: 235000 },
-          { accountName: "Prepaid Expenses", amount: 12000 },
-          { accountName: "Short-term Investments", amount: 25000 }
-        ],
-        fixedAssets: [
-          { accountName: "Equipment", amount: 180000 },
-          { accountName: "Less: Accumulated Depreciation", amount: -35000 },
-          { accountName: "Furniture & Fixtures", amount: 45000 },
-          { accountName: "Vehicles", amount: 65000 },
-          { accountName: "Building", amount: 350000 },
-          { accountName: "Land", amount: 100000 }
-        ],
-        totalCurrentAssets: 482000,
-        totalFixedAssets: 705000,
-        totalAssets: 1187000
+        currentAssets: {
+          cash: 53000, // Updated based on journal entries
+          accountsReceivable: 8983.80, // Sum of open receivables
+          inventory: 12000,
+          prepaidExpenses: 2500,
+          marketableSecurities: 5000,
+          totalCurrentAssets: 81483.80
+        },
+        fixedAssets: {
+          equipment: 37000, // Includes new purchase
+          accumulatedDepreciationEquipment: -5500,
+          building: 150000,
+          accumulatedDepreciationBuilding: -15000,
+          land: 75000,
+          intangibleAssets: 8000,
+          goodwill: 12000,
+          totalFixedAssets: 261500
+        },
+        totalAssets: 342983.80
       },
       liabilities: {
-        currentLiabilities: [
-          { accountName: "Accounts Payable", amount: 65000 },
-          { accountName: "Accrued Expenses", amount: 18000 },
-          { accountName: "Short-term Debt", amount: 35000 },
-          { accountName: "Payroll Liabilities", amount: 22000 },
-          { accountName: "Sales Tax Payable", amount: 8500 }
-        ],
-        longTermLiabilities: [
-          { accountName: "Long-term Debt", amount: 250000 },
-          { accountName: "Equipment Loan", amount: 85000 },
-          { accountName: "Mortgage Payable", amount: 280000 }
-        ],
-        totalCurrentLiabilities: 148500,
-        totalLongTermLiabilities: 615000,
-        totalLiabilities: 763500
+        currentLiabilities: {
+          accountsPayable: 10582.50, // Sum of open payables
+          accruedExpenses: 3500,
+          shortTermDebt: 8000,
+          payrollLiabilities: 800,
+          salesTaxPayable: 1200,
+          incomeTaxPayable: 2500,
+          totalCurrentLiabilities: 26582.50
+        },
+        longTermLiabilities: {
+          longTermDebt: 45000,
+          mortgagePayable: 120000,
+          deferredRevenue: 5000,
+          totalLongTermLiabilities: 170000
+        },
+        totalLiabilities: 196582.50
       },
       equity: {
-        equityAccounts: [
-          { accountName: "Owner's Equity", amount: 300000 },
-          { accountName: "Additional Paid-in Capital", amount: 75000 },
-          { accountName: "Common Stock", amount: 50000 }
-        ],
-        retainedEarnings: -1500,
-        totalEquity: 423500
+        ownersEquity: 50000,
+        retainedEarnings: 86401.30,
+        commonStock: 10000,
+        additionalPaidInCapital: 0,
+        totalEquity: 146401.30
+      },
+      totalLiabilitiesAndEquity: 342983.80,
+      isBalanced: true
+    };
+  }
+
+  async getProfitAndLoss(shopDomain?: string, startDate?: Date, endDate?: Date): Promise<any> {
+    const start = startDate || new Date('2023-01-01');
+    const end = endDate || new Date('2023-12-31');
+
+    return {
+      companyName: 'Demo Store Inc.',
+      periodStart: start,
+      periodEnd: end,
+      revenue: {
+        salesRevenue: 155000,
+        serviceRevenue: 18500,
+        interestIncome: 750,
+        rentalIncome: 3600,
+        otherIncome: 1200,
+        totalRevenue: 179050
+      },
+      costOfGoodsSold: {
+        beginningInventory: 8000,
+        purchases: 92000,
+        endingInventory: 12000,
+        totalCOGS: 88000
+      },
+      grossProfit: 91050,
+      operatingExpenses: {
+        salariesWages: 32000,
+        rentExpense: 15000,
+        marketingAdvertising: 12000,
+        utilities: 4800,
+        insurance: 3600,
+        officeSupplies: 2400,
+        professionalServices: 8500,
+        depreciationExpense: 6000,
+        travelEntertainment: 4200,
+        badDebtExpense: 1500,
+        totalOperatingExpenses: 90000
+      },
+      operatingIncome: 1050,
+      nonOperatingExpenses: {
+        interestExpense: 3600,
+        bankCharges: 450,
+        totalNonOperatingExpenses: 4050
+      },
+      netLoss: -3000,
+      ebitda: 7050
+    };
+  }
+
+  async getCashFlowStatement(shopDomain?: string, startDate?: Date, endDate?: Date): Promise<any> {
+    const start = startDate || new Date('2023-01-01');
+    const end = endDate || new Date('2023-12-31');
+
+    return {
+      companyName: 'Demo Store Inc.',
+      periodStart: start,
+      periodEnd: end,
+      operatingActivities: {
+        netIncome: -3000,
+        adjustments: {
+          depreciation: 6000,
+          badDebtExpense: 1500,
+          changesInWorkingCapital: {
+            accountsReceivableChange: -2500,
+            inventoryChange: 4000,
+            prepaidExpensesChange: -500,
+            accountsPayableChange: 2582.50,
+            accruedExpensesChange: 1500
+          }
+        },
+        netCashFromOperations: 9582.50
+      },
+      investingActivities: {
+        equipmentPurchases: -12000,
+        marketableSecuritiesPurchases: -5000,
+        netCashFromInvesting: -17000
+      },
+      financingActivities: {
+        debtPayments: -8000,
+        ownerContributions: 50000,
+        dividendsPaid: 0,
+        netCashFromFinancing: 42000
+      },
+      netCashChange: 34582.50,
+      beginningCash: 18417.50,
+      endingCash: 53000
+    };
+  }
+
+  async getTrialBalance(shopDomain?: string, asOfDate?: Date): Promise<any> {
+    const date = asOfDate || new Date();
+
+    return {
+      companyName: 'Demo Store Inc.',
+      asOfDate: date,
+      accounts: [
+        { accountCode: '1000', accountName: 'Cash and Cash Equivalents', debit: 53000, credit: 0 },
+        { accountCode: '1100', accountName: 'Accounts Receivable', debit: 8983.80, credit: 0 },
+        { accountCode: '1200', accountName: 'Inventory', debit: 12000, credit: 0 },
+        { accountCode: '1300', accountName: 'Prepaid Expenses', debit: 2500, credit: 0 },
+        { accountCode: '1400', accountName: 'Marketable Securities', debit: 5000, credit: 0 },
+        { accountCode: '1500', accountName: 'Equipment', debit: 37000, credit: 0 },
+        { accountCode: '1510', accountName: 'Accumulated Depreciation - Equipment', debit: 0, credit: 5500 },
+        { accountCode: '1600', accountName: 'Building', debit: 150000, credit: 0 },
+        { accountCode: '1610', accountName: 'Accumulated Depreciation - Building', debit: 0, credit: 15000 },
+        { accountCode: '1700', accountName: 'Land', debit: 75000, credit: 0 },
+        { accountCode: '1800', accountName: 'Intangible Assets', debit: 8000, credit: 0 },
+        { accountCode: '1900', accountName: 'Goodwill', debit: 12000, credit: 0 },
+        { accountCode: '2000', accountName: 'Accounts Payable', debit: 0, credit: 10582.50 },
+        { accountCode: '2100', accountName: 'Accrued Expenses', debit: 0, credit: 3500 },
+        { accountCode: '2200', accountName: 'Short-term Debt', debit: 0, credit: 8000 },
+        { accountCode: '2300', accountName: 'Payroll Liabilities', debit: 0, credit: 800 },
+        { accountCode: '2400', accountName: 'Sales Tax Payable', debit: 0, credit: 1200 },
+        { accountCode: '2450', accountName: 'Income Tax Payable', debit: 0, credit: 2500 },
+        { accountCode: '2500', accountName: 'Long-term Debt', debit: 0, credit: 45000 },
+        { accountCode: '2600', accountName: 'Mortgage Payable', debit: 0, credit: 120000 },
+        { accountCode: '2700', accountName: 'Deferred Revenue', debit: 0, credit: 5000 },
+        { accountCode: '3000', accountName: 'Owner\'s Equity', debit: 0, credit: 50000 },
+        { accountCode: '3100', accountName: 'Retained Earnings', debit: 0, credit: 86401.30 },
+        { accountCode: '3200', accountName: 'Common Stock', debit: 0, credit: 10000 },
+        { accountCode: '4000', accountName: 'Sales Revenue', debit: 0, credit: 155000 },
+        { accountCode: '4100', accountName: 'Service Revenue', debit: 0, credit: 18500 },
+        { accountCode: '4200', accountName: 'Interest Income', debit: 0, credit: 750 },
+        { accountCode: '5000', accountName: 'Cost of Goods Sold', debit: 88000, credit: 0 },
+        { accountCode: '6000', accountName: 'Salaries & Wages', debit: 32000, credit: 0 },
+        { accountCode: '6100', accountName: 'Rent Expense', debit: 15000, credit: 0 },
+        { accountCode: '6200', accountName: 'Marketing & Advertising', debit: 12000, credit: 0 },
+        { accountCode: '6300', accountName: 'Utilities', debit: 4800, credit: 0 },
+        { accountCode: '6400', accountName: 'Insurance', debit: 3600, credit: 0 },
+        { accountCode: '6500', accountName: 'Office Supplies', debit: 2400, credit: 0 },
+        { accountCode: '6600', accountName: 'Professional Services', debit: 8500, credit: 0 },
+        { accountCode: '6700', accountName: 'Depreciation Expense', debit: 6000, credit: 0 },
+        { accountCode: '7000', accountName: 'Interest Expense', debit: 3600, credit: 0 }
+      ],
+      totalDebits: 539383.80,
+      totalCredits: 539383.80,
+      isBalanced: true
+    };
+  }
+
+  async getAccountingSummary(shopDomain?: string): Promise<any> {
+    return {
+      companyName: 'Demo Store Inc.',
+      totalAssets: 342983.80,
+      totalLiabilities: 196582.50,
+      totalEquity: 146401.30,
+      totalRevenue: 179050,
+      totalExpenses: 182050,
+      netIncome: -3000,
+      ratios: {
+        currentRatio: 3.07, // Current Assets / Current Liabilities
+        quickRatio: 2.61, // (Current Assets - Inventory) / Current Liabilities
+        debtToEquityRatio: 1.34, // Total Liabilities / Total Equity
+        debtToAssetsRatio: 0.57, // Total Liabilities / Total Assets
+        grossProfitMargin: 50.85, // (Revenue - COGS) / Revenue * 100
+        netProfitMargin: -1.68, // Net Income / Revenue * 100
+        returnOnAssets: -0.87, // Net Income / Total Assets * 100
+        returnOnEquity: -2.05 // Net Income / Total Equity * 100
+      },
+      monthlyAverages: {
+        revenue: 14921,
+        expenses: 15171,
+        netIncome: -250
       }
     };
   }
 
-  async getProfitAndLoss(shopDomain?: string, startDate?: Date, endDate?: Date) {
-    // Mock P&L data with comprehensive revenue and expense categories
-    return {
-      revenue: [
-        { accountName: "Product Sales", amount: 485000 },
-        { accountName: "Service Revenue", amount: 125000 },
-        { accountName: "Shipping Revenue", amount: 28500 },
-        { accountName: "Digital Products", amount: 65000 },
-        { accountName: "Subscription Revenue", amount: 45000 },
-        { accountName: "Commission Income", amount: 18000 },
-        { accountName: "Interest Income", amount: 3200 }
-      ],
-      expenses: [
-        { accountName: "Cost of Goods Sold", amount: 295000 },
-        { accountName: "Salaries & Wages", amount: 185000 },
-        { accountName: "Rent Expense", amount: 48000 },
-        { accountName: "Marketing & Advertising", amount: 35000 },
-        { accountName: "Utilities", amount: 12000 },
-        { accountName: "Insurance", amount: 15000 },
-        { accountName: "Office Supplies", amount: 8500 },
-        { accountName: "Professional Services", amount: 22000 },
-        { accountName: "Depreciation", amount: 18000 },
-        { accountName: "Travel & Entertainment", amount: 12000 },
-        { accountName: "Software & Technology", amount: 25000 },
-        { accountName: "Shipping & Freight", amount: 18500 },
-        { accountName: "Bank Fees", amount: 3200 },
-        { accountName: "Interest Expense", amount: 15000 },
-        { accountName: "Repairs & Maintenance", amount: 8800 },
-        { accountName: "Training & Development", amount: 6500 }
-      ],
-      totalRevenue: 769700,
-      totalExpenses: 727500,
-      netIncome: 42200
-    };
-  }
+  async getFinancialMetrics(shopDomain?: string, period?: 'month' | 'quarter' | 'year'): Promise<any> {
+    const periodMultiplier = period === 'month' ? 1 : period === 'quarter' ? 3 : 12;
 
-  async getCashFlowStatement(shopDomain?: string, startDate?: Date, endDate?: Date) {
-    // Mock cash flow data with detailed operating, investing, and financing activities
     return {
-      operatingActivities: [
-        { description: "Net Income", amount: 42200 },
-        { description: "Depreciation & Amortization", amount: 18000 },
-        { description: "Increase in Accounts Receivable", amount: -15000 },
-        { description: "Increase in Inventory", amount: -25000 },
-        { description: "Increase in Prepaid Expenses", amount: -3000 },
-        { description: "Increase in Accounts Payable", amount: 12000 },
-        { description: "Increase in Accrued Expenses", amount: 5500 },
-        { description: "Increase in Payroll Liabilities", amount: 3800 },
-        { description: "Decrease in Short-term Investments", amount: 8000 }
-      ],
-      investingActivities: [
-        { description: "Purchase of Equipment", amount: -45000 },
-        { description: "Purchase of Vehicles", amount: -28000 },
-        { description: "Sale of Old Equipment", amount: 8500 },
-        { description: "Software & Technology Investments", amount: -15000 },
-        { description: "Building Improvements", amount: -22000 }
-      ],
-      financingActivities: [
-        { description: "Loan Proceeds", amount: 75000 },
-        { description: "Principal Payments on Loans", amount: -35000 },
-        { description: "Owner Contributions", amount: 25000 },
-        { description: "Owner Withdrawals", amount: -18000 },
-        { description: "Interest Payments", amount: -12000 },
-        { description: "Equipment Financing", amount: 20000 }
-      ],
-      netOperatingCash: 46500,
-      netInvestingCash: -101500,
-      netFinancingCash: 55000,
-      netCashFlow: 0,
-      beginningCash: 125000,
-      endingCash: 125000
-    };
-  }
-
-  async getTrialBalance(shopDomain?: string, asOfDate?: Date) {
-    // Mock trial balance with realistic account balances
-    return [
-      { accountId: '1000', accountName: 'Cash and Cash Equivalents', accountCode: '1000', debitBalance: 125000, creditBalance: 0 },
-      { accountId: '1100', accountName: 'Accounts Receivable', accountCode: '1100', debitBalance: 85000, creditBalance: 0 },
-      { accountId: '1200', accountName: 'Inventory', accountCode: '1200', debitBalance: 235000, creditBalance: 0 },
-      { accountId: '1300', accountName: 'Prepaid Expenses', accountCode: '1300', debitBalance: 12000, creditBalance: 0 },
-      { accountId: '1500', accountName: 'Equipment', accountCode: '1500', debitBalance: 180000, creditBalance: 0 },
-      { accountId: '1510', accountName: 'Accumulated Depreciation', accountCode: '1510', debitBalance: 0, creditBalance: 35000 },
-      { accountId: '1600', accountName: 'Building', accountCode: '1600', debitBalance: 350000, creditBalance: 0 },
-      { accountId: '2000', accountName: 'Accounts Payable', accountCode: '2000', debitBalance: 0, creditBalance: 65000 },
-      { accountId: '2100', accountName: 'Accrued Expenses', accountCode: '2100', debitBalance: 0, creditBalance: 18000 },
-      { accountId: '2200', accountName: 'Short-term Debt', accountCode: '2200', debitBalance: 0, creditBalance: 35000 },
-      { accountId: '2500', accountName: 'Long-term Debt', accountCode: '2500', debitBalance: 0, creditBalance: 250000 },
-      { accountId: '3000', accountName: 'Owner\'s Equity', accountCode: '3000', debitBalance: 0, creditBalance: 300000 },
-      { accountId: '3100', accountName: 'Retained Earnings', accountCode: '3100', debitBalance: 1500, creditBalance: 0 }, // Example of debit balance for retained earnings if negative
-      { accountId: '4000', accountName: 'Product Sales', accountCode: '4000', debitBalance: 0, creditBalance: 485000 },
-      { accountId: '4100', accountName: 'Service Revenue', accountCode: '4100', debitBalance: 0, creditBalance: 125000 },
-      { accountId: '5000', accountName: 'Cost of Goods Sold', accountCode: '5000', debitBalance: 295000, creditBalance: 0 },
-      { accountId: '6000', accountName: 'Salaries & Wages', accountCode: '6000', debitBalance: 185000, creditBalance: 0 },
-      { accountId: '6100', accountName: 'Rent Expense', accountCode: '6100', debitBalance: 48000, creditBalance: 0 },
-      { accountId: '6200', accountName: 'Marketing & Advertising', accountCode: '6200', debitBalance: 35000, creditBalance: 0 },
-      { accountId: '6300', accountName: 'Utilities', accountCode: '6300', debitBalance: 12000, creditBalance: 0 }
-    ];
-  }
-
-  async getAccountingSummary(shopDomain?: string) {
-    // Mock accounting summary with comprehensive financial metrics
-    return {
-      totalAssets: 1187000,
-      totalLiabilities: 763500,
-      totalEquity: 423500,
-      totalRevenue: 769700,
-      totalExpenses: 727500,
-      netIncome: 42200,
-      cashBalance: 125000,
-      accountsReceivable: 85000,
-      accountsPayable: 65000,
-      inventory: 235000,
-      grossMargin: ((769700 - 295000) / 769700 * 100).toFixed(2), // 61.7%
-      operatingMargin: ((769700 - 295000 - 727500 + 295000) / 769700 * 100).toFixed(2), // Calculated net income margin (5.5%)
-      currentRatio: (482000 / 148500).toFixed(2), // 3.25
-      debtToEquityRatio: (763500 / 423500).toFixed(2), // 1.80
-      returnOnAssets: (42200 / 1187000 * 100).toFixed(2), // 3.6%
-      returnOnEquity: (42200 / 423500 * 100).toFixed(2), // 10.0%
-      workingCapital: (482000 - 148500).toFixed(2), // 333500
-      quickRatio: ((125000 + 85000 + 25000) / 148500).toFixed(2) // 1.58 (assuming short-term investments are liquid)
-    };
-  }
-
-  async getFinancialMetrics(shopDomain?: string, period?: 'month' | 'quarter' | 'year') {
-    // Mock financial KPIs and trends
-    return {
-      revenue: {
-        current: 769700,
-        previous: 723400,
-        growth: 6.4,
-        trend: 'up'
+      period,
+      liquidity: {
+        currentRatio: 3.07,
+        quickRatio: 2.61,
+        cashRatio: 1.99,
+        workingCapital: 54901.30
       },
-      expenses: {
-        current: 727500,
-        previous: 695200,
-        growth: 4.6,
-        trend: 'up'
-      },
-      netIncome: {
-        current: 42200,
-        previous: 28200,
-        growth: 49.6,
-        trend: 'up'
-      },
-      cashFlow: {
-        operating: 46500,
-        investing: -101500,
-        financing: 55000,
-        net: 0
-      },
-      margins: {
-        gross: 61.7,
-        operating: 5.5,
-        net: 5.5
+      profitability: {
+        grossProfitMargin: 50.85,
+        netProfitMargin: -1.68,
+        operatingMargin: 0.59,
+        returnOnAssets: -0.87,
+        returnOnEquity: -2.05,
+        ebitdaMargin: 3.94
       },
       efficiency: {
-        assetTurnover: 0.65,
-        inventoryTurnover: 1.26,
-        receivablesTurnover: 9.05
+        inventoryTurnover: 7.33, // COGS / Average Inventory
+        receivablesTurnover: 17.26, // Revenue / Average Receivables
+        payablesTurnover: 8.32, // COGS / Average Payables
+        assetTurnover: 0.52, // Revenue / Total Assets
+        equityTurnover: 1.22 // Revenue / Total Equity
+      },
+      leverage: {
+        debtToAssets: 0.57,
+        debtToEquity: 1.34,
+        equityMultiplier: 2.34,
+        interestCoverage: 0.29, // Operating Income / Interest Expense
+        debtServiceCoverage: 2.66
+      },
+      growth: {
+        revenueGrowth: 15.2 * periodMultiplier,
+        netIncomeGrowth: -125.5 * periodMultiplier,
+        assetGrowth: 8.7 * periodMultiplier,
+        equityGrowth: 12.3 * periodMultiplier
       }
     };
   }
