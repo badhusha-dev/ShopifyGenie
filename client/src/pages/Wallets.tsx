@@ -74,6 +74,8 @@ const Wallets = () => {
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterType, setFilterType] = useState('');
   const [filterEntity, setFilterEntity] = useState('');
   
   const queryClient = useQueryClient();
@@ -485,12 +487,12 @@ const Wallets = () => {
   }
 
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid py-4 animate__animated animate__fadeIn">
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="h3 mb-1 text-dark">
-            <FaWallet className="me-2" style={{ color: designTokens.colors.shopify.green }} />
+          <h2 className="h3 mb-1 text-dark fw-bold gradient-text">
+            <FaWallet className="me-2" style={{ color: 'var(--shopify-green)' }} />
             Wallets & Credits
           </h2>
           <p className="text-muted mb-0">Manage customer and vendor credit wallets and transactions</p>
@@ -498,65 +500,136 @@ const Wallets = () => {
         <button
           type="button"
           onClick={handleNewWallet}
-          className="btn btn-success d-flex align-items-center gap-2 px-3"
+          className="btn btn-primary d-flex align-items-center gap-2 px-3 btn-ripple hover-lift"
+          data-testid="button-add-wallet"
           style={{ 
             background: `linear-gradient(135deg, ${designTokens.colors.shopify.green} 0%, ${designTokens.colors.shopify.greenLight} 100%)`,
             border: 'none'
           }}
-          data-testid="button-add-wallet"
         >
           <FaPlus size={14} />
           New Wallet
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-2">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h4 mb-1 text-primary fw-bold">{walletStats.totalWallets}</div>
-              <div className="small text-muted">Total Wallets</div>
+      {/* Enhanced Stats Cards */}
+      <div className="row g-4 mb-4">
+        <div className="col-xl-2 col-md-4 col-sm-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-primary" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-primary bg-opacity-10 rounded-3">
+                  <i className="fas fa-wallet fs-4 text-primary"></i>
+                </div>
+                <div className="badge bg-primary bg-opacity-10 text-primary">Total</div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-primary fw-bold" data-testid="text-total-wallets">
+                  {walletStats.totalWallets}
+                </div>
+                <div className="text-muted small">Total Wallets</div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-2">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h4 mb-1 text-success fw-bold">{walletStats.activeWallets}</div>
-              <div className="small text-muted">Active</div>
+        
+        <div className="col-xl-2 col-md-4 col-sm-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-success" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-success bg-opacity-10 rounded-3">
+                  <i className="fas fa-check-circle fs-4 text-success"></i>
+                </div>
+                <div className="badge bg-success bg-opacity-10 text-success">Active</div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-success fw-bold" data-testid="text-active-wallets">
+                  {walletStats.activeWallets}
+                </div>
+                <div className="text-muted small">Active Wallets</div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-2">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h4 mb-1 text-info fw-bold">${walletStats.totalBalance.toFixed(2)}</div>
-              <div className="small text-muted">Total Balance</div>
+        
+        <div className="col-xl-2 col-md-4 col-sm-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-info" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-info bg-opacity-10 rounded-3">
+                  <i className="fas fa-dollar-sign fs-4 text-info"></i>
+                </div>
+                <div className="badge bg-info bg-opacity-10 text-info">Balance</div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-info fw-bold" data-testid="text-total-balance">
+                  ${walletStats.totalBalance.toFixed(2)}
+                </div>
+                <div className="text-muted small">Total Balance</div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-2">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h4 mb-1 text-primary fw-bold">{walletStats.customerWallets}</div>
-              <div className="small text-muted">Customer</div>
+        
+        <div className="col-xl-2 col-md-4 col-sm-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-warning" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-warning bg-opacity-10 rounded-3">
+                  <i className="fas fa-users fs-4 text-warning"></i>
+                </div>
+                <div className="badge bg-warning bg-opacity-10 text-warning">Customers</div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-warning fw-bold" data-testid="text-customer-wallets">
+                  {walletStats.customerWallets}
+                </div>
+                <div className="text-muted small">Customer Wallets</div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-2">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h4 mb-1 text-warning fw-bold">{walletStats.vendorWallets}</div>
-              <div className="small text-muted">Vendor</div>
+        
+        <div className="col-xl-2 col-md-4 col-sm-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-secondary" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-secondary bg-opacity-10 rounded-3">
+                  <i className="fas fa-building fs-4 text-secondary"></i>
+                </div>
+                <div className="badge bg-secondary bg-opacity-10 text-secondary">Vendors</div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-secondary fw-bold" data-testid="text-vendor-wallets">
+                  {walletStats.vendorWallets}
+                </div>
+                <div className="text-muted small">Vendor Wallets</div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-2">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h4 mb-1 text-danger fw-bold">{walletStats.expiringWallets}</div>
-              <div className="small text-muted">Expiring Soon</div>
+        
+        <div className="col-xl-2 col-md-4 col-sm-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-danger" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-danger bg-opacity-10 rounded-3">
+                  <i className="fas fa-clock fs-4 text-danger"></i>
+                </div>
+                <div className="badge bg-danger bg-opacity-10 text-danger">Expiring</div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-danger fw-bold" data-testid="text-expiring-wallets">
+                  {walletStats.expiringWallets}
+                </div>
+                <div className="text-muted small">Expiring Soon</div>
+              </div>
             </div>
           </AnimatedCard>
         </div>

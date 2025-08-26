@@ -408,12 +408,12 @@ const AccountsReceivable = () => {
   }
 
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid py-4 animate__animated animate__fadeIn">
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="h3 mb-1 text-dark">
-            <FaFileInvoiceDollar className="me-2" style={{ color: designTokens.colors.shopify.green }} />
+          <h2 className="h3 mb-1 text-dark fw-bold gradient-text">
+            <FaFileInvoiceDollar className="me-2" style={{ color: 'var(--shopify-green)' }} />
             Accounts Receivable
           </h2>
           <p className="text-muted mb-0">Manage customer invoices, payments, and aging analysis</p>
@@ -421,135 +421,369 @@ const AccountsReceivable = () => {
         <button
           type="button"
           onClick={handleNew}
-          className="btn btn-success d-flex align-items-center gap-2 px-3"
+          className="btn btn-primary d-flex align-items-center gap-2 px-3 btn-ripple hover-lift"
+          data-testid="button-new-receivable"
           style={{ 
             background: `linear-gradient(135deg, ${designTokens.colors.shopify.green} 0%, ${designTokens.colors.shopify.greenLight} 100%)`,
             border: 'none'
           }}
-          data-testid="button-add-receivable"
         >
           <FaPlus size={14} />
           New Invoice
         </button>
       </div>
 
-      {/* Aging Analysis Cards */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-3">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h5 mb-1 text-success fw-bold">${agingAnalysis.current.amount.toFixed(2)}</div>
-              <div className="small text-muted">Current (0-30 days)</div>
-              <div className="small text-muted">{agingAnalysis.current.count} invoices</div>
+      {/* Enhanced Aging Analysis Cards */}
+      <div className="row g-4 mb-4">
+        <div className="col-xl-3 col-md-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-success" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-success bg-opacity-10 rounded-3">
+                  <i className="fas fa-check-circle fs-4 text-success"></i>
+                </div>
+                <div className="text-end">
+                  <div className="small text-muted">0-30 days</div>
+                  <div className="badge bg-success bg-opacity-10 text-success">Current</div>
+                </div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-success fw-bold" data-testid="text-current-amount">
+                  ${agingAnalysis.current.amount.toFixed(2)}
+                </div>
+                <div className="text-muted small">{agingAnalysis.current.count} invoices</div>
+              </div>
+              <div className="d-flex align-items-center justify-content-between">
+                <button 
+                  className="btn btn-outline-success btn-sm"
+                  onClick={() => setFilterAging('current')}
+                  data-testid="button-filter-current"
+                >
+                  View Details
+                </button>
+                <div className="text-success small fw-semibold">
+                  {receivables.length > 0 ? 
+                    ((agingAnalysis.current.amount / receivables.reduce((sum, r) => sum + parseFloat(r.outstandingAmount), 0)) * 100).toFixed(1) 
+                    : 0}%
+                </div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-3">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h5 mb-1 text-warning fw-bold">${agingAnalysis.thirtyDays.amount.toFixed(2)}</div>
-              <div className="small text-muted">31-60 Days</div>
-              <div className="small text-muted">{agingAnalysis.thirtyDays.count} invoices</div>
+        
+        <div className="col-xl-3 col-md-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-warning" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-warning bg-opacity-10 rounded-3">
+                  <i className="fas fa-clock fs-4 text-warning"></i>
+                </div>
+                <div className="text-end">
+                  <div className="small text-muted">31-60 days</div>
+                  <div className="badge bg-warning bg-opacity-10 text-warning">Watch</div>
+                </div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-warning fw-bold" data-testid="text-thirty-days-amount">
+                  ${agingAnalysis.thirtyDays.amount.toFixed(2)}
+                </div>
+                <div className="text-muted small">{agingAnalysis.thirtyDays.count} invoices</div>
+              </div>
+              <div className="d-flex align-items-center justify-content-between">
+                <button 
+                  className="btn btn-outline-warning btn-sm"
+                  onClick={() => setFilterAging('31-60')}
+                  data-testid="button-filter-thirty-days"
+                >
+                  View Details
+                </button>
+                <div className="text-warning small fw-semibold">
+                  {receivables.length > 0 ? 
+                    ((agingAnalysis.thirtyDays.amount / receivables.reduce((sum, r) => sum + parseFloat(r.outstandingAmount), 0)) * 100).toFixed(1) 
+                    : 0}%
+                </div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-3">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h5 mb-1 text-danger fw-bold">${agingAnalysis.sixtyDays.amount.toFixed(2)}</div>
-              <div className="small text-muted">61-90 Days</div>
-              <div className="small text-muted">{agingAnalysis.sixtyDays.count} invoices</div>
+        
+        <div className="col-xl-3 col-md-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-danger" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-danger bg-opacity-10 rounded-3">
+                  <i className="fas fa-exclamation-triangle fs-4 text-danger"></i>
+                </div>
+                <div className="text-end">
+                  <div className="small text-muted">61-90 days</div>
+                  <div className="badge bg-danger bg-opacity-10 text-danger">Risk</div>
+                </div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-danger fw-bold" data-testid="text-sixty-days-amount">
+                  ${agingAnalysis.sixtyDays.amount.toFixed(2)}
+                </div>
+                <div className="text-muted small">{agingAnalysis.sixtyDays.count} invoices</div>
+              </div>
+              <div className="d-flex align-items-center justify-content-between">
+                <button 
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={() => setFilterAging('61-90')}
+                  data-testid="button-filter-sixty-days"
+                >
+                  View Details
+                </button>
+                <div className="text-danger small fw-semibold">
+                  {receivables.length > 0 ? 
+                    ((agingAnalysis.sixtyDays.amount / receivables.reduce((sum, r) => sum + parseFloat(r.outstandingAmount), 0)) * 100).toFixed(1) 
+                    : 0}%
+                </div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
-        <div className="col-md-3">
-          <AnimatedCard>
-            <div className="text-center">
-              <div className="h5 mb-1 text-dark fw-bold">${agingAnalysis.ninetyDays.amount.toFixed(2)}</div>
-              <div className="small text-muted">90+ Days</div>
-              <div className="small text-muted">{agingAnalysis.ninetyDays.count} invoices</div>
+        
+        <div className="col-xl-3 col-md-6">
+          <AnimatedCard className="border-0 shadow-sm overflow-hidden h-100">
+            <div className="card-body p-4 position-relative">
+              <div className="position-absolute top-0 start-0 w-100 bg-dark" style={{height: '4px'}}></div>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="p-3 bg-dark bg-opacity-10 rounded-3">
+                  <i className="fas fa-times-circle fs-4 text-dark"></i>
+                </div>
+                <div className="text-end">
+                  <div className="small text-muted">90+ days</div>
+                  <div className="badge bg-dark bg-opacity-10 text-dark">Critical</div>
+                </div>
+              </div>
+              <div className="mb-2">
+                <div className="h3 mb-1 text-dark fw-bold" data-testid="text-ninety-days-amount">
+                  ${agingAnalysis.ninetyDays.amount.toFixed(2)}
+                </div>
+                <div className="text-muted small">{agingAnalysis.ninetyDays.count} invoices</div>
+              </div>
+              <div className="d-flex align-items-center justify-content-between">
+                <button 
+                  className="btn btn-outline-dark btn-sm"
+                  onClick={() => setFilterAging('90+')}
+                  data-testid="button-filter-ninety-days"
+                >
+                  View Details
+                </button>
+                <div className="text-dark small fw-semibold">
+                  {receivables.length > 0 ? 
+                    ((agingAnalysis.ninetyDays.amount / receivables.reduce((sum, r) => sum + parseFloat(r.outstandingAmount), 0)) * 100).toFixed(1) 
+                    : 0}%
+                </div>
+              </div>
             </div>
           </AnimatedCard>
         </div>
       </div>
 
-      {/* Total Outstanding */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-6">
-          <AnimatedCard>
-            <div className="d-flex justify-content-between align-items-center">
-              <div>
-                <div className="h4 mb-1 text-primary fw-bold">${agingAnalysis.total.amount.toFixed(2)}</div>
-                <div className="text-muted">Total Outstanding</div>
+      {/* Summary Overview Card */}
+      <div className="row g-4 mb-4">
+        <div className="col-lg-8">
+          <AnimatedCard className="border-0 shadow-sm h-100">
+            <div className="card-body p-4">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <h5 className="card-title mb-0 fw-bold text-primary">
+                  <i className="fas fa-chart-line me-2"></i>
+                  Outstanding Balance Summary
+                </h5>
+                <button 
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={() => { setFilterAging(''); setFilterStatus(''); setSearchTerm(''); }}
+                  data-testid="button-clear-filters"
+                >
+                  Clear Filters
+                </button>
               </div>
-              <div className="text-end">
-                <div className="h5 mb-1 text-info fw-bold">{agingAnalysis.total.count}</div>
-                <div className="text-muted">Total Invoices</div>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <div className="d-flex align-items-center p-3 bg-primary bg-opacity-5 rounded-3">
+                    <div className="p-3 bg-primary bg-opacity-10 rounded-3 me-3">
+                      <i className="fas fa-dollar-sign fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                      <div className="h4 mb-1 text-primary fw-bold" data-testid="text-total-outstanding">
+                        ${agingAnalysis.total.amount.toFixed(2)}
+                      </div>
+                      <div className="text-muted small">Total Outstanding</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="d-flex align-items-center p-3 bg-info bg-opacity-5 rounded-3">
+                    <div className="p-3 bg-info bg-opacity-10 rounded-3 me-3">
+                      <i className="fas fa-file-invoice fs-4 text-info"></i>
+                    </div>
+                    <div>
+                      <div className="h4 mb-1 text-info fw-bold" data-testid="text-total-invoices">
+                        {agingAnalysis.total.count}
+                      </div>
+                      <div className="text-muted small">Total Invoices</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </AnimatedCard>
+        </div>
+        <div className="col-lg-4">
+          <AnimatedCard className="border-0 shadow-sm h-100">
+            <div className="card-body p-4">
+              <h6 className="card-title mb-3 fw-bold text-muted">Quick Actions</h6>
+              <div className="d-grid gap-2">
+                <button 
+                  className="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center"
+                  data-testid="button-export-data"
+                >
+                  <i className="fas fa-download me-2"></i>
+                  Export Report
+                </button>
+                <button 
+                  className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
+                  data-testid="button-send-reminders"
+                >
+                  <i className="fas fa-envelope me-2"></i>
+                  Send Reminders
+                </button>
+                <button 
+                  className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center"
+                  data-testid="button-aging-analysis"
+                >
+                  <i className="fas fa-chart-bar me-2"></i>
+                  Detailed Analysis
+                </button>
               </div>
             </div>
           </AnimatedCard>
         </div>
       </div>
 
-      {/* Filters */}
-      <AnimatedCard>
-        <div className="row g-3 mb-3">
-          <div className="col-md-4">
-            <div className="input-group">
-              <span className="input-group-text bg-light border-end-0">
-                <FaSearch className="text-muted" />
+      {/* Enhanced Filters */}
+      <AnimatedCard className="border-0 shadow-sm">
+        <div className="card-body p-4">
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <h6 className="card-title mb-0 fw-bold text-dark">
+              <i className="fas fa-filter me-2 text-primary"></i>
+              Filter & Search
+            </h6>
+            <div className="d-flex align-items-center gap-2">
+              <span className="badge bg-primary bg-opacity-10 text-primary" data-testid="text-filtered-count">
+                {filteredReceivables.length} of {receivables.length} invoices
               </span>
-              <input
-                type="text"
-                className="form-control border-start-0 ps-0"
-                placeholder="Search invoices..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                data-testid="input-search-receivables"
-              />
             </div>
           </div>
-          <div className="col-md-3">
-            <select
-              className="form-select"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              data-testid="select-filter-status"
-            >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="partial">Partial</option>
-              <option value="paid">Paid</option>
-              <option value="overdue">Overdue</option>
-              <option value="written_off">Written Off</option>
-            </select>
-          </div>
-          <div className="col-md-3">
-            <select
-              className="form-select"
-              value={filterAging}
-              onChange={(e) => setFilterAging(e.target.value)}
-              data-testid="select-filter-aging"
-            >
-              <option value="">All Ages</option>
-              <option value="current">Current (0-30 days)</option>
-              <option value="31-60">31-60 Days</option>
-              <option value="61-90">61-90 Days</option>
-              <option value="90+">90+ Days</option>
-            </select>
+          <div className="row g-3">
+            <div className="col-lg-4 col-md-6">
+              <label className="form-label small fw-semibold text-muted mb-2">Search Invoices</label>
+              <div className="input-group">
+                <span className="input-group-text bg-light border-end-0">
+                  <FaSearch className="text-muted" />
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-start-0 ps-2"
+                  placeholder="Invoice #, customer name, email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  data-testid="input-search-receivables"
+                />
+              </div>
+            </div>
+            <div className="col-lg-3 col-md-6">
+              <label className="form-label small fw-semibold text-muted mb-2">Status Filter</label>
+              <select
+                className="form-select"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                data-testid="select-filter-status"
+              >
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="partial">Partial</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="written_off">Written Off</option>
+              </select>
+            </div>
+            <div className="col-lg-3 col-md-6">
+              <label className="form-label small fw-semibold text-muted mb-2">Aging Filter</label>
+              <select
+                className="form-select"
+                value={filterAging}
+                onChange={(e) => setFilterAging(e.target.value)}
+                data-testid="select-filter-aging"
+              >
+                <option value="">All Ages</option>
+                <option value="current">Current (0-30 days)</option>
+                <option value="31-60">31-60 Days</option>
+                <option value="61-90">61-90 Days</option>
+                <option value="90+">90+ Days</option>
+              </select>
+            </div>
+            <div className="col-lg-2 col-md-6 d-flex align-items-end">
+              <div className="d-grid w-100">
+                <button 
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => { setFilterAging(''); setFilterStatus(''); setSearchTerm(''); }}
+                  data-testid="button-reset-filters"
+                >
+                  <i className="fas fa-undo me-1"></i>
+                  Reset
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </AnimatedCard>
 
-      {/* Receivables Table */}
-      <AnimatedCard>
-        <DataTable
-          columns={columns}
-          data={filteredReceivables}
-          loading={isLoading}
-          emptyMessage="No receivables found"
-          className="table-hover"
-        />
+      {/* Enhanced Receivables Table */}
+      <AnimatedCard className="border-0 shadow-sm">
+        <div className="card-body p-0">
+          <div className="d-flex align-items-center justify-content-between p-4 border-bottom">
+            <h6 className="card-title mb-0 fw-bold text-dark">
+              <i className="fas fa-table me-2 text-primary"></i>
+              Accounts Receivable
+            </h6>
+            <div className="d-flex align-items-center gap-2">
+              {filterAging && (
+                <span className="badge bg-warning bg-opacity-10 text-warning">
+                  Filtered by: {filterAging === 'current' ? 'Current (0-30)' : filterAging === '31-60' ? '31-60 days' : filterAging === '61-90' ? '61-90 days' : '90+ days'}
+                </span>
+              )}
+              {filterStatus && (
+                <span className="badge bg-info bg-opacity-10 text-info">
+                  Status: {filterStatus}
+                </span>
+              )}
+            </div>
+          </div>
+          <DataTable
+            columns={columns}
+            data={filteredReceivables}
+            loading={isLoading}
+            emptyMessage={
+              <div className="text-center py-5">
+                <i className="fas fa-inbox fs-1 text-muted mb-3"></i>
+                <h6 className="text-muted">No receivables found</h6>
+                <p className="text-muted small mb-0">
+                  {searchTerm || filterStatus || filterAging 
+                    ? 'Try adjusting your filters or search terms' 
+                    : 'Create your first invoice to get started'
+                  }
+                </p>
+              </div>
+            }
+            className="table-hover mb-0"
+          />
+        </div>
       </AnimatedCard>
 
       {/* Add/Edit Modal */}
