@@ -39,7 +39,7 @@ const AnimatedKPICard: React.FC<AnimatedKPICardProps> = ({
   };
 
   return (
-    <div className={`kpi-card animate-pulse-hover ${className}`}>
+    <div className={`modern-card p-4 h-100 ${className}`}>
       <div className="d-flex justify-content-between align-items-start">
         <div className="flex-grow-1">
           <p className="text-muted small fw-medium mb-2 text-uppercase" style={{letterSpacing: '0.5px'}}>

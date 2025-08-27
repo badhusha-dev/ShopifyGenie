@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { logout } from '../store/slices/authSlice';
 import logoImage from '../assets/logo.png';
 
 interface SidebarProps {
@@ -132,7 +133,12 @@ const menuItems = [
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+  
+  const handleLogout = () => {
+    dispatch(logout());
+  };
   const [location] = useLocation();
 
   const filteredMenuItems = menuItems.filter(item => 
@@ -221,7 +227,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       <div className="p-3 border-top border-white border-opacity-10">
         <div className="sidebar-nav-item">
           <button 
-            onClick={logout}
+            onClick={handleLogout}
             className="sidebar-nav-link w-100 border-0 bg-transparent text-start"
             style={{color: 'rgba(255, 107, 107, 0.9)'}}
           >
