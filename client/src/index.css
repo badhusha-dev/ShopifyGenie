@@ -260,7 +260,7 @@
   animation: progress-bar-stripes 1s linear infinite;
 }
 
-/* Navbar Clock Animation */
+/*Navbar Clock Animation */
 .navbar-clock {
   font-family: 'Courier New', monospace;
   font-weight: 700;
@@ -325,7 +325,7 @@
   .animate-slide-in-right {
     animation-duration: 0.4s;
   }
-  
+
   .hover-lift:hover,
   .card-hover:hover {
     transform: translateY(-2px);
@@ -1015,5 +1015,52 @@ html {
 
   .kpi-card {
     margin-bottom: 1rem;
+  }
+}
+
+/* Add any additional custom styles here */
+
+/* Language Switcher Styles */
+.language-switcher-btn:hover {
+  background: var(--bs-primary-bg-subtle) !important;
+  border-color: var(--bs-primary) !important;
+  transform: translateY(-1px);
+}
+
+.language-switcher-btn:active {
+  transform: translateY(0);
+}
+
+.language-switcher-btn .transition-transform {
+  transition: transform 0.2s ease;
+}
+
+.dropdown-item.active {
+  background: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary);
+  font-weight: 600;
+}
+
+.dropdown-item:hover {
+  background: var(--bs-secondary-bg-subtle);
+  transform: translateX(2px);
+}
+
+.dropdown-item:active {
+  transform: translateX(0);
+}
+
+.flag-icon {
+  display: inline-block;
+  line-height: 1;
+}
+
+@media (max-width: 576px) {
+  .language-name {
+    display: none !important;
+  }
+
+  .language-switcher-btn {
+    min-width: 50px !important;
   }
 }

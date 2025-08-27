@@ -156,7 +156,9 @@ const TopNav: React.FC<TopNavProps> = ({
             <span className="time-text">{formatTime(currentTime)}</span>
           </div>
 
-          <LanguageSwitcher />
+          <div className="me-2">
+            <LanguageSwitcher />
+          </div>
 
           {/* Theme Customizer (Super Admin only) */}
           {user?.role === 'superadmin' && (

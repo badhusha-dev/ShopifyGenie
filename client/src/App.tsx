@@ -77,7 +77,7 @@ const AppContent = () => {
 
   const renderPage = (title: string, subtitle: string, PageComponent: React.ComponentType) => (
     <>
-      <TopNav 
+      <TopNav
         title={title}
         subtitle={subtitle}
         onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -179,7 +179,7 @@ const AppContent = () => {
           <Route path="/tax-management">
             {() => renderPage("Tax Management", "Manage tax rates and generate tax reports", TaxManagement)}
           </Route>
-          
+
           {/* Catch-all route for 404 - MUST BE LAST */}
           <Route path="*">
             {() => <NotFound />}
@@ -189,7 +189,7 @@ const AppContent = () => {
 
       {/* Mobile overlay */}
       {!sidebarCollapsed && (
-        <div 
+        <div
           className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none"
           style={{zIndex: 1035}}
           onClick={() => setSidebarCollapsed(true)}

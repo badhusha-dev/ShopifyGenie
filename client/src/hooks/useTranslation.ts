@@ -17,7 +17,13 @@ export function useTranslation() {
   };
 
   const setLocale = (locale: SupportedLocale): void => {
-    i18n.setLocale(locale);
+    try {
+      i18n.setLocale(locale);
+      // Force re-render to update UI immediately
+      forceUpdate({});
+    } catch (error) {
+      console.error('Failed to set locale:', error);
+    }
   };
 
   const getCurrentLocale = (): SupportedLocale => {
