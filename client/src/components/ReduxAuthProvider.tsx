@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchCurrentUser, fetchUserPermissions } from '../store/slices/authSlice';
+import { fetchCurrentUser } from '../store/slices/authSlice';
 
 interface ReduxAuthProviderProps {
   children: React.ReactNode;
@@ -18,12 +18,6 @@ export const ReduxAuthProvider: React.FC<ReduxAuthProviderProps> = ({ children }
     }
   }, [dispatch, token, user]);
 
-  useEffect(() => {
-    // Fetch permissions when user is authenticated
-    if (user && token) {
-      dispatch(fetchUserPermissions());
-    }
-  }, [dispatch, user, token]);
 
   return <>{children}</>;
 };

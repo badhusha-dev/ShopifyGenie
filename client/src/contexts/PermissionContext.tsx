@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import { useAppSelector } from '../store/hooks';
 
 interface PermissionContextType {
   permissions: Record<string, boolean>;
@@ -24,7 +24,7 @@ interface PermissionProviderProps {
 }
 
 export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children }) => {
-  const { user, token } = useAuth();
+  const { user, token } = useAppSelector((state) => state.auth);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
 

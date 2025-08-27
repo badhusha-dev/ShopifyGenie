@@ -53,12 +53,11 @@ import { fetchCurrentUser } from './store/slices/authSlice';
 
 
 const AppContent = () => {
-  const { user } = useAppSelector((state) => state.auth); // Use Redux state
-  const { isLoading: permissionsLoading } = useAppSelector((state) => state.permissions); // Assuming permissions are also managed by Redux or a similar mechanism
+  const { user, isLoading } = useAppSelector((state) => state.auth); // Use Redux state
   const [showRegister, setShowRegister] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  if (isLoading || permissionsLoading) {
+  if (isLoading) {
     return (
       <div className="d-flex align-items-center justify-content-center vh-100">
         <div className="text-center">
