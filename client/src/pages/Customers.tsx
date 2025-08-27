@@ -258,20 +258,6 @@ const Customers: React.FC = () => {
     }
   };
 
-  // Add window functions for AG-Grid action buttons
-  React.useEffect(() => {
-    (window as any).viewCustomer = (customerId: string) => {
-      const customer = filteredAndSortedCustomers.find(c => c.id === customerId);
-      if (customer) handleViewCustomer(customer);
-    };
-    (window as any).editCustomer = (customerId: string) => {
-      const customer = filteredAndSortedCustomers.find(c => c.id === customerId);
-      if (customer) handleEdit(customer);
-    };
-    (window as any).deleteCustomer = (customerId: string) => {
-      deleteCustomerMutation.mutate(customerId);
-    };
-  }, [filteredAndSortedCustomers]);
 
   // Customer data queries
   const { data: customers = [], isLoading } = useQuery({
@@ -434,6 +420,21 @@ const Customers: React.FC = () => {
     
     return filtered;
   }, [customers, searchTerm, selectedTierFilter, selectedStatusFilter, sortKey, sortDirection]);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).viewCustomer = (customerId: string) => {
+      const customer = filteredAndSortedCustomers.find((c: Customer) => c.id === customerId);
+      if (customer) handleViewCustomer(customer);
+    };
+    (window as any).editCustomer = (customerId: string) => {
+      const customer = filteredAndSortedCustomers.find((c: Customer) => c.id === customerId);
+      if (customer) handleEdit(customer);
+    };
+    (window as any).deleteCustomer = (customerId: string) => {
+      deleteCustomerMutation.mutate(customerId);
+    };
+  }, [filteredAndSortedCustomers]);
 
   // Helper functions
   const resetForm = () => {
