@@ -1,66 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppSelector } from '../store/hooks';
 import { useQuery } from '@tanstack/react-query';
 import AnimatedKPICard from '@/components/ui/AnimatedKPICard';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 const Dashboard = () => {
-  const { user, token } = useAuth();
+  const { user, token } = useAppSelector((state) => state.auth);
 
   // Fetch dashboard data
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/stats'],
-    queryFn: async () => {
-      const response = await fetch('/api/stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      return response.json();
-    },
+    enabled: !!token,
   });
 
   const { data: salesTrends, isLoading: trendsLoading } = useQuery({
-    queryKey: ['/api/analytics/sales-trends/30'],
-    queryFn: async () => {
-      const response = await fetch('/api/analytics/sales-trends/30', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch sales trends');
-      return response.json();
-    },
+    queryKey: ['/api/analytics/sales-trends'],
+    enabled: !!token,
   });
 
   const { data: topProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ['/api/analytics/top-products/30'],
-    queryFn: async () => {
-      const response = await fetch('/api/analytics/top-products/30', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch top products');
-      return response.json();
-    },
+    queryKey: ['/api/analytics/top-products'],
+    enabled: !!token,
   });
 
   const { data: loyaltyData, isLoading: loyaltyLoading } = useQuery({
     queryKey: ['/api/analytics/loyalty-points'],
-    queryFn: async () => {
-      const response = await fetch('/api/analytics/loyalty-points', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch loyalty data');
-      return response.json();
-    },
+    enabled: !!token,
   });
 
   const { data: businessInsights, isLoading: insightsLoading } = useQuery({
     queryKey: ['/api/ai/business-insights'],
-    queryFn: async () => {
-      const response = await fetch('/api/ai/business-insights', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch business insights');
-      return response.json();
-    },
+    enabled: !!token,
   });
 
   const mockKPIData = [
