@@ -179,22 +179,18 @@ function App() {
   }, [dispatch, token, user]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Provider store={store}> {/* Wrap with Redux Provider */}
-        <ReduxAuthProvider> {/* Use ReduxAuthProvider */}
-          <PermissionProvider>
-            <ThemeProvider>
-              <div className="app">
-                <SafeComponent>
-                  <AppContent />
-                </SafeComponent>
-                <Toaster />
-              </div>
-            </ThemeProvider>
-          </PermissionProvider>
-        </ReduxAuthProvider>
-      </Provider>
-    </QueryClientProvider>
+    <ReduxAuthProvider>
+      <PermissionProvider>
+        <ThemeProvider>
+          <div className="app">
+            <SafeComponent>
+              <AppContent />
+            </SafeComponent>
+            <Toaster />
+          </div>
+        </ThemeProvider>
+      </PermissionProvider>
+    </ReduxAuthProvider>
   );
 }
 
