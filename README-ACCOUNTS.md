@@ -1,17 +1,19 @@
+
 # 📊 ShopifyApp Accounting Module Documentation
 
 *Updated for Replit Environment - January 2025*
 
 ## Overview
 
-The ShopifyApp Accounting Module provides comprehensive financial management capabilities following standard double-entry bookkeeping principles. This system enables businesses to track their financial transactions, generate reports, and maintain accurate accounting records.
+The ShopifyApp Accounting Module provides comprehensive financial management capabilities following standard double-entry bookkeeping principles. This system enables businesses to track their financial transactions, generate reports, and maintain accurate accounting records with professional-grade features.
 
 ## 🚀 **Replit Ready Features**
 - ✅ **Real-time Database**: PostgreSQL integration with Drizzle ORM
-- ✅ **API Documentation**: Swagger interface at `/api-docs`
+- ✅ **API Documentation**: Complete Swagger interface at `/api-docs`
 - ✅ **Live Data Sync**: WebSocket support for real-time updates  
 - ✅ **Seed Data**: Pre-populated sample accounting data for testing
 - ✅ **Role-based Access**: Complete permission system implementation
+- ✅ **Modern UI**: shadcn/ui components with responsive design
 
 ### Key Features
 
@@ -22,6 +24,8 @@ The ShopifyApp Accounting Module provides comprehensive financial management cap
 - **Accounts Payable**: Vendor bill management and payment tracking
 - **Wallets & Credits**: Customer and vendor credit management system
 - **Financial Reports**: Profit & Loss, Balance Sheet, and Cash Flow statements
+- **Bank Reconciliation**: Automated matching and reconciliation features
+- **Tax Management**: Tax rate configuration and compliance tracking
 - **Role-Based Access Control**: SuperAdmin/Admin can modify; Staff view-only
 
 ---
@@ -38,6 +42,8 @@ The ShopifyApp Accounting Module provides comprehensive financial management cap
    - **Accounts Payable**: `/accounting/accounts-payable`
    - **Wallets**: `/accounting/wallets`
    - **Financial Reports**: `/accounting/financial-reports`
+   - **Bank Reconciliation**: `/accounting/bank-reconciliation`
+   - **Tax Management**: `/accounting/tax-management`
 
 ### API Endpoints
 All accounting data is accessible via REST APIs documented at `/api-docs`:
@@ -46,6 +52,8 @@ All accounting data is accessible via REST APIs documented at `/api-docs`:
 - **GET** `/api/accounts-receivable` - Customer invoices
 - **GET** `/api/accounts-payable` - Vendor bills
 - **GET** `/api/wallets` - Customer/vendor credit balances
+- **GET** `/api/general-ledger` - General ledger transactions
+- **GET** `/api/financial-reports` - Financial statements
 
 ## 🏦 Chart of Accounts Structure
 
@@ -125,9 +133,9 @@ All transactions in our system follow double-entry bookkeeping where **Total Deb
 
 ---
 
-## 🧾 Accounts Receivable Examples
+## 🧾 Accounts Receivable Management
 
-Our sample data includes realistic customer invoice scenarios:
+Our comprehensive AR system includes customer invoice tracking and aging analysis:
 
 ### Customer Invoice Aging Report
 
@@ -151,9 +159,9 @@ Our sample data includes realistic customer invoice scenarios:
 
 ---
 
-## 💳 Accounts Payable Examples
+## 💳 Accounts Payable Management
 
-Vendor bill management with payment tracking:
+Comprehensive vendor bill management with payment tracking:
 
 ### Vendor Bills Summary
 
@@ -175,9 +183,9 @@ Vendor bill management with payment tracking:
 
 ---
 
-## 💰 Wallets & Credits Examples
+## 💰 Wallets & Credits System
 
-Our system supports multiple wallet types for customers and vendors:
+Multi-wallet support for customers and vendors with transaction tracking:
 
 ### Customer Wallets
 
@@ -203,7 +211,7 @@ Our system supports multiple wallet types for customers and vendors:
 
 ---
 
-## 📈 Financial Reports Examples
+## 📈 Financial Reports
 
 ### Profit & Loss Statement
 **Period: January 2024**
@@ -294,6 +302,109 @@ Our system supports multiple wallet types for customers and vendors:
 
 ---
 
+## 🏪 Bank Reconciliation
+
+### Automated Reconciliation Features
+- **Statement Import**: Upload bank statements in CSV/Excel format
+- **Transaction Matching**: Automated matching based on amount, date, and description
+- **Manual Adjustments**: Easy interface for manual reconciliation entries
+- **Discrepancy Reporting**: Detailed reports of unmatched transactions
+- **Approval Workflow**: Multi-step approval process for reconciled statements
+
+### Reconciliation Process
+1. **Import Statement**: Upload bank statement file
+2. **Auto-Match**: System matches transactions automatically
+3. **Review Matches**: Verify and adjust matches as needed
+4. **Manual Entry**: Add missing transactions or adjustments
+5. **Finalize**: Complete reconciliation and generate report
+
+---
+
+## 🧾 Tax Management
+
+### Tax Configuration
+- **Multiple Tax Rates**: Support for different tax types and rates
+- **Geographic Zones**: Tax rates by location/jurisdiction
+- **Product Categories**: Different tax rates for different product types
+- **Date Ranges**: Historical tax rate tracking with effective dates
+
+### Tax Compliance Features
+- **Automatic Calculation**: Real-time tax calculation on transactions
+- **Tax Reports**: Detailed tax liability and payment reports
+- **Audit Trail**: Complete history of tax calculations and adjustments
+- **Export Capabilities**: Export data for tax filing purposes
+
+---
+
+## 🔐 Role-Based Access Control (RBAC)
+
+### Permission Structure
+
+| Role | Accounts | Journal Entries | Reports | Wallets | AP/AR | Bank Rec | Tax Mgmt |
+|------|----------|----------------|---------|---------|-------|----------|----------|
+| **SuperAdmin** | Full Access | Full Access | Full Access | Full Access | Full Access | Full Access | Full Access |
+| **Admin** | Create/Edit/View | Create/Edit/View | View/Export | Manage All | Create/Edit/View | View/Edit | View/Edit |
+| **Staff** | View Only | View Only | View Only | View Own | View Only | View Only | View Only |
+| **Customer** | No Access | No Access | No Access | View Own | View Own Invoices | No Access | No Access |
+
+### API Endpoints Security
+
+All accounting endpoints are protected with role-based authentication:
+
+```typescript
+// Example: Journal Entry creation requires admin role
+POST /api/accounting/journal-entries
+Authorization: Bearer <token>
+Required Roles: ['admin', 'superadmin']
+
+// Example: View own customer invoices
+GET /api/accounting/invoices/customer/:customerId
+Authorization: Bearer <token>
+Required: Customer owns the invoices OR admin/staff role
+```
+
+---
+
+## 📊 Database Schema
+
+### Key Relationships
+
+```
+accounts (Chart of Accounts)
+├── journal_entry_lines (Account transactions)
+├── general_ledger (Posted transactions)
+├── account_balances (Period balances)
+└── tax_rates (Tax configuration)
+
+journal_entries (Transaction headers)
+├── journal_entry_lines (Transaction details)
+└── general_ledger (Posted entries)
+
+customers
+├── accounts_receivable (Customer invoices)
+├── wallets (Customer credits)
+└── bank_reconciliation_items (Reconciliation entries)
+
+vendors
+├── accounts_payable (Vendor bills)
+└── wallets (Vendor credits)
+
+fiscal_periods (Accounting periods)
+├── account_balances (Period-end balances)
+└── financial_reports (Generated reports)
+```
+
+### Data Integrity Rules
+
+1. **Journal Entries**: Total debits must equal total credits
+2. **General Ledger**: All entries must reference valid accounts and journal entries
+3. **Account Balances**: Must be recalculated when transactions are posted
+4. **Wallets**: Balance must equal (Total Earned - Total Used)
+5. **AR/AP**: Outstanding amount must equal (Total Amount - Paid Amount)
+6. **Bank Reconciliation**: All bank transactions must be matched or explained
+
+---
+
 ## 🛠️ Using the Seed Data
 
 ### Development & Testing Setup
@@ -322,6 +433,8 @@ await insertAllAccountingData(db);
 - **4 Wallet Transactions** (Credits, debits, transfers)
 - **4 Fiscal Periods** (Monthly, Quarterly, Yearly)
 - **5 Account Balance snapshots** for reporting
+- **Tax Rates** for different jurisdictions
+- **Bank Reconciliation entries** for testing
 
 #### 3. **Testing Scenarios**
 
@@ -334,6 +447,8 @@ The seed data enables testing of:
 - **Financial Reporting**: P&L, Balance Sheet, Cash Flow generation
 - **Aging Reports**: AR/AP aging analysis
 - **Wallet Management**: Credit earning, usage, and transfers
+- **Bank Reconciliation**: Statement import and matching
+- **Tax Calculations**: Multi-rate tax scenarios
 
 #### 4. **Role-Based Access Testing**
 
@@ -351,98 +466,7 @@ All seed data maintains:
 - **Referential integrity**: All foreign keys reference valid records
 - **Business logic**: Realistic transaction flows and amounts
 - **Date consistency**: Logical transaction sequencing
-
-#### 6. **Customization**
-
-To customize the seed data:
-
-1. **Modify accounts**: Update `sampleAccounts` array for your business
-2. **Add transactions**: Extend `sampleJournalEntries` with your scenarios
-3. **Adjust balances**: Update `sampleAccountBalances` for different periods
-4. **Change dates**: Modify transaction dates for current testing periods
-
-#### 7. **Reset & Refresh**
-
-For clean testing environments:
-
-```sql
--- Clear all accounting data (in order to maintain referential integrity)
-DELETE FROM account_balances;
-DELETE FROM wallet_transactions;
-DELETE FROM wallets;
-DELETE FROM accounts_payable;
-DELETE FROM accounts_receivable;
-DELETE FROM general_ledger;
-DELETE FROM journal_entry_lines;
-DELETE FROM journal_entries;
-DELETE FROM fiscal_periods;
-DELETE FROM accounts;
-
--- Re-run seeder
-npm run seed:accounts
-```
-
----
-
-## 🔐 Role-Based Access Control (RBAC)
-
-### Permission Structure
-
-| Role | Accounts | Journal Entries | Reports | Wallets | AP/AR |
-|------|----------|----------------|---------|---------|-------|
-| **SuperAdmin** | Full Access | Full Access | Full Access | Full Access | Full Access |
-| **Admin** | Create/Edit/View | Create/Edit/View | View/Export | Manage All | Create/Edit/View |
-| **Staff** | View Only | View Only | View Only | View Own | View Only |
-| **Customer** | No Access | No Access | No Access | View Own | View Own Invoices |
-
-### API Endpoints Security
-
-All accounting endpoints are protected:
-
-```typescript
-// Example: Journal Entry creation requires admin role
-POST /api/accounting/journal-entries
-Authorization: Bearer <token>
-Required Roles: ['admin', 'superadmin']
-
-// Example: View own customer invoices
-GET /api/accounting/invoices/customer/:customerId
-Authorization: Bearer <token>
-Required: Customer owns the invoices OR admin/staff role
-```
-
----
-
-## 📊 Database Schema
-
-### Key Relationships
-
-```
-accounts (Chart of Accounts)
-├── journal_entry_lines (Account transactions)
-├── general_ledger (Posted transactions)
-└── account_balances (Period balances)
-
-journal_entries (Transaction headers)
-├── journal_entry_lines (Transaction details)
-└── general_ledger (Posted entries)
-
-customers
-├── accounts_receivable (Customer invoices)
-└── wallets (Customer credits)
-
-vendors
-├── accounts_payable (Vendor bills)
-└── wallets (Vendor credits)
-```
-
-### Data Integrity Rules
-
-1. **Journal Entries**: Total debits must equal total credits
-2. **General Ledger**: All entries must reference valid accounts and journal entries
-3. **Account Balances**: Must be recalculated when transactions are posted
-4. **Wallets**: Balance must equal (Total Earned - Total Used)
-5. **AR/AP**: Outstanding amount must equal (Total Amount - Paid Amount)
+- **Tax compliance**: Proper tax calculations and tracking
 
 ---
 
@@ -474,7 +498,8 @@ npm run dev
 - **Financial Reporting**: Standard business reports (P&L, Balance Sheet, Cash Flow)
 - **Audit Trail**: Complete transaction history with user attribution
 - **Data Export**: Support for CSV/Excel export of all reports
+- **Integration Ready**: API endpoints for ERP and accounting software integration
 
 ---
 
-*This documentation covers the complete accounting module implementation with realistic sample data for development and testing purposes.*
+*This documentation covers the complete accounting module implementation with realistic sample data for development and testing purposes. The system provides enterprise-grade accounting functionality suitable for small to medium-sized businesses.*

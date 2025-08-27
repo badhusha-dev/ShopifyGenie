@@ -1,18 +1,19 @@
 
 # ShopifyApp - Complete Business Management Suite
 
-A comprehensive business management application built with React 18, TypeScript, Express.js, and modern web technologies for complete e-commerce business management including inventory, loyalty, AI insights, vendor management, and accounting features.
+A comprehensive business management application built with React 18, TypeScript, Express.js, and modern web technologies for complete e-commerce business management including inventory, loyalty, AI insights, vendor management, and professional-grade accounting features.
 
 ## 🚀 **Replit Environment Ready** - Updated January 2025 ✅
 
-This application has been successfully migrated and optimized for the Replit environment:
+This application has been successfully optimized for the Replit environment:
 - ✅ **Express + Vite Integration**: Unified server running on port 5000
 - ✅ **Hot Module Replacement**: Development server with live reloading
 - ✅ **WebSocket Support**: Real-time features enabled
 - ✅ **Progressive Web App**: PWA capabilities for offline usage
-- ✅ **Database Integration**: PostgreSQL with Drizzle ORM
+- ✅ **Database Integration**: PostgreSQL with Drizzle ORM ready
 - ✅ **Authentication System**: JWT-based user authentication
 - ✅ **API Documentation**: Swagger/OpenAPI documentation at `/api-docs`
+- ✅ **Modern UI**: Complete shadcn/ui + Tailwind CSS integration
 
 ## 🎨 Modern UI Design System - COMPLETED ✅
 
@@ -87,13 +88,16 @@ This application has been successfully migrated and optimized for the Replit env
 - ✅ Payment tracking and accounts payable
 - ✅ Supplier relationship management
 
-**💰 Financial & Accounting Features**
-- ✅ General Ledger with double-entry bookkeeping
-- ✅ Chart of Accounts management
+**💰 Professional Accounting System**
+- ✅ Complete Chart of Accounts with standard structure
+- ✅ Double-entry bookkeeping system
+- ✅ General Ledger with transaction history
 - ✅ Journal Entries with automated posting
-- ✅ Accounts Payable and Receivable tracking
-- ✅ Financial reporting and statements
+- ✅ Accounts Receivable and Payable management
+- ✅ Financial reporting (P&L, Balance Sheet, Cash Flow)
 - ✅ Multi-currency wallet system
+- ✅ Bank reconciliation features
+- ✅ Tax management and compliance
 
 **🤖 AI-Powered Intelligence**
 - ✅ AI recommendations engine
@@ -159,7 +163,7 @@ This application has been successfully migrated and optimized for the Replit env
 - **WebSocket**: Real-time communication
 - **JWT**: Secure authentication tokens
 - **Drizzle ORM**: Type-safe database operations
-- **PostgreSQL**: Production-ready database (planned)
+- **PostgreSQL**: Production-ready database (configured)
 - **In-Memory Storage**: Current development storage
 
 ### Development Tools
@@ -221,15 +225,15 @@ The application is already configured and ready to run in Replit:
 ## 🎨 Design System
 
 ### Color Palette
-- **Primary**: Coral (#FF6B6B) - Primary actions and highlights
+- **Primary**: Modern neutral tones with accent colors
 - **Secondary**: Emerald (#10B981) - Success states and positive metrics
-- **Background**: White (#FFFFFF) - Main application background
+- **Background**: Clean whites and subtle grays
 - **Surface**: Gray 50 (#F9FAFB) - Card backgrounds and surfaces
 - **Text**: Slate 700 (#334155) - Primary text content
 - **Muted**: Gray 500 (#6B7280) - Secondary text and descriptions
 
 ### Typography System
-- **Font Family**: Inter - Modern, readable sans-serif
+- **Font Family**: System fonts for optimal performance
 - **Scale**: 
   - Display: 36px (2.25rem) for hero text
   - Heading: 24px (1.5rem) for page titles
@@ -238,7 +242,7 @@ The application is already configured and ready to run in Replit:
   - Small: 14px (0.875rem) for captions
 
 ### Component Design
-- **Cards**: Rounded-xl corners, subtle shadows, proper spacing
+- **Cards**: Rounded corners, subtle shadows, proper spacing
 - **Buttons**: Consistent padding, hover states, focus indicators
 - **Forms**: Clear labels, validation feedback, logical grouping
 - **Tables**: Responsive design, sorting, filtering capabilities
@@ -276,11 +280,12 @@ The application is already configured and ready to run in Replit:
 - **Contract Management**: Terms, agreements, and renewals
 
 ### 💰 Financial Management
-- **Accounting System**: Double-entry bookkeeping
-- **Financial Reports**: P&L, Balance Sheet, Cash Flow
+- **Professional Accounting**: Complete double-entry bookkeeping system
+- **Financial Reports**: P&L, Balance Sheet, Cash Flow statements
 - **Invoice Management**: Automated billing and collections
 - **Multi-Currency**: International transaction support
 - **Tax Compliance**: Automated tax calculations and reporting
+- **Bank Reconciliation**: Automated matching and reconciliation
 
 ### 🤖 AI-Powered Insights
 - **Sales Forecasting**: Predictive analytics for revenue planning
@@ -376,6 +381,14 @@ The Swagger UI provides:
 - `POST /api/loyalty/transactions` - Process point transaction
 - `GET /api/loyalty/tiers` - Customer tier information
 
+#### Accounting System
+- `GET /api/accounts` - Chart of accounts
+- `GET /api/journal-entries` - Journal entries
+- `GET /api/general-ledger` - General ledger transactions
+- `GET /api/accounts-receivable` - Customer invoices
+- `GET /api/accounts-payable` - Vendor bills
+- `GET /api/wallets` - Customer/vendor credit balances
+
 #### AI Insights
 - `GET /api/ai/recommendations` - AI-generated suggestions
 - `GET /api/ai/forecasting` - Sales predictions
@@ -417,7 +430,7 @@ The Swagger UI provides:
 
 ### Backend Performance
 - **Query Optimization**: Efficient database queries
-- **Response Caching**: Redis-based caching layer
+- **Response Caching**: Memory-based caching layer
 - **Connection Pooling**: Database connection management
 - **Compression**: Gzip response compression
 
@@ -460,11 +473,16 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Documentation**: Comprehensive guides and tutorials
 - **API Reference**: Complete endpoint documentation
 
+### Additional Documentation
+- **[Accounting Module Documentation](README-ACCOUNTS.md)**: Complete guide to the accounting system
+- **[Design System Documentation](README-DESIGN.md)**: UI/UX design guidelines and components
+
 ### Resources
 - **Shopify Developer Guide**: [shopify.dev](https://shopify.dev)
 - **React Documentation**: [react.dev](https://react.dev)
 - **TypeScript Guide**: [typescriptlang.org](https://typescriptlang.org)
 - **Tailwind CSS**: [tailwindcss.com](https://tailwindcss.com)
+- **shadcn/ui**: [ui.shadcn.com](https://ui.shadcn.com)
 
 ---
 
