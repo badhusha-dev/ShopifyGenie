@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaFileInvoice, FaSearch, FaFilter, FaCalendarAlt, FaExclamationTriangle, FaDollarSign, FaMoneyBillWave } from 'react-icons/fa';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import AnimatedModal from '../components/ui/AnimatedModal';
 import { designTokens } from '../design/tokens';
@@ -288,16 +289,16 @@ const AccountsPayable = () => {
     return { bg: 'dark', text: '90+ days' };
   };
 
-  // DataTable columns
-  const columns: Column[] = [
+  // AG-Grid Column Definitions
+  const columnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'billNumber',
-      label: 'Bill #',
+      headerName: 'Bill #',
+      field: 'billNumber',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-primary">{value}</span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-primary">${params.value}</span>`
     },
     {
       key: 'vendorName',
@@ -407,7 +408,22 @@ const AccountsPayable = () => {
         </div>
       )
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleRecordPaymentAP = (id: string) => {
+      const payable = payables.find(p => p.id === id);
+      if (payable) handleRecordPayment(payable);
+    };
+    (window as any).handleEditPayable = (id: string) => {
+      const payable = payables.find(p => p.id === id);
+      if (payable) handleEdit(payable);
+    };
+    (window as any).handleDeletePayable = (id: string) => {
+      handleDelete(id);
+    };
+  }, [payables]);
 
   if (error) {
     return (

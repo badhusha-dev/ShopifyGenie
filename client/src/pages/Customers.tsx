@@ -56,8 +56,9 @@ import { useToast } from '../hooks/use-toast';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import AnimatedKPICard from '../components/ui/AnimatedKPICard';
 import AnimatedModal from '../components/ui/AnimatedModal';
-import DataTable from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../components/ui/chart';
+import { ColDef } from 'ag-grid-community';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 
 interface Customer {
@@ -121,8 +122,156 @@ const Customers: React.FC = () => {
     address: ''
   });
 
+  // AG-Grid Column Definitions
+  const columnDefs: ColDef[] = useMemo(() => [
+    {
+      headerName: 'Customer',
+      field: 'name',
+      sortable: true,
+      filter: true,
+      cellRenderer: (params: any) => {
+        const customer = params.data;
+        return `
+          <div class="d-flex align-items-center">
+            <div class="avatar-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" 
+                 style="width: 40px; height: 40px; border-radius: 50%; font-size: 14px; font-weight: 600;">
+              ${getInitials(customer.name)}
+            </div>
+            <div>
+              <div class="fw-semibold">${customer.name}</div>
+              <small class="text-muted">ID: ${customer.id.slice(-8)}</small>
+            </div>
+          </div>
+        `;
+      },
+      minWidth: 250
+    },
+    {
+      headerName: 'Email',
+      field: 'email',
+      sortable: true,
+      filter: true,
+      minWidth: 200
+    },
+    {
+      headerName: 'Phone',
+      field: 'phone',
+      sortable: true,
+      filter: true,
+      minWidth: 150,
+      valueGetter: (params) => params.data.phone || 'N/A'
+    },
+    {
+      headerName: 'Tier',
+      field: 'tier',
+      sortable: true,
+      filter: true,
+      cellRenderer: (params: any) => {
+        const tier = params.value;
+        const badgeClass = getTierBadgeClass(tier);
+        return `<span class="badge ${badgeClass}"><i class="fas fa-crown me-1"></i>${tier}</span>`;
+      },
+      minWidth: 120
+    },
+    {
+      headerName: 'Loyalty Points',
+      field: 'loyaltyPoints',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      cellRenderer: (params: any) => {
+        return `<span class="text-muted"><i class="fas fa-star me-1"></i>${params.value} points</span>`;
+      },
+      minWidth: 150
+    },
+    {
+      headerName: 'Orders',
+      field: 'ordersCount',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      cellRenderer: (params: any) => {
+        const customer = params.data;
+        return `
+          <div class="text-center">
+            <div class="fw-semibold">${customer.ordersCount || 0}</div>
+            ${customer.lastOrderDate ? `<small class="text-muted">Last: ${new Date(customer.lastOrderDate).toLocaleDateString()}</small>` : ''}
+          </div>
+        `;
+      },
+      minWidth: 120
+    },
+    {
+      headerName: 'Total Spent',
+      field: 'totalSpent',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      cellRenderer: (params: any) => {
+        return `<div class="fw-semibold">$${parseFloat(params.value || '0').toFixed(2)}</div>`;
+      },
+      minWidth: 120
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => {
+        const customer = params.data;
+        return `
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary" onclick="viewCustomer('${customer.id}')" data-testid="button-view-customer-${customer.id}">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="editCustomer('${customer.id}')" data-testid="button-edit-customer-${customer.id}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer('${customer.id}')" data-testid="button-delete-customer-${customer.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        `;
+      },
+      minWidth: 150,
+      pinned: 'right'
+    }
+  ], []);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Helper functions
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getTierBadgeClass = (tier: string) => {
+    switch (tier.toLowerCase()) {
+      case 'bronze': return 'badge-bronze';
+      case 'silver': return 'badge-silver';
+      case 'gold': return 'badge-gold';
+      case 'platinum': return 'badge-platinum';
+      default: return 'badge-secondary';
+    }
+  };
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).viewCustomer = (customerId: string) => {
+      const customer = filteredAndSortedCustomers.find(c => c.id === customerId);
+      if (customer) handleViewCustomer(customer);
+    };
+    (window as any).editCustomer = (customerId: string) => {
+      const customer = filteredAndSortedCustomers.find(c => c.id === customerId);
+      if (customer) handleEdit(customer);
+    };
+    (window as any).deleteCustomer = (customerId: string) => {
+      deleteCustomerMutation.mutate(customerId);
+    };
+  }, [filteredAndSortedCustomers]);
 
   // Customer data queries
   const { data: customers = [], isLoading } = useQuery({
@@ -595,125 +744,22 @@ const Customers: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="card-body p-0">
-              <DataTable
-                columns={[
-                  {
-                    key: 'customer',
-                    label: 'Customer',
-                    sortable: true,
-                    render: (_, customer: Customer) => (
-                      <div className="d-flex align-items-center">
-                        <div className="avatar-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" 
-                             style={{ width: '40px', height: '40px', borderRadius: '50%', fontSize: '14px', fontWeight: '600' }}>
-                          {getInitials(customer.name)}
-                        </div>
-                        <div>
-                          <div className="fw-semibold">{customer.name}</div>
-                          <small className="text-muted">ID: {customer.id.slice(-8)}</small>
-                        </div>
-                      </div>
-                    )
-                  },
-                  {
-                    key: 'contact',
-                    label: 'Contact',
-                    render: (_, customer: Customer) => (
-                      <div>
-                        <div className="d-flex align-items-center mb-1">
-                          <Mail size={12} className="me-2 text-muted" />
-                          <small>{customer.email}</small>
-                        </div>
-                        {customer.phone && (
-                          <div className="d-flex align-items-center">
-                            <Phone size={12} className="me-2 text-muted" />
-                            <small className="text-muted">{customer.phone}</small>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  },
-                  {
-                    key: 'loyalty',
-                    label: 'Loyalty',
-                    sortable: true,
-                    render: (_, customer: Customer) => {
-                      const status = getStatusBadge(customer);
-                      return (
-                        <div>
-                          <div className="d-flex align-items-center mb-1">
-                            <span className={`badge ${getTierBadgeClass(customer.tier)} me-2`}>
-                              <Crown size={10} className="me-1" />
-                              {customer.tier}
-                            </span>
-                            <span className={`badge ${status.class}`}>{status.label}</span>
-                          </div>
-                          <small className="text-muted">
-                            <Star size={10} className="me-1" />
-                            {customer.loyaltyPoints} points
-                          </small>
-                        </div>
-                      );
-                    }
-                  },
-                  {
-                    key: 'orders',
-                    label: 'Orders',
-                    sortable: true,
-                    render: (_, customer: Customer) => (
-                      <div className="text-center">
-                        <div className="fw-semibold">{customer.ordersCount || 0}</div>
-                        {customer.lastOrderDate && (
-                          <small className="text-muted">
-                            Last: {new Date(customer.lastOrderDate).toLocaleDateString()}
-                          </small>
-                        )}
-                      </div>
-                    )
-                  },
-                  {
-                    key: 'totalSpent',
-                    label: 'Total Spent',
-                    sortable: true,
-                    render: (_, customer: Customer) => (
-                      <div className="fw-semibold">${parseFloat(customer.totalSpent || '0').toFixed(2)}</div>
-                    )
-                  },
-                  {
-                    key: 'actions',
-                    label: 'Actions',
-                    render: (_, customer: Customer) => (
-                      <div className="d-flex gap-1">
-                        <button
-                          className="btn btn-sm btn-outline-primary btn-ripple"
-                          onClick={() => handleViewCustomer(customer)}
-                          data-testid={`button-view-customer-${customer.id}`}
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-secondary btn-ripple"
-                          onClick={() => handleEdit(customer)}
-                          data-testid={`button-edit-customer-${customer.id}`}
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-danger btn-ripple"
-                          onClick={() => deleteCustomerMutation.mutate(customer.id)}
-                          data-testid={`button-delete-customer-${customer.id}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )
-                  }
-                ]}
-                data={filteredAndSortedCustomers}
-                onSort={handleSort}
+            <div className="card-body p-3">
+              <AGDataGrid
+                rowData={filteredAndSortedCustomers}
+                columnDefs={columnDefs}
                 loading={isLoading}
-                emptyMessage="No customers found matching your criteria"
-                className="modern-table"
+                pagination={true}
+                paginationPageSize={25}
+                height="600px"
+                enableExport={true}
+                exportFileName="customers"
+                showExportButtons={false}
+                enableFiltering={true}
+                enableSorting={true}
+                enableResizing={true}
+                sideBar={false}
+                onRowDoubleClicked={(event) => handleViewCustomer(event.data)}
               />
             </div>
           </AnimatedCard>

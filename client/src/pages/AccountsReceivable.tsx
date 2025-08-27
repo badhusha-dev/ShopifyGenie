@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaFileInvoiceDollar, FaSearch, FaFilter, FaCalendarAlt, FaExclamationTriangle } from 'react-icons/fa';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import { designTokens } from '../design/tokens';
 import { useForm } from 'react-hook-form';
@@ -276,126 +277,137 @@ const AccountsReceivable = () => {
     return { bg: 'dark', text: '90+ days' };
   };
 
-  // DataTable columns
-  const columns: Column[] = [
+  // AG-Grid Column Definitions
+  const columnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'invoiceNumber',
-      label: 'Invoice #',
+      headerName: 'Invoice #',
+      field: 'invoiceNumber',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-primary">{value}</span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-primary">${params.value}</span>`
     },
     {
-      key: 'customerName',
-      label: 'Customer',
+      headerName: 'Customer',
+      field: 'customerName',
       sortable: true,
-      render: (value, row) => (
-        <div>
-          <div className="fw-semibold">{value}</div>
-          <small className="text-muted">{row.customerEmail}</small>
-        </div>
-      )
+      filter: true,
+      width: 200,
+      cellRenderer: (params: any) => 
+        `<div>
+          <div class="fw-semibold">${params.data.customerName}</div>
+          <small class="text-muted">${params.data.customerEmail}</small>
+        </div>`
     },
     {
-      key: 'invoiceDate',
-      label: 'Invoice Date',
+      headerName: 'Invoice Date',
+      field: 'invoiceDate',
       sortable: true,
-      width: '120px',
-      render: (value) => new Date(value).toLocaleDateString()
+      filter: 'agDateColumnFilter',
+      width: 120,
+      valueGetter: (params) => new Date(params.data.invoiceDate).toLocaleDateString()
     },
     {
-      key: 'dueDate',
-      label: 'Due Date',
+      headerName: 'Due Date',
+      field: 'dueDate',
       sortable: true,
-      width: '120px',
-      render: (value, row) => {
-        const isOverdue = row.daysPastDue > 0 && row.status !== 'paid';
-        return (
-          <div className={isOverdue ? 'text-danger' : ''}>
-            {new Date(value).toLocaleDateString()}
-            {isOverdue && <FaExclamationTriangle className="ms-1" size={12} />}
-          </div>
-        );
+      filter: 'agDateColumnFilter',
+      width: 120,
+      cellRenderer: (params: any) => {
+        const isOverdue = params.data.daysPastDue > 0 && params.data.status !== 'paid';
+        const dateStr = new Date(params.data.dueDate).toLocaleDateString();
+        return isOverdue 
+          ? `<div class="text-danger">${dateStr} <i class="fas fa-exclamation-triangle ms-1"></i></div>`
+          : dateStr;
       }
     },
     {
-      key: 'totalAmount',
-      label: 'Total',
-      width: '100px',
-      render: (value) => (
-        <span className="font-monospace">${parseFloat(value).toFixed(2)}</span>
-      )
+      headerName: 'Total',
+      field: 'totalAmount',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      width: 100,
+      valueGetter: (params) => `$${parseFloat(params.data.totalAmount).toFixed(2)}`
     },
     {
-      key: 'outstandingAmount',
-      label: 'Outstanding',
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-warning">
-          ${parseFloat(value).toFixed(2)}
-        </span>
-      )
+      headerName: 'Outstanding',
+      field: 'outstandingAmount',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-warning">$${parseFloat(params.data.outstandingAmount).toFixed(2)}</span>`
     },
     {
-      key: 'daysPastDue',
-      label: 'Aging',
-      width: '100px',
-      render: (value) => {
-        const aging = getAgingBadge(value || 0);
-        return (
-          <span className={`badge bg-${aging.bg} bg-opacity-10 text-${aging.bg} border border-${aging.bg} border-opacity-25`}>
-            {aging.text}
-          </span>
-        );
+      headerName: 'Aging',
+      field: 'daysPastDue',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      width: 100,
+      cellRenderer: (params: any) => {
+        const value = params.data.daysPastDue || 0;
+        const aging = getAgingBadge(value);
+        return `<span class="badge bg-${aging.bg} bg-opacity-10 text-${aging.bg} border border-${aging.bg} border-opacity-25">${aging.text}</span>`;
       }
     },
     {
-      key: 'status',
-      label: 'Status',
-      width: '100px',
-      render: (value) => getStatusBadge(value)
+      headerName: 'Status',
+      field: 'status',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        const badges = {
+          pending: { bg: 'warning', text: 'Pending' },
+          partial: { bg: 'info', text: 'Partial' },
+          paid: { bg: 'success', text: 'Paid' },
+          overdue: { bg: 'danger', text: 'Overdue' },
+          written_off: { bg: 'secondary', text: 'Written Off' }
+        };
+        const badge = badges[params.value as keyof typeof badges] || { bg: 'secondary', text: params.value };
+        return `<span class="badge bg-${badge.bg} bg-opacity-10 text-${badge.bg} border border-${badge.bg} border-opacity-25">${badge.text}</span>`;
+      }
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      width: '160px',
-      render: (_, row) => (
-        <div className="d-flex gap-1">
-          {row.status !== 'paid' && parseFloat(row.outstandingAmount) > 0 && (
-            <button
-              type="button"
-              className="btn btn-outline-success btn-sm"
-              onClick={() => handleRecordPayment(row)}
-              data-testid={`button-pay-${row.id}`}
-              title="Record Payment"
-            >
-              $
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 160,
+      cellRenderer: (params: any) => {
+        const row = params.data;
+        const canPay = row.status !== 'paid' && parseFloat(row.outstandingAmount) > 0;
+        return `
+          <div class="d-flex gap-1">
+            ${canPay ? `<button type="button" class="btn btn-outline-success btn-sm" onclick="handleRecordPaymentAR('${row.id}')" title="Record Payment">$</button>` : ''}
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="handleEditReceivable('${row.id}')" title="Edit">
+              <i class="fas fa-edit" style="font-size: 12px;"></i>
             </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => handleEdit(row)}
-            data-testid={`button-edit-${row.id}`}
-            title="Edit"
-          >
-            <FaEdit size={12} />
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline-danger btn-sm"
-            onClick={() => handleDelete(row.id)}
-            data-testid={`button-delete-${row.id}`}
-            title="Delete"
-          >
-            <FaTrash size={12} />
-          </button>
-        </div>
-      )
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="handleDeleteReceivable('${row.id}')" title="Delete">
+              <i class="fas fa-trash" style="font-size: 12px;"></i>
+            </button>
+          </div>
+        `;
+      },
+      pinned: 'right'
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleRecordPaymentAR = (id: string) => {
+      const receivable = receivables.find(r => r.id === id);
+      if (receivable) handleRecordPayment(receivable);
+    };
+    (window as any).handleEditReceivable = (id: string) => {
+      const receivable = receivables.find(r => r.id === id);
+      if (receivable) handleEdit(receivable);
+    };
+    (window as any).handleDeleteReceivable = (id: string) => {
+      handleDelete(id);
+    };
+  }, [receivables]);
 
   if (error) {
     return (
@@ -765,23 +777,19 @@ const AccountsReceivable = () => {
               )}
             </div>
           </div>
-          <DataTable
-            columns={columns}
-            data={filteredReceivables}
+          <AGDataGrid
+            rowData={filteredReceivables || []}
+            columnDefs={columnDefs}
             loading={isLoading}
-            emptyMessage={
-              <div className="text-center py-5">
-                <i className="fas fa-inbox fs-1 text-muted mb-3"></i>
-                <h6 className="text-muted">No receivables found</h6>
-                <p className="text-muted small mb-0">
-                  {searchTerm || filterStatus || filterAging 
-                    ? 'Try adjusting your filters or search terms' 
-                    : 'Create your first invoice to get started'
-                  }
-                </p>
-              </div>
-            }
-            className="table-hover mb-0"
+            pagination={true}
+            paginationPageSize={20}
+            height="500px"
+            enableExport={true}
+            exportFileName="accounts-receivable"
+            showExportButtons={true}
+            enableFiltering={true}
+            enableSorting={true}
+            enableResizing={true}
           />
         </div>
       </AnimatedCard>
