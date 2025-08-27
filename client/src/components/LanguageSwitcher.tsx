@@ -1,16 +1,34 @@
 import React, { useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setLanguage } from '../store/slices/uiSlice';
 import { useTranslation } from '../hooks/useTranslation';
 
 const LanguageSwitcher: React.FC = () => {
-  const { getCurrentLocale, getAvailableLocales, setLocale } = useTranslation();
+  const dispatch = useAppDispatch();
+  const currentLanguage = useAppSelector((state) => state.ui.currentLanguage);
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  
-  const currentLocale = getCurrentLocale();
-  const availableLocales = getAvailableLocales();
-  
-  const handleLocaleChange = (localeCode: string) => {
-    setLocale(localeCode as any);
+
+  const changeLanguage = (lang: string) => {
+    dispatch(setLanguage(lang));
     setIsOpen(false);
+  };
+
+  const getAvailableLocales = () => {
+    // This should ideally come from the store or a configuration
+    // For now, hardcoding based on the original implementation
+    return [
+      { code: 'en', name: 'English' },
+      { code: 'es', name: 'Español' },
+      { code: 'fr', name: 'Français' },
+    ];
+  };
+
+  const currentLocale = currentLanguage; // Use currentLanguage from Redux store
+  const availableLocales = getAvailableLocales();
+
+  const handleLocaleChange = (localeCode: string) => {
+    changeLanguage(localeCode); // Use the new changeLanguage function
   };
 
   const getCurrentLocaleName = () => {
@@ -21,7 +39,7 @@ const LanguageSwitcher: React.FC = () => {
   const getFlag = (code: string) => {
     const flags: { [key: string]: string } = {
       'en': '🇺🇸',
-      'es': '🇪🇸', 
+      'es': '🇪🇸',
       'fr': '🇫🇷'
     };
     return flags[code] || '🌐';
@@ -29,7 +47,7 @@ const LanguageSwitcher: React.FC = () => {
 
   return (
     <div className="dropdown position-relative">
-      <button 
+      <button
         className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2 px-3 py-2 language-switcher-btn"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -53,15 +71,15 @@ const LanguageSwitcher: React.FC = () => {
         </span>
         <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'} small transition-transform`}></i>
       </button>
-      
+
       {isOpen && (
         <>
-          <div 
+          <div
             className="dropdown-backdrop position-fixed w-100 h-100 top-0 start-0"
             style={{ zIndex: 1040 }}
             onClick={() => setIsOpen(false)}
           ></div>
-          <ul 
+          <ul
             className="dropdown-menu show position-absolute animate__animated animate__fadeIn animate__faster"
             style={{
               right: '0',

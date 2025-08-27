@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Route } from 'wouter';
+import React, { useState, useEffect } from 'react';
+import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
-import { AuthProvider } from './contexts/AuthContext';
 import { PermissionProvider } from './contexts/PermissionContext';
-import { ThemeProvider } from './contexts/ThemeContext'; // Import ThemeProvider
-import { useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Sidebar } from './components/Sidebar';
 import TopNav from './components/TopNav';
 import { LoginForm } from './components/LoginForm';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import { Provider } from 'react-redux';
+import { store } from './store'; // Import the Redux store
 
 // Pages
 import Home from './pages/Home';
@@ -46,12 +46,19 @@ import ErrorPage from './pages/ErrorPage';
 // Design Tokens
 import './design/tokens.scss'; // Import design tokens
 
+// Redux Auth Provider
+import { ReduxAuthProvider } from './components/ReduxAuthProvider';
+import { useAppSelector, useAppDispatch } from './store/hooks';
+import { fetchCurrentUser } from './store/slices/authSlice';
+
+
 const AppContent = () => {
-  const { user, isLoading } = useAuth();
+  const { user } = useAppSelector((state) => state.auth); // Use Redux state
+  const { isLoading: permissionsLoading } = useAppSelector((state) => state.permissions); // Assuming permissions are also managed by Redux or a similar mechanism
   const [showRegister, setShowRegister] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  if (isLoading) {
+  if (isLoading || permissionsLoading) {
     return (
       <div className="d-flex align-items-center justify-content-center vh-100">
         <div className="text-center">
@@ -124,7 +131,7 @@ const AppContent = () => {
         <Route path="/accounting/bank-reconciliation" component={() => renderPage("Bank Reconciliation", "Upload and match bank statements with general ledger", BankReconciliation)} />
         <Route path="/accounting/invoices" component={() => renderPage("Invoice Management", "Enhanced invoice management with aging reports", InvoiceManagement)} />
         <Route path="/tax-management" component={() => renderPage("Tax Management", "Manage tax rates and generate tax reports", TaxManagement)} />
-        
+
         {/* Catch-all route for 404 - MUST BE LAST */}
         <Route>
           {(params) => {
@@ -139,11 +146,11 @@ const AppContent = () => {
               '/accounting/wallets', '/accounting/financial-reports', '/accounting/bank-reconciliation',
               '/accounting/invoices', '/tax-management'
             ];
-            
+
             if (!validPaths.includes(currentPath)) {
               return <NotFound />;
             }
-            
+
             return null;
           }}
         </Route>
@@ -162,10 +169,20 @@ const AppContent = () => {
 };
 
 function App() {
+  const dispatch = useAppDispatch();
+  const { token } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    // Initialize app by fetching current user if token exists
+    if (token && !useAppSelector((state) => state.auth.user)) { // Check if user is not already loaded
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch, token]);
+
   return (
-    <ErrorBoundary showDetails={process.env.NODE_ENV === 'development'}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}> {/* Wrap with Redux Provider */}
+        <ReduxAuthProvider> {/* Use ReduxAuthProvider */}
           <PermissionProvider>
             <ThemeProvider>
               <div className="app">
@@ -176,9 +193,9 @@ function App() {
               </div>
             </ThemeProvider>
           </PermissionProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+        </ReduxAuthProvider>
+      </Provider>
+    </QueryClientProvider>
   );
 }
 

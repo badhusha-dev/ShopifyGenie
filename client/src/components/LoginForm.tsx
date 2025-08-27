@@ -1,6 +1,7 @@
-
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { loginUser, registerUser, clearError } from '../store/slices/authSlice';
+import { useAppSelector as useThemeSelector } from '../store/hooks';
 
 interface LoginFormProps {
   onToggleMode: () => void;
@@ -8,7 +9,9 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => {
-  const { login, register, error, isLoading, clearError } = useAuth();
+  const dispatch = useAppDispatch();
+  const { error, isLoading } = useAppSelector((state) => state.auth);
+  const { isDark } = useThemeSelector((state) => state.theme);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,16 +21,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
-    
+    dispatch(clearError());
+
     try {
       if (showRegister) {
-        await register(formData.name, formData.email, formData.password, formData.role);
+        await dispatch(registerUser({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role
+        })).unwrap();
       } else {
-        await login(formData.email, formData.password);
+        await dispatch(loginUser({
+          email: formData.email,
+          password: formData.password
+        })).unwrap();
       }
     } catch (err) {
-      // Error is handled by the context
+      // Error handled by Redux slice
     }
   };
 
@@ -139,8 +150,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
               className="btn btn-link"
               onClick={onToggleMode}
             >
-              {showRegister 
-                ? 'Already have an account? Sign in' 
+              {showRegister
+                ? 'Already have an account? Sign in'
                 : "Don't have an account? Sign up"
               }
             </button>

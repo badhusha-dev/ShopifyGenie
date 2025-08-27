@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { logout } from '../store/slices/authSlice';
+import { toggleDarkMode } from '../store/slices/themeSlice';
 import LanguageSwitcher from './LanguageSwitcher';
+import ThemeSettings from './ThemeSettings';
 import { useTranslation } from '../hooks/useTranslation';
 import logoImage from '../assets/logo.png';
 
@@ -18,13 +20,25 @@ const TopNav: React.FC<TopNavProps> = ({
   onMenuToggle,
   showSearch = true 
 }) => {
-  const { user, logout } = useAuth();
-  const { isDark, toggleDarkMode } = useTheme();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  const { isDark } = useAppSelector((state) => state.theme);
+  const { t } = useTranslation();
   const [notifications] = useState(3);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [themeColors] = useState(['emerald', 'blue', 'purple', 'coral']);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('accentColor') || 'blue');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showThemeSettings, setShowThemeSettings] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
+
+  const handleToggleDarkMode = () => {
+    dispatch(toggleDarkMode());
+  };
 
   // Live clock update
   useEffect(() => {
@@ -200,7 +214,7 @@ const TopNav: React.FC<TopNavProps> = ({
           {/* Dark Mode Toggle */}
           <button 
             className="btn btn-outline-secondary btn-sm btn-ripple hover-lift"
-            onClick={toggleDarkMode}
+            onClick={handleToggleDarkMode}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             data-testid="button-theme-toggle"
           >
@@ -362,7 +376,7 @@ const TopNav: React.FC<TopNavProps> = ({
                 <button 
                   className="dropdown-item text-danger" 
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   data-testid="button-logout"
                 >
                   <i className="fas fa-sign-out-alt me-3"></i>Sign out

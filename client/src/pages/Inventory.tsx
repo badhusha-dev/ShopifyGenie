@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchProducts, setFilters, setSelectedProduct } from '../store/slices/inventorySlice';
 
 interface Product {
   id: string;
@@ -12,29 +14,15 @@ interface Product {
 }
 
 const Inventory: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showLowStock, setShowLowStock] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    price: '',
-    stock: '',
-    lowStockThreshold: '',
-    status: 'active' as 'active' | 'draft'
-  });
-
+  const dispatch = useAppDispatch();
+  const { products, isLoading, searchTerm, showLowStock } = useAppSelector((state) => state.inventory);
+  
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: async () => {
-      const response = await fetch('/api/products');
-      if (!response.ok) throw new Error('Failed to fetch products');
-      return response.json();
-    }
-  });
+  // Fetch products using Redux thunk
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
@@ -48,6 +36,7 @@ const Inventory: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      // dispatch(fetchProducts()); // Re-fetch products after mutation
       setShowModal(false);
       resetForm();
     },
@@ -68,6 +57,7 @@ const Inventory: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      // dispatch(fetchProducts()); // Re-fetch products after mutation
       setShowModal(false);
       resetForm();
     },
@@ -86,10 +76,21 @@ const Inventory: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      // dispatch(fetchProducts()); // Re-fetch products after mutation
     },
     onError: () => {
       console.error('Failed to delete product');
     }
+  });
+
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    price: '',
+    stock: '',
+    lowStockThreshold: '',
+    status: 'active' as 'active' | 'draft'
   });
 
   const resetForm = () => {
@@ -101,11 +102,11 @@ const Inventory: React.FC = () => {
       lowStockThreshold: '',
       status: 'active'
     });
-    setSelectedProduct(null);
+    dispatch(setSelectedProduct(null));
   };
 
   const handleEdit = (product: Product) => {
-    setSelectedProduct(product);
+    dispatch(setSelectedProduct(product));
     setFormData({
       name: product.name,
       category: product.category,
@@ -126,8 +127,10 @@ const Inventory: React.FC = () => {
       lowStockThreshold: parseInt(formData.lowStockThreshold)
     };
 
-    if (selectedProduct) {
-      updateProductMutation.mutate({ ...productData, id: selectedProduct.id });
+    const currentSelectedProduct = useAppSelector((state) => state.inventory.selectedProduct);
+
+    if (currentSelectedProduct) {
+      updateProductMutation.mutate({ ...productData, id: currentSelectedProduct.id });
     } else {
       createProductMutation.mutate(productData);
     }
@@ -205,7 +208,7 @@ const Inventory: React.FC = () => {
                     className="form-control ps-5"
                     placeholder="Search products by name or category..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => dispatch(setFilters({ searchTerm: e.target.value }))}
                     style={{borderRadius: '12px'}}
                   />
                 </div>
@@ -217,7 +220,7 @@ const Inventory: React.FC = () => {
                     type="checkbox"
                     id="lowStockFilter"
                     checked={showLowStock}
-                    onChange={(e) => setShowLowStock(e.target.checked)}
+                    onChange={(e) => dispatch(setFilters({ showLowStock: e.target.checked }))}
                   />
                   <label className="form-check-label fw-medium" htmlFor="lowStockFilter">
                     <i className="fas fa-exclamation-triangle text-warning me-2"></i>
@@ -330,7 +333,7 @@ const Inventory: React.FC = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
-                  {selectedProduct ? 'Edit Product' : 'Add New Product'}
+                  {useAppSelector((state) => state.inventory.selectedProduct) ? 'Edit Product' : 'Add New Product'}
                 </h5>
                 <button 
                   type="button" 
@@ -487,11 +490,11 @@ const Inventory: React.FC = () => {
                     {createProductMutation.isPending || updateProductMutation.isPending ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2"></span>
-                        {selectedProduct ? 'Updating...' : 'Creating...'}
+                        {useAppSelector((state) => state.inventory.selectedProduct) ? 'Updating...' : 'Creating...'}
                       </>
                     ) : (
                       <>
-                        {selectedProduct ? 'Update' : 'Create'} Product
+                        {useAppSelector((state) => state.inventory.selectedProduct) ? 'Update' : 'Create'} Product
                       </>
                     )}
                   </button>

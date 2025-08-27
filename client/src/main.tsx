@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import App from "./App";
 import "./index.css";
+import { Provider } from 'react-redux';
+import { store } from './store';
 
 // Global unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {
@@ -29,9 +31,11 @@ const initializeApp = () => {
     const root = createRoot(container);
     root.render(
       <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-          <App />
-        </QueryClientProvider>
+        <Provider store={store}>
+          <QueryClientProvider client={queryClient}>
+            <App />
+          </QueryClientProvider>
+        </Provider>
       </React.StrictMode>
     );
     console.log("App initialized successfully");
