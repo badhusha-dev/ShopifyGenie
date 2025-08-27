@@ -97,93 +97,55 @@ const AppContent = () => {
 
       {/* Main Content */}
       <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        <Route path="/" nest>
-          <Route path="/">
-            {() => renderPage("Dashboard", "Overview of your business metrics", Home)}
-          </Route>
-          <Route path="/dashboard">
-            {() => renderPage("Dashboard", "Overview of your business metrics", Home)}
-          </Route>
-          <Route path="/inventory">
-            {() => renderPage("Inventory Management", "Manage your products and stock levels", Inventory)}
-          </Route>
-          <Route path="/advanced-inventory">
-            {() => renderPage("Advanced Inventory", "AI-powered inventory insights and forecasting", AdvancedInventory)}
-          </Route>
-          <Route path="/customers">
-            {() => renderPage("Customer Management", "Manage customer relationships and data", Customers)}
-          </Route>
-          <Route path="/customer-portal">
-            {() => renderPage("Customer Portal", "Customer-facing dashboard and account management", CustomerPortal)}
-          </Route>
-          <Route path="/loyalty">
-            {() => renderPage("Loyalty Program", "Manage customer loyalty and rewards", Loyalty)}
-          </Route>
-          <Route path="/subscriptions">
-            {() => renderPage("Subscriptions", "Manage recurring subscriptions and billing", Subscriptions)}
-          </Route>
-          <Route path="/vendors">
-            {() => renderPage("Vendor Management", "Manage suppliers and vendor relationships", VendorManagement)}
-          </Route>
-          <Route path="/ai-recommendations">
-            {() => renderPage("AI Insights", "AI-powered business recommendations and analytics", AIRecommendations)}
-          </Route>
-          <Route path="/ai-insights">
-            {() => renderPage("AI Insights", "AI-powered business recommendations and analytics", AIRecommendations)}
-          </Route>
-          <Route path="/reports">
-            {() => renderPage("Finance & Reports", "Financial analytics and business reports", Reports)}
-          </Route>
-          <Route path="/settings">
-            {() => renderPage("System Settings", "Configure system preferences and settings", SystemSettings)}
-          </Route>
-          <Route path="/user-management">
-            {() => renderPage("User Management", "Manage system users and access", UserManagement)}
-          </Route>
-          <Route path="/role-permissions">
-            {() => renderPage("Role & Permissions", "Configure user roles and access permissions", RolePermissionManagement)}
-          </Route>
-          <Route path="/integrations">
-            {() => renderPage("Integrations", "Connect third-party services and tools", Integrations)}
-          </Route>
-          <Route path="/accounting/chart-of-accounts">
-            {() => renderPage("Chart of Accounts", "Manage your accounting structure and classifications", ChartOfAccounts)}
-          </Route>
-          <Route path="/accounting/general-ledger">
-            {() => renderPage("General Ledger", "Complete record of all accounting transactions", GeneralLedger)}
-          </Route>
-          <Route path="/accounting/journal-entries">
-            {() => renderPage("Journal Entries", "View and manage all journal entries", JournalEntries)}
-          </Route>
-          <Route path="/accounting/manual-journal-entry">
-            {() => renderPage("Manual Journal Entry", "Create manual journal entries with double-entry validation", ManualJournalEntry)}
-          </Route>
-          <Route path="/accounting/accounts-receivable">
-            {() => renderPage("Accounts Receivable", "Manage customer invoices and aging analysis", AccountsReceivable)}
-          </Route>
-          <Route path="/accounting/accounts-payable">
-            {() => renderPage("Accounts Payable", "Manage vendor bills and aging analysis", AccountsPayable)}
-          </Route>
-          <Route path="/accounting/wallets">
-            {() => renderPage("Wallets & Credits", "Manage customer and vendor credit wallets", Wallets)}
-          </Route>
-          <Route path="/accounting/financial-reports">
-            {() => renderPage("Financial Reports", "Generate comprehensive financial statements", FinancialReports)}
-          </Route>
-          <Route path="/accounting/bank-reconciliation">
-            {() => renderPage("Bank Reconciliation", "Upload and match bank statements with general ledger", BankReconciliation)}
-          </Route>
-          <Route path="/accounting/invoices">
-            {() => renderPage("Invoice Management", "Enhanced invoice management with aging reports", InvoiceManagement)}
-          </Route>
-          <Route path="/tax-management">
-            {() => renderPage("Tax Management", "Manage tax rates and generate tax reports", TaxManagement)}
-          </Route>
-
-          {/* Catch-all route for 404 - MUST BE LAST */}
-          <Route path="*">
-            {() => <NotFound />}
-          </Route>
+        <Route path="/" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
+        <Route path="/dashboard" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
+        <Route path="/inventory" component={() => renderPage("Inventory Management", "Manage your products and stock levels", Inventory)} />
+        <Route path="/advanced-inventory" component={() => renderPage("Advanced Inventory", "AI-powered inventory insights and forecasting", AdvancedInventory)} />
+        <Route path="/customers" component={() => renderPage("Customer Management", "Manage customer relationships and data", Customers)} />
+        <Route path="/customer-portal" component={() => renderPage("Customer Portal", "Customer-facing dashboard and account management", CustomerPortal)} />
+        <Route path="/loyalty" component={() => renderPage("Loyalty Program", "Manage customer loyalty and rewards", Loyalty)} />
+        <Route path="/subscriptions" component={() => renderPage("Subscriptions", "Manage recurring subscriptions and billing", Subscriptions)} />
+        <Route path="/vendors" component={() => renderPage("Vendor Management", "Manage suppliers and vendor relationships", VendorManagement)} />
+        <Route path="/ai-recommendations" component={() => renderPage("AI Insights", "AI-powered business recommendations and analytics", AIRecommendations)} />
+        <Route path="/ai-insights" component={() => renderPage("AI Insights", "AI-powered business recommendations and analytics", AIRecommendations)} />
+        <Route path="/reports" component={() => renderPage("Finance & Reports", "Financial analytics and business reports", Reports)} />
+        <Route path="/settings" component={() => renderPage("System Settings", "Configure system preferences and settings", SystemSettings)} />
+        <Route path="/user-management" component={() => renderPage("User Management", "Manage system users and access", UserManagement)} />
+        <Route path="/role-permissions" component={() => renderPage("Role & Permissions", "Configure user roles and access permissions", RolePermissionManagement)} />
+        <Route path="/integrations" component={() => renderPage("Integrations", "Connect third-party services and tools", Integrations)} />
+        <Route path="/accounting/chart-of-accounts" component={() => renderPage("Chart of Accounts", "Manage your accounting structure and classifications", ChartOfAccounts)} />
+        <Route path="/accounting/general-ledger" component={() => renderPage("General Ledger", "Complete record of all accounting transactions", GeneralLedger)} />
+        <Route path="/accounting/journal-entries" component={() => renderPage("Journal Entries", "View and manage all journal entries", JournalEntries)} />
+        <Route path="/accounting/manual-journal-entry" component={() => renderPage("Manual Journal Entry", "Create manual journal entries with double-entry validation", ManualJournalEntry)} />
+        <Route path="/accounting/accounts-receivable" component={() => renderPage("Accounts Receivable", "Manage customer invoices and aging analysis", AccountsReceivable)} />
+        <Route path="/accounting/accounts-payable" component={() => renderPage("Accounts Payable", "Manage vendor bills and aging analysis", AccountsPayable)} />
+        <Route path="/accounting/wallets" component={() => renderPage("Wallets & Credits", "Manage customer and vendor credit wallets", Wallets)} />
+        <Route path="/accounting/financial-reports" component={() => renderPage("Financial Reports", "Generate comprehensive financial statements", FinancialReports)} />
+        <Route path="/accounting/bank-reconciliation" component={() => renderPage("Bank Reconciliation", "Upload and match bank statements with general ledger", BankReconciliation)} />
+        <Route path="/accounting/invoices" component={() => renderPage("Invoice Management", "Enhanced invoice management with aging reports", InvoiceManagement)} />
+        <Route path="/tax-management" component={() => renderPage("Tax Management", "Manage tax rates and generate tax reports", TaxManagement)} />
+        
+        {/* Catch-all route for 404 - MUST BE LAST */}
+        <Route>
+          {(params) => {
+            // Only show NotFound for unmatched routes
+            const currentPath = window.location.pathname;
+            const validPaths = [
+              '/', '/dashboard', '/inventory', '/advanced-inventory', '/customers', '/customer-portal',
+              '/loyalty', '/subscriptions', '/vendors', '/ai-recommendations', '/ai-insights', '/reports',
+              '/settings', '/user-management', '/role-permissions', '/integrations',
+              '/accounting/chart-of-accounts', '/accounting/general-ledger', '/accounting/journal-entries',
+              '/accounting/manual-journal-entry', '/accounting/accounts-receivable', '/accounting/accounts-payable',
+              '/accounting/wallets', '/accounting/financial-reports', '/accounting/bank-reconciliation',
+              '/accounting/invoices', '/tax-management'
+            ];
+            
+            if (!validPaths.includes(currentPath)) {
+              return <NotFound />;
+            }
+            
+            return null;
+          }}
         </Route>
       </div>
 
