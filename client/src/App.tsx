@@ -169,14 +169,14 @@ const AppContent = () => {
 
 function App() {
   const dispatch = useAppDispatch();
-  const { token } = useAppSelector((state) => state.auth);
+  const { token, user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     // Initialize app by fetching current user if token exists
-    if (token && !useAppSelector((state) => state.auth.user)) { // Check if user is not already loaded
+    if (token && !user) { // Check if user is not already loaded
       dispatch(fetchCurrentUser());
     }
-  }, [dispatch, token]);
+  }, [dispatch, token, user]);
 
   return (
     <QueryClientProvider client={queryClient}>
