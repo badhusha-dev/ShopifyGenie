@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../hooks/useTranslation';
+import logoImage from '../assets/logo.png';
 
 interface TopNavProps {
   title: string;
@@ -67,19 +68,23 @@ const TopNav: React.FC<TopNavProps> = ({
           <div className="d-flex align-items-center">
             <div className="nav-logo me-3">
               <div 
-                className="rounded-circle d-flex align-items-center justify-content-center"
+                className="rounded d-flex align-items-center justify-content-center"
                 style={{
                   width: '40px', 
                   height: '40px',
-                  background: `linear-gradient(135deg, var(--bs-${currentTheme}), var(--bs-${currentTheme}-dark, #0056b3))`
+                  background: 'transparent'
                 }}
               >
-                <i className="fas fa-store text-white"></i>
+                <img 
+                  src={logoImage} 
+                  alt="Shopify Gennie" 
+                  style={{ width: '40px', height: '40px', objectFit: 'contain' }}
+                />
               </div>
             </div>
             <div>
               <h1 className="h5 mb-0 fw-bold gradient-text" data-testid="text-app-title">
-                ShopifyApp
+                Shopify Gennie
               </h1>
               <small className="text-muted d-none d-md-inline" data-testid="text-subtitle">
                 {subtitle || 'Advanced Accounting & Analytics'}

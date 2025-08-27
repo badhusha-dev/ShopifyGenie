@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '../contexts/AuthContext';
+import logoImage from '../assets/logo.png';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -144,11 +145,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       <div className="sidebar-brand">
         <div className="d-flex align-items-center">
           <div className="brand-icon">
-            <i className="fas fa-store text-white"></i>
+            <img 
+              src={logoImage} 
+              alt="Shopify Gennie" 
+              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+            />
           </div>
           {!collapsed && (
             <div className="ms-3">
-              <h5 className="text-white mb-0 fw-bold">ShopifyApp</h5>
+              <h5 className="text-white mb-0 fw-bold">Shopify Gennie</h5>
               <small className="text-white-50">Business Suite</small>
             </div>
           )}
