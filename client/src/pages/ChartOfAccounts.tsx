@@ -446,7 +446,7 @@ const ChartOfAccounts = () => {
           height="600px"
           enableExport={true}
           exportFileName="chart-of-accounts"
-          showExportButtons={false}
+          showExportButtons={true}
           enableFiltering={true}
           enableSorting={true}
           enableResizing={true}

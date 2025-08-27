@@ -489,7 +489,7 @@ const GeneralLedger = () => {
           height="600px"
           enableExport={true}
           exportFileName="general-ledger"
-          showExportButtons={false}
+          showExportButtons={true}
           enableFiltering={true}
           enableSorting={true}
           enableResizing={true}

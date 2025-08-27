@@ -3,7 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { ColDef, GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-import { FaFileExport, FaFileExcel, FaFileCsv, FaFilePdf } from 'react-icons/fa';
+import { FaFileExport, FaFileExcel, FaFileCsv, FaFilePdf, FaDownload } from 'react-icons/fa';
 
 interface AGDataGridProps {
   rowData: any[];
@@ -24,6 +24,12 @@ interface AGDataGridProps {
   enableSorting?: boolean;
   enableResizing?: boolean;
   sideBar?: boolean;
+  autoSizeColumns?: boolean;
+  suppressColumnVirtualisation?: boolean;
+  suppressRowVirtualisation?: boolean;
+  rowSelection?: 'single' | 'multiple';
+  enableRangeSelection?: boolean;
+  rowMultiSelectWithClick?: boolean;
 }
 
 const AGDataGrid: React.FC<AGDataGridProps> = ({
@@ -44,7 +50,13 @@ const AGDataGrid: React.FC<AGDataGridProps> = ({
   enableFiltering = true,
   enableSorting = true,
   enableResizing = true,
-  sideBar = false
+  sideBar = false,
+  autoSizeColumns = true,
+  suppressColumnVirtualisation = false,
+  suppressRowVirtualisation = false,
+  rowSelection = 'single',
+  enableRangeSelection = true,
+  rowMultiSelectWithClick = false
 }) => {
   const gridRef = useRef<AgGridReact>(null);
   const gridApiRef = useRef<GridApi | null>(null);
@@ -56,14 +68,21 @@ const AGDataGrid: React.FC<AGDataGridProps> = ({
     floatingFilter: enableFiltering,
     flex: 1,
     minWidth: 100,
+    cellClass: 'ag-cell-center',
+    headerClass: 'ag-header-center'
   }), [enableSorting, enableFiltering, enableResizing]);
 
   const onGridReadyCallback = useCallback((event: GridReadyEvent) => {
     gridApiRef.current = event.api;
+    if (autoSizeColumns) {
+      setTimeout(() => {
+        event.api.sizeColumnsToFit();
+      }, 100);
+    }
     if (onGridReady) {
       onGridReady(event);
     }
-  }, [onGridReady]);
+  }, [onGridReady, autoSizeColumns]);
 
   // Export functions
   const exportToCSV = useCallback(() => {
@@ -111,7 +130,11 @@ const AGDataGrid: React.FC<AGDataGridProps> = ({
   return (
     <div className={`ag-data-grid-container ${className}`}>
       {showExportButtons && enableExport && (
-        <div className="d-flex justify-content-end mb-3 gap-2">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="d-flex align-items-center">
+            <FaDownload className="text-muted me-2" />
+            <span className="text-muted small">Export Options:</span>
+          </div>
           <div className="btn-group" role="group">
             <button
               type="button"
@@ -180,12 +203,18 @@ const AGDataGrid: React.FC<AGDataGridProps> = ({
           onRowDoubleClicked={onRowDoubleClicked}
           onGridReady={onGridReadyCallback}
           suppressRowClickSelection={false}
-          rowSelection="single"
+          rowSelection={rowSelection}
+          rowMultiSelectWithClick={rowMultiSelectWithClick}
           animateRows={true}
           sideBar={sideBar}
-          enableRangeSelection={true}
-          suppressColumnVirtualisation={false}
-          suppressRowVirtualisation={false}
+          enableRangeSelection={enableRangeSelection}
+          suppressColumnVirtualisation={suppressColumnVirtualisation}
+          suppressRowVirtualisation={suppressRowVirtualisation}
+          onFirstDataRendered={(params) => {
+            if (autoSizeColumns) {
+              params.api.sizeColumnsToFit();
+            }
+          }}
           {...gridOptions}
         />
       </div>

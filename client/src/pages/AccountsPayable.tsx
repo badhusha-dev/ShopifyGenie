@@ -584,7 +584,7 @@ const AccountsPayable = () => {
           height="600px"
           enableExport={true}
           exportFileName="accounts-payable"
-          showExportButtons={false}
+          showExportButtons={true}
           enableFiltering={true}
           enableSorting={true}
           enableResizing={true}

@@ -160,10 +160,6 @@ const InventoryTable = () => {
             <i className={`fas fa-sync me-1 ${syncMutation.isPending ? "fa-spin" : ""}`}></i>
             Sync with Shopify
           </button>
-          <button className="btn btn-outline-secondary btn-sm">
-            <i className="fas fa-download me-1"></i>
-            Export
-          </button>
         </div>
       </div>
       <div className="card-body p-3">
@@ -176,7 +172,7 @@ const InventoryTable = () => {
           height="500px"
           enableExport={true}
           exportFileName="inventory"
-          showExportButtons={false}
+          showExportButtons={true}
           enableFiltering={true}
           enableSorting={true}
           enableResizing={true}

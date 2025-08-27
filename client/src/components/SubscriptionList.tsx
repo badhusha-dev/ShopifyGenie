@@ -67,7 +67,7 @@ const SubscriptionList = () => {
       field: 'productId',
       sortable: true,
       filter: true,
-      valueGetter: (params) => getProductName(params.value),
+      valueGetter: (params) => getProductName(params.data?.productId),
       minWidth: 200
     },
     {
@@ -75,7 +75,7 @@ const SubscriptionList = () => {
       field: 'customerId',
       sortable: true,
       filter: true,
-      valueGetter: (params) => getCustomerName(params.value),
+      valueGetter: (params) => getCustomerName(params.data?.customerId),
       minWidth: 180
     },
     {
@@ -95,7 +95,7 @@ const SubscriptionList = () => {
       field: 'nextDelivery',
       sortable: true,
       filter: 'agDateColumnFilter',
-      valueGetter: (params) => formatDate(params.value),
+      valueGetter: (params) => formatDate(params.data?.nextDelivery),
       minWidth: 150
     },
     {
@@ -154,7 +154,7 @@ const SubscriptionList = () => {
           height="400px"
           enableExport={true}
           exportFileName="subscriptions"
-          showExportButtons={false}
+          showExportButtons={true}
           enableFiltering={true}
           enableSorting={true}
           enableResizing={true}

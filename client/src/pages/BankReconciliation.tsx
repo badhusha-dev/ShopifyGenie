@@ -418,7 +418,7 @@ const BankReconciliation = () => {
                       height="400px"
                       enableExport={true}
                       exportFileName="bank-statements"
-                      showExportButtons={false}
+                      showExportButtons={true}
                       enableFiltering={true}
                       enableSorting={true}
                       enableResizing={true}
@@ -468,7 +468,7 @@ const BankReconciliation = () => {
                         paginationPageSize={10}
                         height="300px"
                         enableExport={false}
-                        showExportButtons={false}
+                        showExportButtons={true}
                         enableFiltering={true}
                         enableSorting={true}
                         enableResizing={true}

@@ -404,7 +404,7 @@ const InvoiceManagement = () => {
               paginationPageSize={10}
               height="350px"
               enableExport={false}
-              showExportButtons={false}
+              showExportButtons={true}
               enableFiltering={true}
               enableSorting={true}
               enableResizing={true}
@@ -474,7 +474,7 @@ const InvoiceManagement = () => {
               height="500px"
               enableExport={true}
               exportFileName="invoices"
-              showExportButtons={false}
+              showExportButtons={true}
               enableFiltering={true}
               enableSorting={true}
               enableResizing={true}

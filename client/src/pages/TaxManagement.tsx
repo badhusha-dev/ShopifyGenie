@@ -422,7 +422,7 @@ const TaxManagement = () => {
               height="400px"
               enableExport={true}
               exportFileName="tax-rates"
-              showExportButtons={false}
+              showExportButtons={true}
               enableFiltering={true}
               enableSorting={true}
               enableResizing={true}

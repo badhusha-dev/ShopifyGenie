@@ -746,7 +746,7 @@ const Wallets = () => {
           height="500px"
           enableExport={true}
           exportFileName="wallets"
-          showExportButtons={false}
+          showExportButtons={true}
           enableFiltering={true}
           enableSorting={true}
           enableResizing={true}
@@ -1045,7 +1045,7 @@ const Wallets = () => {
                   paginationPageSize={10}
                   height="400px"
                   enableExport={false}
-                  showExportButtons={false}
+                  showExportButtons={true}
                   enableFiltering={true}
                   enableSorting={true}
                   enableResizing={true}

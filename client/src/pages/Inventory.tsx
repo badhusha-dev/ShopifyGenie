@@ -4,20 +4,18 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProducts, setFilters, setSelectedProduct } from '../store/slices/inventorySlice';
 import AGDataGrid from '../components/ui/AGDataGrid';
 import { ColDef } from 'ag-grid-community';
+import type { Product } from '@shared/schema';
 
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  lowStockThreshold: number;
-  status: 'active' | 'draft';
+interface InventoryProduct extends Product {
+  lowStockThreshold?: number;
+  status?: 'active' | 'draft';
 }
 
 const Inventory: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { products, isLoading, searchTerm, showLowStock } = useAppSelector((state) => state.inventory);
+  const { products, isLoading, category, status, lowStock } = useAppSelector((state) => state.inventory);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showLowStock, setShowLowStock] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -107,15 +105,15 @@ const Inventory: React.FC = () => {
     dispatch(setSelectedProduct(null));
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: InventoryProduct) => {
     dispatch(setSelectedProduct(product));
     setFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price.toString(),
+      name: product.name || '',
+      category: product.category || '',
+      price: (typeof product.price === 'string' ? parseFloat(product.price) : product.price || 0).toString(),
       stock: product.stock.toString(),
-      lowStockThreshold: product.lowStockThreshold.toString(),
-      status: product.status
+      lowStockThreshold: (product.lowStockThreshold || 0).toString(),
+      status: (product.status as 'active' | 'draft') || 'active'
     });
     setShowModal(true);
   };
@@ -138,10 +136,10 @@ const Inventory: React.FC = () => {
     }
   };
 
-  const getStockBadge = (product: Product) => {
+  const getStockBadge = (product: InventoryProduct) => {
     if (product.stock === 0) {
       return <span className="badge bg-danger">Out of Stock</span>;
-    } else if (product.stock <= product.lowStockThreshold) {
+    } else if (product.stock <= (product.lowStockThreshold || 0)) {
       return <span className="badge bg-warning text-dark">Low Stock</span>;
     }
     return <span className="badge bg-success">In Stock</span>;
@@ -155,18 +153,20 @@ const Inventory: React.FC = () => {
       sortable: true,
       filter: true,
       width: 250,
-      cellRenderer: (params: any) => `
-        <div class="d-flex align-items-center">
-          <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3" 
-               style="width: 40px; height: 40px;">
-            <i class="fas fa-box text-primary"></i>
-          </div>
-          <div>
-            <div class="fw-semibold">${params.value}</div>
-            <small class="text-muted">ID: ${params.data.id.slice(0, 8)}</small>
-          </div>
-        </div>
-      `
+      cellRenderer: (params: any) => {
+        return (
+          `<div class="d-flex align-items-center">
+            <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3" 
+                 style="width: 40px; height: 40px;">
+              <i class="fas fa-box text-primary"></i>
+            </div>
+            <div>
+              <div class="fw-semibold">${params.value || 'N/A'}</div>
+              <small class="text-muted">ID: ${(params.data.id || '').slice(0, 8)}</small>
+            </div>
+          </div>`
+        );
+      }
     },
     {
       headerName: 'Category',
@@ -181,7 +181,10 @@ const Inventory: React.FC = () => {
       sortable: true,
       filter: true,
       width: 120,
-      cellRenderer: (params: any) => `<span class="fw-semibold">$${params.value.toFixed(2)}</span>`
+      cellRenderer: (params: any) => {
+        const price = typeof params.value === 'string' ? parseFloat(params.value) : params.value;
+        return `<span class="fw-semibold">$${(price || 0).toFixed(2)}</span>`;
+      }
     },
     {
       headerName: 'Stock',
@@ -189,12 +192,14 @@ const Inventory: React.FC = () => {
       sortable: true,
       filter: true,
       width: 120,
-      cellRenderer: (params: any) => `
-        <span class="fw-bold">${params.value}</span>
-        <small class="text-muted d-block">
-          Threshold: ${params.data.lowStockThreshold}
-        </small>
-      `
+      cellRenderer: (params: any) => {
+        return (
+          `<span class="fw-bold">${params.value || 0}</span>
+           <small class="text-muted d-block">
+             Threshold: ${params.data.lowStockThreshold || 0}
+           </small>`
+        );
+      }
     },
     {
       headerName: 'Status',
@@ -213,9 +218,12 @@ const Inventory: React.FC = () => {
       width: 140,
       cellRenderer: (params: any) => {
         const product = params.data;
-        if (product.stock === 0) {
+        const stock = product.stock || 0;
+        const threshold = product.lowStockThreshold || 0;
+        
+        if (stock === 0) {
           return '<span class="badge bg-danger">Out of Stock</span>';
-        } else if (product.stock <= product.lowStockThreshold) {
+        } else if (stock <= threshold) {
           return '<span class="badge bg-warning text-dark">Low Stock</span>';
         }
         return '<span class="badge bg-success">In Stock</span>';
@@ -261,10 +269,12 @@ const Inventory: React.FC = () => {
     }
   ], []);
 
-  const filteredProducts = products.filter((product: Product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = !showLowStock || product.stock <= product.lowStockThreshold;
+  const filteredProducts = products.filter((product: InventoryProduct) => {
+    const name = product.name || '';
+    const category = product.category || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = !showLowStock || product.stock <= (product.lowStockThreshold || 0);
     return matchesSearch && matchesFilter;
   });
 
@@ -279,7 +289,7 @@ const Inventory: React.FC = () => {
     
     (window as any).handleEditProduct = (id: string) => {
       const product = filteredProducts.find(p => p.id === id);
-      if (product) handleEdit(product);
+      if (product) handleEdit(product as InventoryProduct);
     };
     
     (window as any).handleDeleteProduct = (id: string) => {
@@ -350,7 +360,7 @@ const Inventory: React.FC = () => {
                     className="form-control ps-5"
                     placeholder="Search products by name or category..."
                     value={searchTerm}
-                    onChange={(e) => dispatch(setFilters({ searchTerm: e.target.value }))}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     style={{borderRadius: '12px'}}
                   />
                 </div>
@@ -362,7 +372,7 @@ const Inventory: React.FC = () => {
                     type="checkbox"
                     id="lowStockFilter"
                     checked={showLowStock}
-                    onChange={(e) => dispatch(setFilters({ showLowStock: e.target.checked }))}
+                    onChange={(e) => setShowLowStock(e.target.checked)}
                   />
                   <label className="form-check-label fw-medium" htmlFor="lowStockFilter">
                     <i className="fas fa-exclamation-triangle text-warning me-2"></i>
@@ -393,7 +403,7 @@ const Inventory: React.FC = () => {
               height="600px"
               enableExport={true}
               exportFileName="inventory-products"
-              showExportButtons={false}
+              showExportButtons={true}
               enableFiltering={true}
               enableSorting={true}
               enableResizing={true}

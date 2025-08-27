@@ -495,7 +495,7 @@ const JournalEntries = () => {
           height="500px"
           enableExport={true}
           exportFileName="journal-entries"
-          showExportButtons={false}
+          showExportButtons={true}
           enableFiltering={true}
           enableSorting={true}
           enableResizing={true}

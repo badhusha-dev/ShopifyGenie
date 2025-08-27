@@ -739,7 +739,7 @@ const Customers: React.FC = () => {
                 height="600px"
                 enableExport={true}
                 exportFileName="customers"
-                showExportButtons={false}
+                showExportButtons={true}
                 enableFiltering={true}
                 enableSorting={true}
                 enableResizing={true}
