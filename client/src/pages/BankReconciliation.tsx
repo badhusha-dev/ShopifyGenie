@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaUpload, FaCheck, FaTimes, FaSearch, FaFileImport, FaBalanceScale } from 'react-icons/fa';
 import AnimatedCard from '../components/ui/AnimatedCard';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import { designTokens } from '../design/tokens';
 import { apiRequest } from '../lib/queryClient';
 
@@ -127,117 +128,154 @@ const BankReconciliation = () => {
     }
   };
 
-  const statementColumns: Column[] = [
+  // AG-Grid Column Definitions for Bank Statements
+  const statementColumnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'statementDate',
-      label: 'Date',
-      render: (value, statement: BankStatement) => new Date(statement.statementDate).toLocaleDateString()
+      headerName: 'Date',
+      field: 'statementDate',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => new Date(params.value).toLocaleDateString()
     },
     {
-      key: 'description',
-      label: 'Description',
-      render: (value, statement: BankStatement) => (
+      headerName: 'Description',
+      field: 'description',
+      sortable: true,
+      filter: true,
+      width: 250,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-bold">{statement.description}</div>
-          {statement.reference && (
-            <small className="text-muted">Ref: {statement.reference}</small>
-          )}
+          <div class="fw-bold">${params.value}</div>
+          ${params.data.reference ? `<small class="text-muted">Ref: ${params.data.reference}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'amount',
-      label: 'Amount',
-      render: (value, statement: BankStatement) => (
-        <span className={parseFloat(statement.amount) >= 0 ? 'text-success' : 'text-danger'}>
-          ${parseFloat(statement.amount).toFixed(2)}
-        </span>
-      )
+      headerName: 'Amount',
+      field: 'amount',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="${parseFloat(params.value) >= 0 ? 'text-success' : 'text-danger'}">$${parseFloat(params.value).toFixed(2)}</span>`
     },
     {
-      key: 'balance',
-      label: 'Balance',
-      render: (value, statement: BankStatement) => `$${parseFloat(statement.balance).toFixed(2)}`
+      headerName: 'Balance',
+      field: 'balance',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => `$${parseFloat(params.value).toFixed(2)}`
     },
     {
-      key: 'isReconciled',
-      label: 'Status',
-      render: (value, statement: BankStatement) => (
-        <span className={`badge ${statement.isReconciled ? 'bg-success' : 'bg-warning'}`}>
-          {statement.isReconciled ? 'Reconciled' : 'Unmatched'}
-        </span>
-      )
+      headerName: 'Status',
+      field: 'isReconciled',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="badge ${params.value ? 'bg-success' : 'bg-warning'}">${params.value ? 'Reconciled' : 'Unmatched'}</span>`
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      render: (value, statement: BankStatement) => (
-        <div className="d-flex gap-1">
-          {!statement.isReconciled && (
-            <button
-              className="btn btn-outline-primary btn-sm"
-              onClick={() => findMatchingEntries(statement)}
-              data-testid={`button-match-${statement.id}`}
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 120,
+      cellRenderer: (params: any) => `
+        <div class="d-flex gap-1">
+          ${!params.data.isReconciled ? 
+            `<button
+              class="btn btn-outline-primary btn-sm"
+              onclick="window.handleFindMatching('${params.data.id}')"
+              data-testid="button-match-${params.data.id}"
             >
-              <FaSearch className="me-1" />
+              <i class="fas fa-search me-1"></i>
               Match
-            </button>
-          )}
-          {statement.isReconciled && (
-            <span className="text-success">
-              <FaCheck className="me-1" />
+            </button>` :
+            `<span class="text-success">
+              <i class="fas fa-check me-1"></i>
               Matched
-            </span>
-          )}
+            </span>`
+          }
         </div>
-      )
+      `
     }
-  ];
+  ], []);
 
-  const glColumns: Column[] = [
+  // AG-Grid Column Definitions for GL Entries
+  const glColumnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'transactionDate',
-      label: 'Date',
-      render: (value, entry: GLEntry) => new Date(entry.transactionDate).toLocaleDateString()
+      headerName: 'Date',
+      field: 'transactionDate',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => new Date(params.value).toLocaleDateString()
     },
     {
-      key: 'description',
-      label: 'Description',
-      render: (value, entry: GLEntry) => entry.description
+      headerName: 'Description',
+      field: 'description',
+      sortable: true,
+      filter: true,
+      width: 250
     },
     {
-      key: 'amount',
-      label: 'Amount',
-      render: (value, entry: GLEntry) => {
-        const amount = parseFloat(entry.debitAmount) || parseFloat(entry.creditAmount);
-        return (
-          <span className={parseFloat(entry.debitAmount) > 0 ? 'text-success' : 'text-danger'}>
-            ${amount.toFixed(2)}
-          </span>
-        );
+      headerName: 'Amount',
+      field: 'amount',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const amount = parseFloat(params.data.debitAmount) || parseFloat(params.data.creditAmount);
+        const isDebit = parseFloat(params.data.debitAmount) > 0;
+        return `<span class="${isDebit ? 'text-success' : 'text-danger'}">$${amount.toFixed(2)}</span>`;
       }
     },
     {
-      key: 'reference',
-      label: 'Reference',
-      render: (value, entry: GLEntry) => entry.reference || '-'
+      headerName: 'Reference',
+      field: 'reference',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => params.value || '-'
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      render: (value, entry: GLEntry) => (
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 120,
+      cellRenderer: (params: any) => `
         <button
-          className="btn btn-success btn-sm"
-          onClick={() => handleMatch(entry.id)}
-          disabled={matchMutation.isPending}
-          data-testid={`button-confirm-match-${entry.id}`}
+          class="btn btn-success btn-sm"
+          onclick="window.handleConfirmMatch('${params.data.id}')"
+          data-testid="button-confirm-match-${params.data.id}"
         >
-          <FaCheck className="me-1" />
+          <i class="fas fa-check me-1"></i>
           Match
         </button>
-      )
+      `
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleFindMatching = (id: string) => {
+      const statement = statements.find(s => s.id === id);
+      if (statement) findMatchingEntries(statement);
+    };
+    
+    (window as any).handleConfirmMatch = (id: string) => {
+      handleMatch(id);
+    };
+    
+    return () => {
+      delete (window as any).handleFindMatching;
+      delete (window as any).handleConfirmMatch;
+    };
+  }, [statements, matchMutation]);
 
   return (
     <div className="container-fluid p-4">
@@ -371,11 +409,20 @@ const BankReconciliation = () => {
                       </div>
                     </div>
                   ) : (
-                    <DataTable
-                      data={statements}
-                      columns={statementColumns}
-                      loading={false}
-                      emptyMessage="No bank statements found"
+                    <AGDataGrid
+                      rowData={statements}
+                      columnDefs={statementColumnDefs}
+                      loading={loadingStatements}
+                      pagination={true}
+                      paginationPageSize={20}
+                      height="400px"
+                      enableExport={true}
+                      exportFileName="bank-statements"
+                      showExportButtons={false}
+                      enableFiltering={true}
+                      enableSorting={true}
+                      enableResizing={true}
+                      sideBar={false}
                     />
                   )}
                 </div>
@@ -413,11 +460,19 @@ const BankReconciliation = () => {
                     {/* Matching GL Entries */}
                     <h6>Potential Matches from General Ledger:</h6>
                     {matchingEntries.length > 0 ? (
-                      <DataTable
-                        data={matchingEntries}
-                        columns={glColumns}
-                        loading={false}
-                        emptyMessage="No matching entries found"
+                      <AGDataGrid
+                        rowData={matchingEntries}
+                        columnDefs={glColumnDefs}
+                        loading={loadingGL}
+                        pagination={true}
+                        paginationPageSize={10}
+                        height="300px"
+                        enableExport={false}
+                        showExportButtons={false}
+                        enableFiltering={true}
+                        enableSorting={true}
+                        enableResizing={true}
+                        sideBar={false}
                       />
                     ) : (
                       <div className="alert alert-warning">

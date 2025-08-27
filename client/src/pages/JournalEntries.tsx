@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaPen, FaSearch, FaFilter, FaCheck, FaTimes, FaBook, FaBalanceScale } from 'react-icons/fa';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import AnimatedModal from '../components/ui/AnimatedModal';
 import { designTokens } from '../design/tokens';
@@ -238,104 +239,133 @@ const JournalEntries = () => {
     );
   };
 
-  // DataTable columns
-  const columns: Column[] = [
+  // AG-Grid Column Definitions
+  const columnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'journalNumber',
-      label: 'Journal #',
+      headerName: 'Journal #',
+      field: 'journalNumber',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-primary">{value}</span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-primary">${params.value}</span>`
     },
     {
-      key: 'transactionDate',
-      label: 'Date',
+      headerName: 'Date',
+      field: 'transactionDate',
       sortable: true,
-      width: '120px',
-      render: (value) => new Date(value).toLocaleDateString()
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => new Date(params.value).toLocaleDateString()
     },
     {
-      key: 'description',
-      label: 'Description',
+      headerName: 'Description',
+      field: 'description',
       sortable: true,
-      render: (value, row) => (
+      filter: true,
+      width: 250,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-semibold">{value}</div>
-          {row.reference && (
-            <small className="text-muted">Ref: {row.reference}</small>
-          )}
+          <div class="fw-semibold">${params.value}</div>
+          ${params.data.reference ? `<small class="text-muted">Ref: ${params.data.reference}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'totalDebit',
-      label: 'Total Debit',
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace text-success">
-          ${parseFloat(value).toFixed(2)}
-        </span>
-      )
+      headerName: 'Total Debit',
+      field: 'totalDebit',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace text-success">$${parseFloat(params.value).toFixed(2)}</span>`
     },
     {
-      key: 'totalCredit',
-      label: 'Total Credit',
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace text-info">
-          ${parseFloat(value).toFixed(2)}
-        </span>
-      )
+      headerName: 'Total Credit',
+      field: 'totalCredit',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace text-info">$${parseFloat(params.value).toFixed(2)}</span>`
     },
     {
-      key: 'status',
-      label: 'Status',
-      width: '100px',
-      render: (value) => getStatusBadge(value)
+      headerName: 'Status',
+      field: 'status',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        const badgeClass = params.value === 'posted' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning';
+        return `<span class="badge ${badgeClass}">${params.value === 'posted' ? 'Posted' : 'Draft'}</span>`;
+      }
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      width: '160px',
-      render: (_, row) => (
-        <div className="d-flex gap-1">
-          {row.status === 'draft' && (
+      headerName: 'Actions',
+      field: 'actions',
+      width: 160,
+      cellRenderer: (params: any) => {
+        const isDraft = params.data.status === 'draft';
+        return `
+          <div class="d-flex gap-1">
+            ${isDraft ? `
+              <button
+                type="button"
+                class="btn btn-outline-success btn-sm"
+                onclick="window.handlePost('${params.data.id}')"
+                data-testid="button-post-entry-${params.data.id}"
+                title="Post Entry"
+              >
+                <i class="fas fa-check"></i>
+              </button>
+            ` : ''}
             <button
               type="button"
-              className="btn btn-outline-success btn-sm"
-              onClick={() => handlePost(row.id)}
-              data-testid={`button-post-entry-${row.id}`}
-              title="Post Entry"
+              class="btn btn-outline-primary btn-sm"
+              onclick="window.handleViewEntry('${params.data.id}')"
+              data-testid="button-view-entry-${params.data.id}"
+              title="View Details"
             >
-              <FaCheck size={12} />
+              <i class="fas fa-eye"></i>
             </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => setEditingEntry(row)}
-            data-testid={`button-view-entry-${row.id}`}
-            title="View Details"
-          >
-            <FaEye size={12} />
-          </button>
-          {row.status === 'draft' && (
-            <button
-              type="button"
-              className="btn btn-outline-danger btn-sm"
-              onClick={() => handleDelete(row.id)}
-              data-testid={`button-delete-entry-${row.id}`}
-              title="Delete Entry"
-            >
-              <FaTrash size={12} />
-            </button>
-          )}
-        </div>
-      )
+            ${isDraft ? `
+              <button
+                type="button"
+                class="btn btn-outline-danger btn-sm"
+                onclick="window.handleDelete('${params.data.id}')"
+                data-testid="button-delete-entry-${params.data.id}"
+                title="Delete Entry"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handlePost = (entryId: string) => {
+      handlePost(entryId);
+    };
+    
+    (window as any).handleViewEntry = (entryId: string) => {
+      const entry = journalEntries?.find((e: JournalEntry) => e.id === entryId);
+      if (entry) setEditingEntry(entry);
+    };
+    
+    (window as any).handleDelete = (entryId: string) => {
+      handleDelete(entryId);
+    };
+    
+    return () => {
+      delete (window as any).handlePost;
+      delete (window as any).handleViewEntry;
+      delete (window as any).handleDelete;
+    };
+  }, [journalEntries]);
 
   // Journal entry stats
   const entryStats = React.useMemo(() => {
@@ -456,12 +486,20 @@ const JournalEntries = () => {
 
       {/* Journal Entries Table */}
       <AnimatedCard>
-        <DataTable
-          columns={columns}
-          data={filteredEntries}
+        <AGDataGrid
+          rowData={filteredEntries}
+          columnDefs={columnDefs}
           loading={isLoading}
-          emptyMessage="No journal entries found"
-          className="table-hover"
+          pagination={true}
+          paginationPageSize={20}
+          height="500px"
+          enableExport={true}
+          exportFileName="journal-entries"
+          showExportButtons={false}
+          enableFiltering={true}
+          enableSorting={true}
+          enableResizing={true}
+          sideBar={false}
         />
       </AnimatedCard>
 

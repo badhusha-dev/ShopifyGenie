@@ -301,129 +301,134 @@ const AccountsPayable = () => {
         `<span class="font-monospace fw-bold text-primary">${params.value}</span>`
     },
     {
-      key: 'vendorName',
-      label: 'Vendor',
+      headerName: 'Vendor',
+      field: 'vendorName',
       sortable: true,
-      render: (value, row) => (
+      filter: true,
+      width: 200,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-semibold">{value}</div>
-          {row.vendorEmail && <small className="text-muted">{row.vendorEmail}</small>}
+          <div class="fw-semibold">${params.data.vendorName}</div>
+          ${params.data.vendorEmail ? `<small class="text-muted">${params.data.vendorEmail}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'billDate',
-      label: 'Bill Date',
+      headerName: 'Bill Date',
+      field: 'billDate',
       sortable: true,
-      width: '120px',
-      render: (value) => new Date(value).toLocaleDateString()
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => new Date(params.value).toLocaleDateString()
     },
     {
-      key: 'dueDate',
-      label: 'Due Date',
+      headerName: 'Due Date',
+      field: 'dueDate',
       sortable: true,
-      width: '120px',
-      render: (value, row) => {
-        const isOverdue = row.daysPastDue > 0 && row.status !== 'paid';
-        return (
-          <div className={isOverdue ? 'text-danger' : ''}>
-            {new Date(value).toLocaleDateString()}
-            {isOverdue && <FaExclamationTriangle className="ms-1" size={12} />}
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const isOverdue = params.data.daysPastDue > 0 && params.data.status !== 'paid';
+        return `
+          <div class="${isOverdue ? 'text-danger' : ''}">
+            ${new Date(params.value).toLocaleDateString()}
+            ${isOverdue ? '<i class="fas fa-exclamation-triangle ms-1"></i>' : ''}
           </div>
-        );
+        `;
       }
     },
     {
-      key: 'totalAmount',
-      label: 'Total',
-      width: '100px',
-      render: (value) => (
-        <span className="font-monospace">${parseFloat(value).toFixed(2)}</span>
-      )
+      headerName: 'Total',
+      field: 'totalAmount',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace">$${parseFloat(params.value).toFixed(2)}</span>`
     },
     {
-      key: 'outstandingAmount',
-      label: 'Outstanding',
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-danger">
-          ${parseFloat(value).toFixed(2)}
-        </span>
-      )
+      headerName: 'Outstanding',
+      field: 'outstandingAmount',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-danger">$${parseFloat(params.value).toFixed(2)}</span>`
     },
     {
-      key: 'daysPastDue',
-      label: 'Aging',
-      width: '100px',
-      render: (value) => {
-        const aging = getAgingBadge(value || 0);
-        return (
-          <span className={`badge bg-${aging.bg} bg-opacity-10 text-${aging.bg} border border-${aging.bg} border-opacity-25`}>
-            {aging.text}
-          </span>
-        );
+      headerName: 'Aging',
+      field: 'daysPastDue',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        const aging = getAgingBadge(params.value || 0);
+        return `<span class="badge bg-${aging.bg} bg-opacity-10 text-${aging.bg} border border-${aging.bg} border-opacity-25">${aging.text}</span>`;
       }
     },
     {
-      key: 'status',
-      label: 'Status',
-      width: '100px',
-      render: (value) => getStatusBadge(value)
+      headerName: 'Status',
+      field: 'status',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        const badges = {
+          pending: { bg: 'warning', text: 'Pending' },
+          partial: { bg: 'info', text: 'Partial' },
+          paid: { bg: 'success', text: 'Paid' },
+          overdue: { bg: 'danger', text: 'Overdue' }
+        };
+        const badge = badges[params.value as keyof typeof badges] || { bg: 'secondary', text: params.value };
+        return `<span class="badge bg-${badge.bg} bg-opacity-10 text-${badge.bg} border border-${badge.bg} border-opacity-25">${badge.text}</span>`;
+      }
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      width: '160px',
-      render: (_, row) => (
-        <div className="d-flex gap-1">
-          {row.status !== 'paid' && parseFloat(row.outstandingAmount) > 0 && (
-            <button
-              type="button"
-              className="btn btn-outline-success btn-sm"
-              onClick={() => handleRecordPayment(row)}
-              data-testid={`button-pay-${row.id}`}
-              title="Record Payment"
-            >
-              <FaDollarSign size={12} />
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => handleEdit(row)}
-            data-testid={`button-edit-${row.id}`}
-            title="Edit"
-          >
-            <FaEdit size={12} />
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 160,
+      cellRenderer: (params: any) => `
+        <div class="d-flex gap-1">
+          ${params.data.status !== 'paid' && parseFloat(params.data.outstandingAmount) > 0 ? 
+            `<button onclick="window.handleRecordPayment('${params.data.id}')" class="btn btn-outline-success btn-sm" title="Record Payment">
+              <i class="fas fa-dollar-sign"></i>
+            </button>` : ''}
+          <button onclick="window.handleEdit('${params.data.id}')" class="btn btn-outline-primary btn-sm" title="Edit">
+            <i class="fas fa-edit"></i>
           </button>
-          <button
-            type="button"
-            className="btn btn-outline-danger btn-sm"
-            onClick={() => handleDelete(row.id)}
-            data-testid={`button-delete-${row.id}`}
-            title="Delete"
-          >
-            <FaTrash size={12} />
+          <button onclick="window.handleDelete('${params.data.id}')" class="btn btn-outline-danger btn-sm" title="Delete">
+            <i class="fas fa-trash"></i>
           </button>
         </div>
-      )
+      `
     }
   ], []);
 
   // Add window functions for AG-Grid action buttons
   React.useEffect(() => {
-    (window as any).handleRecordPaymentAP = (id: string) => {
+    (window as any).handleRecordPayment = (id: string) => {
       const payable = payables.find(p => p.id === id);
       if (payable) handleRecordPayment(payable);
     };
-    (window as any).handleEditPayable = (id: string) => {
+    
+    (window as any).handleEdit = (id: string) => {
       const payable = payables.find(p => p.id === id);
       if (payable) handleEdit(payable);
     };
-    (window as any).handleDeletePayable = (id: string) => {
+    
+    (window as any).handleDelete = (id: string) => {
       handleDelete(id);
     };
+    
+    return () => {
+      delete (window as any).handleRecordPayment;
+      delete (window as any).handleEdit;
+      delete (window as any).handleDelete;
+    };
   }, [payables]);
+  
 
   if (error) {
     return (
@@ -570,12 +575,20 @@ const AccountsPayable = () => {
 
       {/* Payables Table */}
       <AnimatedCard>
-        <DataTable
-          columns={columns}
-          data={filteredPayables}
+        <AGDataGrid
+          rowData={filteredPayables}
+          columnDefs={columnDefs}
           loading={isLoading}
-          emptyMessage="No bills found"
-          className="table-hover"
+          pagination={true}
+          paginationPageSize={25}
+          height="600px"
+          enableExport={true}
+          exportFileName="accounts-payable"
+          showExportButtons={false}
+          enableFiltering={true}
+          enableSorting={true}
+          enableResizing={true}
+          sideBar={false}
         />
       </AnimatedCard>
 

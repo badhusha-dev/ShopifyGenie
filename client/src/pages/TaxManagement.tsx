@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaEdit, FaTrash, FaFileAlt, FaPercent, FaCalendarAlt } from 'react-icons/fa';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AnimatedCard from '../components/ui/AnimatedCard';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import { designTokens } from '../design/tokens';
 import { apiRequest } from '../lib/queryClient';
 
@@ -151,80 +152,105 @@ const TaxManagement = () => {
     saveTaxRateMutation.mutate(data);
   };
 
-  const taxRateColumns: Column[] = [
+  // AG-Grid Column Definitions
+  const taxRateColumnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'name',
-      label: 'Tax Name',
-      render: (value, taxRate: TaxRate) => (
+      headerName: 'Tax Name',
+      field: 'name',
+      sortable: true,
+      filter: true,
+      width: 200,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-bold">{taxRate.name}</div>
-          {taxRate.region && (
-            <small className="text-muted">{taxRate.region}</small>
-          )}
+          <div class="fw-bold">${params.value}</div>
+          ${params.data.region ? `<small class="text-muted">${params.data.region}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'type',
-      label: 'Type',
-      render: (value, taxRate: TaxRate) => (
-        <span className="badge bg-info">
-          {taxRate.type.toUpperCase()}
-        </span>
-      )
+      headerName: 'Type',
+      field: 'type',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="badge bg-info">${params.value.toUpperCase()}</span>`
     },
     {
-      key: 'rate',
-      label: 'Rate',
-      render: (value, taxRate: TaxRate) => (
-        <span className="fw-bold">
-          {(parseFloat(taxRate.rate) * 100).toFixed(2)}%
-        </span>
-      )
+      headerName: 'Rate',
+      field: 'rate',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="fw-bold">${(parseFloat(params.value) * 100).toFixed(2)}%</span>`
     },
     {
-      key: 'effectiveFrom',
-      label: 'Effective Period',
-      render: (value, taxRate: TaxRate) => (
+      headerName: 'Effective Period',
+      field: 'effectiveFrom',
+      sortable: true,
+      filter: true,
+      width: 180,
+      cellRenderer: (params: any) => `
         <div>
-          <div>From: {new Date(taxRate.effectiveFrom).toLocaleDateString()}</div>
-          {taxRate.effectiveTo && (
-            <div>To: {new Date(taxRate.effectiveTo).toLocaleDateString()}</div>
-          )}
+          <div>From: ${new Date(params.value).toLocaleDateString()}</div>
+          ${params.data.effectiveTo ? `<div>To: ${new Date(params.data.effectiveTo).toLocaleDateString()}</div>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'isActive',
-      label: 'Status',
-      render: (value, taxRate: TaxRate) => (
-        <span className={`badge ${taxRate.isActive ? 'bg-success' : 'bg-secondary'}`}>
-          {taxRate.isActive ? 'Active' : 'Inactive'}
-        </span>
-      )
+      headerName: 'Status',
+      field: 'isActive',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="badge ${params.value ? 'bg-success' : 'bg-secondary'}">${params.value ? 'Active' : 'Inactive'}</span>`
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      render: (value, taxRate: TaxRate) => (
-        <div className="d-flex gap-1">
+      headerName: 'Actions',
+      field: 'actions',
+      width: 120,
+      cellRenderer: (params: any) => `
+        <div class="d-flex gap-1">
           <button
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => handleEdit(taxRate)}
-            data-testid={`button-edit-${taxRate.id}`}
+            class="btn btn-outline-primary btn-sm"
+            onclick="window.handleEditTaxRate('${params.data.id}')"
+            data-testid="button-edit-${params.data.id}"
+            title="Edit"
           >
-            <FaEdit />
+            <i class="fas fa-edit"></i>
           </button>
           <button
-            className="btn btn-outline-danger btn-sm"
-            data-testid={`button-delete-${taxRate.id}`}
+            class="btn btn-outline-danger btn-sm"
+            onclick="window.handleDeleteTaxRate('${params.data.id}')"
+            data-testid="button-delete-${params.data.id}"
+            title="Delete"
           >
-            <FaTrash />
+            <i class="fas fa-trash"></i>
           </button>
         </div>
-      )
+      `
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleEditTaxRate = (taxRateId: string) => {
+      const taxRate = taxRates?.find((tr: TaxRate) => tr.id === taxRateId);
+      if (taxRate) handleEdit(taxRate);
+    };
+    
+    (window as any).handleDeleteTaxRate = (taxRateId: string) => {
+      // Add delete functionality here if needed
+      console.log('Delete tax rate:', taxRateId);
+    };
+    
+    return () => {
+      delete (window as any).handleEditTaxRate;
+      delete (window as any).handleDeleteTaxRate;
+    };
+  }, [taxRates]);
 
   return (
     <div className="container-fluid p-4">
@@ -387,11 +413,20 @@ const TaxManagement = () => {
               </div>
             </div>
           ) : (
-            <DataTable
-              data={taxRates}
-              columns={taxRateColumns}
+            <AGDataGrid
+              rowData={taxRates}
+              columnDefs={taxRateColumnDefs}
               loading={false}
-              emptyMessage="No tax rates found"
+              pagination={true}
+              paginationPageSize={15}
+              height="400px"
+              enableExport={true}
+              exportFileName="tax-rates"
+              showExportButtons={false}
+              enableFiltering={true}
+              enableSorting={true}
+              enableResizing={true}
+              sideBar={false}
             />
           )}
         </div>

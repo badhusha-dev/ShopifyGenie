@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 // Using Bootstrap classes instead of react-bootstrap
 import { FaPlus, FaEdit, FaTrash, FaEye, FaBalanceScale, FaSearch, FaFilter } from 'react-icons/fa';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import { designTokens } from '../design/tokens';
 import { apiRequest } from '../lib/queryClient';
@@ -174,84 +175,112 @@ const ChartOfAccounts = () => {
     );
   };
 
-  // DataTable columns
-  const columns: Column[] = [
+  // AG-Grid Column Definitions
+  const columnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'accountCode',
-      label: 'Code',
+      headerName: 'Code',
+      field: 'accountCode',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-primary">{value}</span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-primary">${params.value}</span>`
     },
     {
-      key: 'accountName',
-      label: 'Account Name',
+      headerName: 'Account Name',
+      field: 'accountName',
       sortable: true,
-      render: (value, row) => (
+      filter: true,
+      width: 250,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-semibold">{value}</div>
-          {row.description && (
-            <small className="text-muted">{row.description}</small>
-          )}
+          <div class="fw-semibold">${params.value}</div>
+          ${params.data.description ? `<small class="text-muted">${params.data.description}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'accountType',
-      label: 'Type',
+      headerName: 'Type',
+      field: 'accountType',
       sortable: true,
-      width: '130px',
-      render: (value) => getAccountTypeBadge(value)
+      filter: true,
+      width: 130,
+      cellRenderer: (params: any) => {
+        const badges = {
+          asset: { bg: 'success', text: 'Asset' },
+          liability: { bg: 'warning', text: 'Liability' },
+          equity: { bg: 'info', text: 'Equity' },
+          revenue: { bg: 'primary', text: 'Revenue' },
+          expense: { bg: 'danger', text: 'Expense' }
+        };
+        const badge = badges[params.value as keyof typeof badges] || { bg: 'secondary', text: params.value };
+        return `<span class="badge bg-${badge.bg} bg-opacity-10 text-${badge.bg} border border-${badge.bg} border-opacity-25">${badge.text}</span>`;
+      }
     },
     {
-      key: 'normalBalance',
-      label: 'Normal Balance',
-      width: '120px',
-      render: (value) => (
-        <span className={`badge ${value === 'debit' ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'}`}>
-          {value.charAt(0).toUpperCase() + value.slice(1)}
-        </span>
-      )
+      headerName: 'Normal Balance',
+      field: 'normalBalance',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="badge ${params.value === 'debit' ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'}">${params.value.charAt(0).toUpperCase() + params.value.slice(1)}</span>`
     },
     {
-      key: 'isActive',
-      label: 'Status',
-      width: '100px',
-      render: (value) => (
-        <span className={`badge ${value ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}`}>
-          {value ? 'Active' : 'Inactive'}
-        </span>
-      )
+      headerName: 'Status',
+      field: 'isActive',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="badge ${params.value ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}">${params.value ? 'Active' : 'Inactive'}</span>`
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      width: '120px',
-      render: (_, row) => (
-        <div className="d-flex gap-1">
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 120,
+      cellRenderer: (params: any) => `
+        <div class="d-flex gap-1">
           <button
             type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => handleEdit(row)}
-            data-testid={`button-edit-account-${row.id}`}
+            class="btn btn-outline-primary btn-sm"
+            onclick="window.handleEditAccount('${params.data.id}')"
+            data-testid="button-edit-account-${params.data.id}"
           >
-            <FaEdit size={12} />
+            <i class="fas fa-edit"></i>
           </button>
           <button
             type="button"
-            className="btn btn-outline-danger btn-sm"
-            onClick={() => handleDelete(row.id)}
-            disabled={!row.isActive}
-            data-testid={`button-delete-account-${row.id}`}
+            class="btn btn-outline-danger btn-sm"
+            onclick="window.handleDeleteAccount('${params.data.id}')"
+            ${!params.data.isActive ? 'disabled' : ''}
+            data-testid="button-delete-account-${params.data.id}"
           >
-            <FaTrash size={12} />
+            <i class="fas fa-trash"></i>
           </button>
         </div>
-      )
+      `
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleEditAccount = (id: string) => {
+      const account = filteredAccounts.find(a => a.id === id);
+      if (account) handleEdit(account);
+    };
+    
+    (window as any).handleDeleteAccount = (id: string) => {
+      handleDelete(id);
+    };
+    
+    return () => {
+      delete (window as any).handleEditAccount;
+      delete (window as any).handleDeleteAccount;
+    };
+  }, [filteredAccounts]);
 
   // Account type counts for stats
   const accountStats = React.useMemo(() => {
@@ -408,12 +437,20 @@ const ChartOfAccounts = () => {
 
       {/* Accounts Table */}
       <AnimatedCard>
-        <DataTable
-          columns={columns}
-          data={filteredAccounts}
+        <AGDataGrid
+          rowData={filteredAccounts}
+          columnDefs={columnDefs}
           loading={isLoading}
-          emptyMessage="No accounts found"
-          className="table-hover"
+          pagination={true}
+          paginationPageSize={25}
+          height="600px"
+          enableExport={true}
+          exportFileName="chart-of-accounts"
+          showExportButtons={false}
+          enableFiltering={true}
+          enableSorting={true}
+          enableResizing={true}
+          sideBar={false}
         />
       </AnimatedCard>
 

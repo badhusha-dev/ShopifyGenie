@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaBook, FaSearch, FaFilter, FaDownload, FaPlus, FaEye, FaCalendarAlt, FaFileExport } from 'react-icons/fa';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import { designTokens } from '../design/tokens';
 import { useForm } from 'react-hook-form';
@@ -144,111 +145,125 @@ const GeneralLedger = () => {
     }).format(amount);
   };
 
-  // DataTable columns
-  const columns: Column[] = [
+  // AG-Grid Column Definitions
+  const columnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'entryDate',
-      label: 'Date',
+      headerName: 'Date',
+      field: 'entryDate',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace">
-          {new Date(value).toLocaleDateString()}
-        </span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace">${new Date(params.value).toLocaleDateString()}</span>`
     },
     {
-      key: 'entryNumber',
-      label: 'Entry #',
+      headerName: 'Entry #',
+      field: 'entryNumber',
       sortable: true,
-      width: '100px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-primary">{value}</span>
-      )
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-primary">${params.value}</span>`
     },
     {
-      key: 'accountCode',
-      label: 'Account',
+      headerName: 'Account',
+      field: 'accountCode',
       sortable: true,
-      width: '180px',
-      render: (value, row) => (
+      filter: true,
+      width: 180,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-semibold text-dark">{value}</div>
-          <small className="text-muted">{row.accountName}</small>
+          <div class="fw-semibold text-dark">${params.value}</div>
+          <small class="text-muted">${params.data.accountName}</small>
         </div>
-      )
+      `
     },
     {
-      key: 'entryDescription',
-      label: 'Description',
+      headerName: 'Description',
+      field: 'entryDescription',
       sortable: true,
-      render: (value, row) => (
+      filter: true,
+      width: 250,
+      cellRenderer: (params: any) => `
         <div>
-          <div>{value}</div>
-          {row.transactionDescription && row.transactionDescription !== value && (
-            <small className="text-muted">{row.transactionDescription}</small>
-          )}
-          {row.reference && (
-            <small className="text-info d-block">Ref: {row.reference}</small>
-          )}
+          <div>${params.value}</div>
+          ${params.data.transactionDescription && params.data.transactionDescription !== params.value ? 
+            `<small class="text-muted">${params.data.transactionDescription}</small>` : ''}
+          ${params.data.reference ? 
+            `<small class="text-info d-block">Ref: ${params.data.reference}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'debitAmount',
-      label: 'Debit',
+      headerName: 'Debit',
+      field: 'debitAmount',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className={`font-monospace ${value > 0 ? 'text-success fw-semibold' : 'text-muted'}`}>
-          {value > 0 ? formatCurrency(value) : '-'}
-        </span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const isPositive = params.value > 0;
+        const formatted = isPositive ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(params.value) : '-';
+        return `<span class="font-monospace ${isPositive ? 'text-success fw-semibold' : 'text-muted'}">${formatted}</span>`;
+      }
     },
     {
-      key: 'creditAmount',
-      label: 'Credit',
+      headerName: 'Credit',
+      field: 'creditAmount',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className={`font-monospace ${value > 0 ? 'text-danger fw-semibold' : 'text-muted'}`}>
-          {value > 0 ? formatCurrency(value) : '-'}
-        </span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const isPositive = params.value > 0;
+        const formatted = isPositive ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(params.value) : '-';
+        return `<span class="font-monospace ${isPositive ? 'text-danger fw-semibold' : 'text-muted'}">${formatted}</span>`;
+      }
     },
     {
-      key: 'balance',
-      label: 'Balance',
+      headerName: 'Balance',
+      field: 'balance',
       sortable: true,
-      width: '120px',
-      render: (value) => (
-        <span className={`font-monospace fw-bold ${value >= 0 ? 'text-success' : 'text-danger'}`}>
-          {formatCurrency(value)}
-        </span>
-      )
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(params.value);
+        return `<span class="font-monospace fw-bold ${params.value >= 0 ? 'text-success' : 'text-danger'}">${formatted}</span>`;
+      }
     },
     {
-      key: 'isPosted',
-      label: 'Status',
-      width: '100px',
-      render: (value, row) => (
-        <div className="d-flex align-items-center gap-2">
-          <span className={`badge ${value ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
-            {value ? 'Posted' : 'Draft'}
+      headerName: 'Status',
+      field: 'isPosted',
+      sortable: true,
+      filter: true,
+      width: 150,
+      cellRenderer: (params: any) => `
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge ${params.value ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
+            ${params.value ? 'Posted' : 'Draft'}
           </span>
           <button
             type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => handleViewJournalEntry(row.id)}
+            class="btn btn-outline-primary btn-sm"
+            onclick="window.handleViewJournalEntry('${params.data.id}')"
             title="View Journal Entry"
-            data-testid={`button-view-entry-${row.id}`}
+            data-testid="button-view-entry-${params.data.id}"
           >
-            <FaEye size={12} />
+            <i class="fas fa-eye"></i>
           </button>
         </div>
-      )
+      `
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleViewJournalEntry = (id: string) => {
+      handleViewJournalEntry(id);
+    };
+    
+    return () => {
+      delete (window as any).handleViewJournalEntry;
+    };
+  }, [ledgerEntries]);
 
   // Calculate totals
   const totals = React.useMemo(() => {
@@ -465,12 +480,20 @@ const GeneralLedger = () => {
 
       {/* Ledger Table */}
       <AnimatedCard>
-        <DataTable
-          columns={columns}
-          data={ledgerEntries}
+        <AGDataGrid
+          rowData={ledgerEntries}
+          columnDefs={columnDefs}
           loading={isLoading}
-          emptyMessage="No ledger entries found"
-          className="table-hover"
+          pagination={true}
+          paginationPageSize={25}
+          height="600px"
+          enableExport={true}
+          exportFileName="general-ledger"
+          showExportButtons={false}
+          enableFiltering={true}
+          enableSorting={true}
+          enableResizing={true}
+          sideBar={false}
         />
       </AnimatedCard>
 

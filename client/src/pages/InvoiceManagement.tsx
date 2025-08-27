@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaEye, FaMoneyBillWave, FaCalendarAlt, FaFileInvoiceDollar, FaExclamationTriangle } from 'react-icons/fa';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AnimatedCard from '../components/ui/AnimatedCard';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import { designTokens } from '../design/tokens';
 import { apiRequest } from '../lib/queryClient';
 
@@ -118,151 +119,211 @@ const InvoiceManagement = () => {
     return 'bg-primary';
   };
 
-  const invoiceColumns: Column<Invoice>[] = [
+  // AG-Grid Column Definitions for Invoices
+  const invoiceColumnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'invoiceNumber',
-      label: 'Invoice #',
-      render: (invoice) => (
+      headerName: 'Invoice #',
+      field: 'invoiceNumber',
+      sortable: true,
+      filter: true,
+      width: 180,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-bold">{invoice.invoiceNumber}</div>
-          <small className="text-muted">{invoice.customerName}</small>
+          <div class="fw-bold">${params.value}</div>
+          <small class="text-muted">${params.data.customerName}</small>
         </div>
-      )
+      `
     },
     {
-      key: 'invoiceDate',
-      label: 'Invoice Date',
-      render: (invoice) => new Date(invoice.invoiceDate).toLocaleDateString()
+      headerName: 'Invoice Date',
+      field: 'invoiceDate',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => new Date(params.value).toLocaleDateString()
     },
     {
-      key: 'dueDate',
-      label: 'Due Date',
-      render: (invoice) => (
-        <div>
-          <div>{new Date(invoice.dueDate).toLocaleDateString()}</div>
-          {invoice.daysPastDue && invoice.daysPastDue > 0 && (
-            <small className="text-danger">
-              <FaExclamationTriangle className="me-1" />
-              {invoice.daysPastDue} days overdue
-            </small>
-          )}
-        </div>
-      )
+      headerName: 'Due Date',
+      field: 'dueDate',
+      sortable: true,
+      filter: true,
+      width: 140,
+      cellRenderer: (params: any) => {
+        const dueDate = new Date(params.value).toLocaleDateString();
+        const daysPastDue = params.data.daysPastDue;
+        const overdue = daysPastDue && daysPastDue > 0 ? 
+          `<small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>${daysPastDue} days overdue</small>` : '';
+        return `<div><div>${dueDate}</div>${overdue}</div>`;
+      }
     },
     {
-      key: 'totalAmount',
-      label: 'Total',
-      render: (invoice) => `$${parseFloat(invoice.totalAmount).toFixed(2)}`
+      headerName: 'Total',
+      field: 'totalAmount',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => `$${parseFloat(params.value).toFixed(2)}`
     },
     {
-      key: 'paidAmount',
-      label: 'Paid',
-      render: (invoice) => (
-        <span className="text-success">
-          ${parseFloat(invoice.paidAmount).toFixed(2)}
-        </span>
-      )
+      headerName: 'Paid',
+      field: 'paidAmount',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="text-success">$${parseFloat(params.value).toFixed(2)}</span>`
     },
     {
-      key: 'outstandingAmount',
-      label: 'Outstanding',
-      render: (invoice) => (
-        <span className={parseFloat(invoice.outstandingAmount) > 0 ? 'text-danger fw-bold' : 'text-muted'}>
-          ${parseFloat(invoice.outstandingAmount).toFixed(2)}
-        </span>
-      )
+      headerName: 'Outstanding',
+      field: 'outstandingAmount',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const amount = parseFloat(params.value);
+        const className = amount > 0 ? 'text-danger fw-bold' : 'text-muted';
+        return `<span class="${className}">$${amount.toFixed(2)}</span>`;
+      }
     },
     {
-      key: 'status',
-      label: 'Status',
-      render: (invoice) => (
-        <span className={`badge ${getStatusBadge(invoice.status, invoice.daysPastDue)}`}>
-          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-        </span>
-      )
+      headerName: 'Status',
+      field: 'status',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        // Simple status badge logic
+        const statusClass = params.value === 'paid' ? 'bg-success' : 
+                           params.value === 'pending' ? 'bg-warning' : 'bg-secondary';
+        const statusText = params.value.charAt(0).toUpperCase() + params.value.slice(1);
+        return `<span class="badge ${statusClass}">${statusText}</span>`;
+      }
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      render: (invoice) => (
-        <div className="d-flex gap-1">
-          <button
-            className="btn btn-outline-primary btn-sm"
-            data-testid={`button-view-${invoice.id}`}
-          >
-            <FaEye />
-          </button>
-          {parseFloat(invoice.outstandingAmount) > 0 && (
+      headerName: 'Actions',
+      field: 'actions',
+      width: 120,
+      cellRenderer: (params: any) => {
+        const hasOutstanding = parseFloat(params.data.outstandingAmount) > 0;
+        return `
+          <div class="d-flex gap-1">
             <button
-              className="btn btn-outline-success btn-sm"
-              onClick={() => openPaymentModal(invoice)}
-              data-testid={`button-payment-${invoice.id}`}
+              class="btn btn-outline-primary btn-sm"
+              onclick="window.handleViewInvoice('${params.data.id}')"
+              data-testid="button-view-${params.data.id}"
+              title="View"
             >
-              <FaMoneyBillWave />
+              <i class="fas fa-eye"></i>
             </button>
-          )}
-        </div>
-      )
+            ${hasOutstanding ? `
+              <button
+                class="btn btn-outline-success btn-sm"
+                onclick="window.handlePaymentModal('${params.data.id}')"
+                data-testid="button-payment-${params.data.id}"
+                title="Payment"
+              >
+                <i class="fas fa-money-bill-wave"></i>
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }
     }
-  ];
+  ], []);
 
-  const agingColumns: Column<AgingReport['customers'][0]>[] = [
+  // AG-Grid Column Definitions for Aging Report
+  const agingColumnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'customerName',
-      label: 'Customer',
-      render: (customer) => customer.customerName
+      headerName: 'Customer',
+      field: 'customerName',
+      sortable: true,
+      filter: true,
+      width: 200
     },
     {
-      key: 'current',
-      label: 'Current',
-      render: (customer) => `$${parseFloat(customer.current).toFixed(2)}`
+      headerName: 'Current',
+      field: 'current',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => `$${parseFloat(params.value).toFixed(2)}`
     },
     {
-      key: 'days30',
-      label: '1-30 Days',
-      render: (customer) => (
-        <span className={parseFloat(customer.days30) > 0 ? 'text-warning' : ''}>
-          ${parseFloat(customer.days30).toFixed(2)}
-        </span>
-      )
+      headerName: '1-30 Days',
+      field: 'days30',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const amount = parseFloat(params.value);
+        const className = amount > 0 ? 'text-warning' : '';
+        return `<span class="${className}">$${amount.toFixed(2)}</span>`;
+      }
     },
     {
-      key: 'days60',
-      label: '31-60 Days',
-      render: (customer) => (
-        <span className={parseFloat(customer.days60) > 0 ? 'text-danger' : ''}>
-          ${parseFloat(customer.days60).toFixed(2)}
-        </span>
-      )
+      headerName: '31-60 Days',
+      field: 'days60',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const amount = parseFloat(params.value);
+        const className = amount > 0 ? 'text-danger' : '';
+        return `<span class="${className}">$${amount.toFixed(2)}</span>`;
+      }
     },
     {
-      key: 'days90',
-      label: '61-90 Days',
-      render: (customer) => (
-        <span className={parseFloat(customer.days90) > 0 ? 'text-danger fw-bold' : ''}>
-          ${parseFloat(customer.days90).toFixed(2)}
-        </span>
-      )
+      headerName: '61-90 Days',
+      field: 'days90',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const amount = parseFloat(params.value);
+        const className = amount > 0 ? 'text-danger fw-bold' : '';
+        return `<span class="${className}">$${amount.toFixed(2)}</span>`;
+      }
     },
     {
-      key: 'over90',
-      label: '90+ Days',
-      render: (customer) => (
-        <span className={parseFloat(customer.over90) > 0 ? 'bg-danger text-white px-2 py-1 rounded' : ''}>
-          ${parseFloat(customer.over90).toFixed(2)}
-        </span>
-      )
+      headerName: '90+ Days',
+      field: 'over90',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const amount = parseFloat(params.value);
+        const className = amount > 0 ? 'bg-danger text-white px-2 py-1 rounded' : '';
+        return `<span class="${className}">$${amount.toFixed(2)}</span>`;
+      }
     },
     {
-      key: 'total',
-      label: 'Total',
-      render: (customer) => (
-        <span className="fw-bold">
-          ${parseFloat(customer.total).toFixed(2)}
-        </span>
-      )
+      headerName: 'Total',
+      field: 'total',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="fw-bold">$${parseFloat(params.value).toFixed(2)}</span>`
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleViewInvoice = (invoiceId: string) => {
+      console.log('View invoice:', invoiceId);
+      // Add view logic here
+    };
+    
+    (window as any).handlePaymentModal = (invoiceId: string) => {
+      const invoice = invoices?.find((inv: Invoice) => inv.id === invoiceId);
+      if (invoice) openPaymentModal(invoice);
+    };
+    
+    return () => {
+      delete (window as any).handleViewInvoice;
+      delete (window as any).handlePaymentModal;
+    };
+  }, [invoices]);
 
   return (
     <div className="container-fluid p-4">
@@ -335,11 +396,19 @@ const InvoiceManagement = () => {
 
             {/* Detailed Customer Aging */}
             <h6>Customer Breakdown:</h6>
-            <DataTable
-              data={agingReport.customers}
-              columns={agingColumns}
-              searchable={true}
-              searchPlaceholder="Search customers..."
+            <AGDataGrid
+              rowData={agingReport.customers}
+              columnDefs={agingColumnDefs}
+              loading={false}
+              pagination={true}
+              paginationPageSize={10}
+              height="350px"
+              enableExport={false}
+              showExportButtons={false}
+              enableFiltering={true}
+              enableSorting={true}
+              enableResizing={true}
+              sideBar={false}
             />
           </div>
         </AnimatedCard>
@@ -396,11 +465,20 @@ const InvoiceManagement = () => {
               </div>
             </div>
           ) : (
-            <DataTable
-              data={invoices}
-              columns={invoiceColumns}
-              searchable={true}
-              searchPlaceholder="Search invoices..."
+            <AGDataGrid
+              rowData={invoices}
+              columnDefs={invoiceColumnDefs}
+              loading={false}
+              pagination={true}
+              paginationPageSize={20}
+              height="500px"
+              enableExport={true}
+              exportFileName="invoices"
+              showExportButtons={false}
+              enableFiltering={true}
+              enableSorting={true}
+              enableResizing={true}
+              sideBar={false}
             />
           )}
         </div>

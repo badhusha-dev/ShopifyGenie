@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaWallet, FaSearch, FaFilter, FaExchangeAlt, FaMoneyBillWave, FaHistory } from 'react-icons/fa';
-import DataTable, { type Column } from '../components/ui/DataTable';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import { designTokens } from '../design/tokens';
 import { useForm } from 'react-hook-form';
@@ -306,174 +307,227 @@ const Wallets = () => {
     );
   };
 
-  // DataTable columns for wallets
-  const walletColumns: Column[] = [
+  // AG-Grid Column Definitions for wallets
+  const walletColumnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'entityName',
-      label: 'Entity',
+      headerName: 'Entity',
+      field: 'entityName',
       sortable: true,
-      render: (value, row) => (
+      filter: true,
+      width: 200,
+      cellRenderer: (params: any) => `
         <div>
-          <div className="fw-semibold">{value}</div>
-          <small className="text-muted text-capitalize">{row.entityType}</small>
-          {row.entityEmail && <small className="text-muted d-block">{row.entityEmail}</small>}
+          <div class="fw-semibold">${params.value}</div>
+          <small class="text-muted text-capitalize">${params.data.entityType}</small>
+          ${params.data.entityEmail ? `<small class="text-muted d-block">${params.data.entityEmail}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'walletType',
-      label: 'Type',
+      headerName: 'Type',
+      field: 'walletType',
       sortable: true,
-      width: '130px',
-      render: (value) => getWalletTypeBadge(value)
-    },
-    {
-      key: 'currentBalance',
-      label: 'Balance',
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace fw-bold text-success">
-          ${parseFloat(value).toFixed(2)}
-        </span>
-      )
-    },
-    {
-      key: 'totalEarned',
-      label: 'Earned',
-      width: '100px',
-      render: (value) => (
-        <span className="font-monospace text-info">
-          ${parseFloat(value).toFixed(2)}
-        </span>
-      )
-    },
-    {
-      key: 'totalUsed',
-      label: 'Used',
-      width: '100px',
-      render: (value) => (
-        <span className="font-monospace text-danger">
-          ${parseFloat(value).toFixed(2)}
-        </span>
-      )
-    },
-    {
-      key: 'expiresAt',
-      label: 'Expires',
-      width: '120px',
-      render: (value) => {
-        if (!value) return <span className="text-muted">Never</span>;
-        const isExpiringSoon = new Date(value) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        return (
-          <span className={isExpiringSoon ? 'text-warning fw-bold' : ''}>
-            {new Date(value).toLocaleDateString()}
-          </span>
-        );
+      filter: true,
+      width: 130,
+      cellRenderer: (params: any) => {
+        const badges = {
+          credit: { bg: 'primary', text: 'Credit' },
+          refund: { bg: 'warning', text: 'Refund' },
+          store_credit: { bg: 'success', text: 'Store Credit' },
+          vendor_credit: { bg: 'info', text: 'Vendor Credit' }
+        };
+        const badge = badges[params.value as keyof typeof badges] || { bg: 'secondary', text: params.value };
+        return `<span class="badge bg-${badge.bg} bg-opacity-10 text-${badge.bg} border border-${badge.bg} border-opacity-25">${badge.text}</span>`;
       }
     },
     {
-      key: 'isActive',
-      label: 'Status',
-      width: '80px',
-      render: (value) => (
-        <span className={`badge ${value ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}`}>
-          {value ? 'Active' : 'Inactive'}
-        </span>
-      )
+      headerName: 'Balance',
+      field: 'currentBalance',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace fw-bold text-success">$${parseFloat(params.value).toFixed(2)}</span>`
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      width: '180px',
-      render: (_, row) => (
-        <div className="d-flex gap-1">
+      headerName: 'Earned',
+      field: 'totalEarned',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace text-info">$${parseFloat(params.value).toFixed(2)}</span>`
+    },
+    {
+      headerName: 'Used',
+      field: 'totalUsed',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace text-danger">$${parseFloat(params.value).toFixed(2)}</span>`
+    },
+    {
+      headerName: 'Expires',
+      field: 'expiresAt',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        if (!params.value) return '<span class="text-muted">Never</span>';
+        const isExpiringSoon = new Date(params.value) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const className = isExpiringSoon ? 'text-warning fw-bold' : '';
+        return `<span class="${className}">${new Date(params.value).toLocaleDateString()}</span>`;
+      }
+    },
+    {
+      headerName: 'Status',
+      field: 'isActive',
+      sortable: true,
+      filter: true,
+      width: 80,
+      cellRenderer: (params: any) => 
+        `<span class="badge ${params.value ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}">${params.value ? 'Active' : 'Inactive'}</span>`
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      width: 180,
+      cellRenderer: (params: any) => `
+        <div class="d-flex gap-1">
           <button
             type="button"
-            className="btn btn-outline-success btn-sm"
-            onClick={() => handleNewTransaction(row)}
-            data-testid={`button-transaction-${row.id}`}
+            class="btn btn-outline-success btn-sm"
+            onclick="window.handleNewTransaction('${params.data.id}')"
+            data-testid="button-transaction-${params.data.id}"
             title="New Transaction"
           >
-            <FaExchangeAlt size={12} />
+            <i class="fas fa-exchange-alt"></i>
           </button>
           <button
             type="button"
-            className="btn btn-outline-info btn-sm"
-            onClick={() => handleViewTransactions(row)}
-            data-testid={`button-history-${row.id}`}
+            class="btn btn-outline-info btn-sm"
+            onclick="window.handleViewTransactions('${params.data.id}')"
+            data-testid="button-history-${params.data.id}"
             title="View History"
           >
-            <FaHistory size={12} />
+            <i class="fas fa-history"></i>
           </button>
           <button
             type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => handleEditWallet(row)}
-            data-testid={`button-edit-${row.id}`}
+            class="btn btn-outline-primary btn-sm"
+            onclick="window.handleEditWallet('${params.data.id}')"
+            data-testid="button-edit-${params.data.id}"
             title="Edit"
           >
-            <FaEdit size={12} />
+            <i class="fas fa-edit"></i>
           </button>
           <button
             type="button"
-            className="btn btn-outline-danger btn-sm"
-            onClick={() => handleDeleteWallet(row.id)}
-            data-testid={`button-delete-${row.id}`}
+            class="btn btn-outline-danger btn-sm"
+            onclick="window.handleDeleteWallet('${params.data.id}')"
+            data-testid="button-delete-${params.data.id}"
             title="Delete"
           >
-            <FaTrash size={12} />
+            <i class="fas fa-trash"></i>
           </button>
         </div>
-      )
+      `
     }
-  ];
+  ], []);
 
-  // DataTable columns for transactions
-  const transactionColumns: Column[] = [
+  // AG-Grid Column Definitions for transactions
+  const transactionColumnDefs: ColDef[] = useMemo(() => [
     {
-      key: 'createdAt',
-      label: 'Date',
+      headerName: 'Date',
+      field: 'createdAt',
       sortable: true,
-      width: '120px',
-      render: (value) => new Date(value).toLocaleDateString()
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => new Date(params.value).toLocaleDateString()
     },
     {
-      key: 'transactionType',
-      label: 'Type',
-      width: '100px',
-      render: (value) => getTransactionTypeBadge(value)
+      headerName: 'Type',
+      field: 'transactionType',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        const badges = {
+          credit: { bg: 'success', text: 'Credit' },
+          debit: { bg: 'danger', text: 'Debit' },
+          transfer: { bg: 'info', text: 'Transfer' },
+          adjustment: { bg: 'warning', text: 'Adjustment' }
+        };
+        const badge = badges[params.value as keyof typeof badges] || { bg: 'secondary', text: params.value };
+        return `<span class="badge bg-${badge.bg} bg-opacity-10 text-${badge.bg} border border-${badge.bg} border-opacity-25">${badge.text}</span>`;
+      }
     },
     {
-      key: 'amount',
-      label: 'Amount',
-      width: '100px',
-      render: (value, row) => (
-        <span className={`font-monospace fw-bold ${row.transactionType === 'debit' ? 'text-danger' : 'text-success'}`}>
-          {row.transactionType === 'debit' ? '-' : '+'}${parseFloat(value).toFixed(2)}
-        </span>
-      )
+      headerName: 'Amount',
+      field: 'amount',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        const isDebit = params.data.transactionType === 'debit';
+        const sign = isDebit ? '-' : '+';
+        const className = isDebit ? 'text-danger' : 'text-success';
+        return `<span class="font-monospace fw-bold ${className}">${sign}$${parseFloat(params.value).toFixed(2)}</span>`;
+      }
     },
     {
-      key: 'description',
-      label: 'Description',
-      render: (value, row) => (
+      headerName: 'Description',
+      field: 'description',
+      sortable: true,
+      filter: true,
+      width: 200,
+      cellRenderer: (params: any) => `
         <div>
-          <div>{value}</div>
-          {row.reference && (
-            <small className="text-muted">Ref: {row.reference}</small>
-          )}
+          <div>${params.value}</div>
+          ${params.data.reference ? `<small class="text-muted">Ref: ${params.data.reference}</small>` : ''}
         </div>
-      )
+      `
     },
     {
-      key: 'newBalance',
-      label: 'New Balance',
-      width: '120px',
-      render: (value) => (
-        <span className="font-monospace">${parseFloat(value).toFixed(2)}</span>
-      )
+      headerName: 'New Balance',
+      field: 'newBalance',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="font-monospace">$${parseFloat(params.value).toFixed(2)}</span>`
     }
-  ];
+  ], []);
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).handleNewTransaction = (walletId: string) => {
+      const wallet = wallets?.find(w => w.id === walletId);
+      if (wallet) handleNewTransaction(wallet);
+    };
+    
+    (window as any).handleViewTransactions = (walletId: string) => {
+      const wallet = wallets?.find(w => w.id === walletId);
+      if (wallet) handleViewTransactions(wallet);
+    };
+    
+    (window as any).handleEditWallet = (walletId: string) => {
+      const wallet = wallets?.find(w => w.id === walletId);
+      if (wallet) handleEditWallet(wallet);
+    };
+    
+    (window as any).handleDeleteWallet = (walletId: string) => {
+      handleDeleteWallet(walletId);
+    };
+    
+    return () => {
+      delete (window as any).handleNewTransaction;
+      delete (window as any).handleViewTransactions;
+      delete (window as any).handleEditWallet;
+      delete (window as any).handleDeleteWallet;
+    };
+  }, [wallets]);
 
   if (error) {
     return (
@@ -683,12 +737,20 @@ const Wallets = () => {
 
       {/* Wallets Table */}
       <AnimatedCard>
-        <DataTable
-          columns={walletColumns}
-          data={filteredWallets}
+        <AGDataGrid
+          rowData={filteredWallets}
+          columnDefs={walletColumnDefs}
           loading={isLoading}
-          emptyMessage="No wallets found"
-          className="table-hover"
+          pagination={true}
+          paginationPageSize={20}
+          height="500px"
+          enableExport={true}
+          exportFileName="wallets"
+          showExportButtons={false}
+          enableFiltering={true}
+          enableSorting={true}
+          enableResizing={true}
+          sideBar={false}
         />
       </AnimatedCard>
 
@@ -975,12 +1037,19 @@ const Wallets = () => {
                     </div>
                   </div>
                 </div>
-                <DataTable
-                  columns={transactionColumns}
-                  data={transactions}
+                <AGDataGrid
+                  rowData={transactions}
+                  columnDefs={transactionColumnDefs}
                   loading={false}
-                  emptyMessage="No transactions found"
-                  className="table-hover"
+                  pagination={true}
+                  paginationPageSize={10}
+                  height="400px"
+                  enableExport={false}
+                  showExportButtons={false}
+                  enableFiltering={true}
+                  enableSorting={true}
+                  enableResizing={true}
+                  sideBar={false}
                 />
               </div>
               <div className="modal-footer">

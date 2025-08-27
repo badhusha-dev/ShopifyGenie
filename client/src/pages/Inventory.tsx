@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProducts, setFilters, setSelectedProduct } from '../store/slices/inventorySlice';
+import AGDataGrid from '../components/ui/AGDataGrid';
+import { ColDef } from 'ag-grid-community';
 
 interface Product {
   id: string;
@@ -145,12 +147,152 @@ const Inventory: React.FC = () => {
     return <span className="badge bg-success">In Stock</span>;
   };
 
+  // AG-Grid Column Definitions
+  const columnDefs: ColDef[] = useMemo(() => [
+    {
+      headerName: 'Product',
+      field: 'name',
+      sortable: true,
+      filter: true,
+      width: 250,
+      cellRenderer: (params: any) => `
+        <div class="d-flex align-items-center">
+          <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3" 
+               style="width: 40px; height: 40px;">
+            <i class="fas fa-box text-primary"></i>
+          </div>
+          <div>
+            <div class="fw-semibold">${params.value}</div>
+            <small class="text-muted">ID: ${params.data.id.slice(0, 8)}</small>
+          </div>
+        </div>
+      `
+    },
+    {
+      headerName: 'Category',
+      field: 'category',
+      sortable: true,
+      filter: true,
+      width: 150
+    },
+    {
+      headerName: 'Price',
+      field: 'price',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => `<span class="fw-semibold">$${params.value.toFixed(2)}</span>`
+    },
+    {
+      headerName: 'Stock',
+      field: 'stock',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => `
+        <span class="fw-bold">${params.value}</span>
+        <small class="text-muted d-block">
+          Threshold: ${params.data.lowStockThreshold}
+        </small>
+      `
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => 
+        `<span class="badge ${params.value === 'active' ? 'bg-success' : 'bg-secondary'}">${params.value}</span>`
+    },
+    {
+      headerName: 'Stock Status',
+      field: 'stockStatus',
+      sortable: true,
+      filter: true,
+      width: 140,
+      cellRenderer: (params: any) => {
+        const product = params.data;
+        if (product.stock === 0) {
+          return '<span class="badge bg-danger">Out of Stock</span>';
+        } else if (product.stock <= product.lowStockThreshold) {
+          return '<span class="badge bg-warning text-dark">Low Stock</span>';
+        }
+        return '<span class="badge bg-success">In Stock</span>';
+      }
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 120,
+      cellRenderer: (params: any) => `
+        <div class="dropdown">
+          <button
+            class="btn btn-sm btn-outline-secondary rounded-circle"
+            type="button"
+            onclick="window.toggleInventoryDropdown('${params.data.id}')"
+            style="width: 32px; height: 32px;"
+          >
+            <i class="fas fa-ellipsis-h"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" id="dropdown-${params.data.id}" style="display: none;">
+            <li>
+              <button 
+                class="dropdown-item" 
+                onclick="window.handleEditProduct('${params.data.id}')"
+              >
+                <i class="fas fa-edit me-2"></i>Edit
+              </button>
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <button 
+                class="dropdown-item text-danger"
+                onclick="window.handleDeleteProduct('${params.data.id}')"
+              >
+                <i class="fas fa-trash me-2"></i>Delete
+              </button>
+            </li>
+          </ul>
+        </div>
+      `
+    }
+  ], []);
+
   const filteredProducts = products.filter((product: Product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = !showLowStock || product.stock <= product.lowStockThreshold;
     return matchesSearch && matchesFilter;
   });
+
+  // Add window functions for AG-Grid action buttons
+  React.useEffect(() => {
+    (window as any).toggleInventoryDropdown = (id: string) => {
+      const dropdown = document.getElementById(`dropdown-${id}`);
+      if (dropdown) {
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+      }
+    };
+    
+    (window as any).handleEditProduct = (id: string) => {
+      const product = filteredProducts.find(p => p.id === id);
+      if (product) handleEdit(product);
+    };
+    
+    (window as any).handleDeleteProduct = (id: string) => {
+      deleteProductMutation.mutate(id);
+    };
+    
+    return () => {
+      delete (window as any).toggleInventoryDropdown;
+      delete (window as any).handleEditProduct;
+      delete (window as any).handleDeleteProduct;
+    };
+  }, [filteredProducts, deleteProductMutation]);
+
 
   if (isLoading) {
     return (
@@ -242,86 +384,21 @@ const Inventory: React.FC = () => {
       <div className="row">
         <div className="col-12">
           <div className="modern-card">
-            <div className="table-responsive">
-              <table className="table modern-table table-hover mb-0">
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Status</th>
-                    <th>Stock Status</th>
-                    <th className="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((product: Product) => (
-                    <tr key={product.id}>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <div className="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3" 
-                               style={{width: '40px', height: '40px'}}>
-                            <i className="fas fa-box text-primary"></i>
-                          </div>
-                          <div>
-                            <div className="fw-semibold">{product.name}</div>
-                            <small className="text-muted">ID: {product.id.slice(0, 8)}</small>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{product.category}</td>
-                      <td className="fw-semibold">${product.price.toFixed(2)}</td>
-                      <td>
-                        <span className="fw-bold">
-                          {product.stock}
-                        </span>
-                        <small className="text-muted d-block">
-                          Threshold: {product.lowStockThreshold}
-                        </small>
-                      </td>
-                      <td>
-                        <span className={`badge ${product.status === 'active' ? 'bg-success' : 'bg-secondary'}`}>
-                          {product.status}
-                        </span>
-                      </td>
-                      <td>{getStockBadge(product)}</td>
-                      <td className="text-end">
-                        <div className="dropdown">
-                          <button
-                            className="btn btn-sm btn-outline-secondary rounded-circle"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                            style={{width: '32px', height: '32px'}}
-                          >
-                            <i className="fas fa-ellipsis-h"></i>
-                          </button>
-                          <ul className="dropdown-menu dropdown-menu-end">
-                            <li>
-                              <button 
-                                className="dropdown-item" 
-                                onClick={() => handleEdit(product)}
-                              >
-                                <i className="fas fa-edit me-2"></i>Edit
-                              </button>
-                            </li>
-                            <li><hr className="dropdown-divider" /></li>
-                            <li>
-                              <button 
-                                className="dropdown-item text-danger"
-                                onClick={() => deleteProductMutation.mutate(product.id)}
-                              >
-                                <i className="fas fa-trash me-2"></i>Delete
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <AGDataGrid
+              rowData={filteredProducts}
+              columnDefs={columnDefs}
+              loading={isLoading}
+              pagination={true}
+              paginationPageSize={25}
+              height="600px"
+              enableExport={true}
+              exportFileName="inventory-products"
+              showExportButtons={false}
+              enableFiltering={true}
+              enableSorting={true}
+              enableResizing={true}
+              sideBar={false}
+            />
           </div>
         </div>
       </div>
