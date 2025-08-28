@@ -73,6 +73,29 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// Custom fetch function to handle API base URL
+const customFetch = (url: string | URL | Request, options?: RequestInit): Promise<Response> => {
+  let finalUrl = url as string;
+
+  // Handle URL normalization
+  if (typeof url === 'string') {
+    // Remove duplicate /api prefixes
+    finalUrl = url.replace(/\/api\/api\//g, '/api/');
+
+    // Ensure proper API prefix
+    if (!finalUrl.startsWith('/api/') && !finalUrl.startsWith('http')) {
+      finalUrl = `/api/${finalUrl.replace(/^\//, '')}`;
+    }
+  }
+
+  return fetch(finalUrl, options);
+};
+
+// Set global fetch for React Query
+if (typeof window !== 'undefined') {
+  window.fetch = customFetch;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

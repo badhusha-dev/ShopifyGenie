@@ -7,16 +7,23 @@ import "./index.css";
 import { Provider } from 'react-redux';
 import { store } from './store';
 
-// Global unhandled promise rejection handler
+// Global error handlers
 window.addEventListener('unhandledrejection', (event) => {
-  console.debug('Unhandled promise rejection (handled):', event.reason);
-  // Prevent the default behavior that logs to console
-  event.preventDefault();
+  // Log the error but don't spam the console with HMR ping failures
+  if (event.reason?.message?.includes('Failed to fetch') && 
+      event.reason?.stack?.includes('ping')) {
+    event.preventDefault(); // Prevent console spam from HMR pings
+    return;
+  }
+
+  console.error('Unhandled promise rejection:', event.reason);
+
+  // You could send this to an error reporting service
+  // errorReportingService.captureException(event.reason);
 });
 
-// Global error handler
 window.addEventListener('error', (event) => {
-  console.debug('Global error (handled):', event.error);
+  console.error('Global error:', event.error);
 });
 
 // Ensure DOM is ready

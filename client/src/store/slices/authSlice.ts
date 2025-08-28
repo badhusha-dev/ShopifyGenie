@@ -1,4 +1,3 @@
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
 interface User {
@@ -7,6 +6,8 @@ interface User {
   email: string;
   role: 'superadmin' | 'admin' | 'staff' | 'customer';
   shopDomain?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AuthState {
@@ -14,18 +15,30 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   error: string | null;
-  isAuthenticated: boolean;
 }
+
+// Safe localStorage access
+const getStoredToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    try {
+      return localStorage.getItem('authToken');
+    } catch (error) {
+      console.warn('Failed to access localStorage:', error);
+      return null;
+    }
+  }
+  return null;
+};
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('auth_token'),
+  token: getStoredToken(),
   isLoading: false,
   error: null,
-  isAuthenticated: false,
 };
 
-export const loginUser = createAsyncThunk(
+// Async thunks
+export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
@@ -37,26 +50,40 @@ export const loginUser = createAsyncThunk(
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
-        return rejectWithValue(data.error || 'Login failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Login failed: ${response.status}`);
       }
 
-      localStorage.setItem('auth_token', data.token);
+      const data = await response.json();
+
+      if (!data.token || !data.user) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Store token in localStorage safely
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('authToken', data.token);
+        } catch (error) {
+          console.warn('Failed to store token in localStorage:', error);
+        }
+      }
+
       return data;
     } catch (error) {
-      return rejectWithValue('Network error occurred');
+      console.error('Login error:', error);
+      return rejectWithValue(error instanceof Error ? error.message : 'Login failed');
     }
   }
 );
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async ({ name, email, password, role = 'customer' }: { 
-    name: string; 
-    email: string; 
-    password: string; 
+  async ({ name, email, password, role = 'customer' }: {
+    name: string;
+    email: string;
+    password: string;
     role?: string;
   }, { rejectWithValue }) => {
     try {
@@ -69,7 +96,7 @@ export const registerUser = createAsyncThunk(
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         return rejectWithValue(data.error || 'Registration failed');
       }
@@ -84,32 +111,73 @@ export const registerUser = createAsyncThunk(
 
 export const fetchCurrentUser = createAsyncThunk(
   'auth/fetchCurrentUser',
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      const { auth } = getState() as { auth: AuthState };
-      
-      if (!auth.token) {
-        return rejectWithValue('No token available');
+      const state = getState() as { auth: AuthState };
+      const token = state.auth.token || getStoredToken();
+
+      if (!token) {
+        return rejectWithValue('No authentication token found');
       }
 
       const response = await fetch('/api/auth/me', {
         headers: {
-          'Authorization': `Bearer ${auth.token}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('auth_token');
-          return rejectWithValue('Token expired');
+      if (response.status === 401) {
+        // Token is invalid, clear it
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('authToken');
         }
-        return rejectWithValue('Failed to fetch user');
+        return rejectWithValue('Authentication token expired');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      return data;
+      return data.user;
     } catch (error) {
-      return rejectWithValue('Network error occurred');
+      console.error('fetchCurrentUser error:', error);
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch user data');
+    }
+  }
+);
+
+export const logout = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Call logout endpoint (optional, as JWT is stateless)
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getStoredToken()}`,
+          },
+        });
+      } catch (error) {
+        // Ignore network errors during logout
+        console.warn('Logout API call failed:', error);
+      }
+
+      // Clear token from localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('authToken');
+        } catch (error) {
+          console.warn('Failed to clear token from localStorage:', error);
+        }
+      }
+
+      return null;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Logout failed');
     }
   }
 );
@@ -121,33 +189,37 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
-      state.isAuthenticated = false;
+      state.isAuthenticated = false; // This line might need adjustment based on how you manage auth status
       state.error = null;
-      localStorage.removeItem('auth_token');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+      }
     },
     clearError: (state) => {
       state.error = null;
     },
     setToken: (state, action: PayloadAction<string>) => {
       state.token = action.payload;
-      localStorage.setItem('auth_token', action.payload);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('authToken', action.payload);
+      }
     },
   },
   extraReducers: (builder) => {
     builder
       // Login
-      .addCase(loginUser.pending, (state) => {
+      .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
+      .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isAuthenticated = true;
         state.error = null;
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;
@@ -172,10 +244,11 @@ const authSlice = createSlice({
       // Fetch current user
       .addCase(fetchCurrentUser.pending, (state) => {
         state.isLoading = true;
+        state.error = null; // Clear previous errors when fetching
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
+        state.user = action.payload; // Assuming payload is the user object directly
         state.isAuthenticated = true;
         state.error = null;
       })
@@ -184,7 +257,23 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.isAuthenticated = false;
         state.user = null;
+        state.token = null; // Clear token if fetch fails (e.g., expired)
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('authToken');
+        }
+      })
+      // Logout
+      .addCase(logout.pending, (state) => {
+        // Optionally handle loading state for logout if it's async and shows UI feedback
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.user = null;
         state.token = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });
