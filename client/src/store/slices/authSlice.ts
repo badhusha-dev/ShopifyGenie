@@ -15,6 +15,7 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   error: string | null;
+  isAuthenticated: boolean;
 }
 
 // Safe localStorage access
@@ -35,6 +36,7 @@ const initialState: AuthState = {
   token: getStoredToken(),
   isLoading: false,
   error: null,
+  isAuthenticated: !!getStoredToken(),
 };
 
 // Async thunks
@@ -278,5 +280,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, setToken } = authSlice.actions;
+export const { logout: logoutAction, clearError, setToken } = authSlice.actions;
 export default authSlice.reducer;

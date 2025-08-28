@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { loginUser, registerUser, clearError } from '../store/slices/authSlice';
+import { login, registerUser, clearError } from '../store/slices/authSlice';
 import { useAppSelector as useThemeSelector } from '../store/hooks';
 
 interface LoginFormProps {
@@ -32,7 +32,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
           role: formData.role
         })).unwrap();
       } else {
-        await dispatch(loginUser({
+        await dispatch(login({
           email: formData.email,
           password: formData.password
         })).unwrap();
