@@ -1,0 +1,18 @@
+1. Dockerfile Prompt
+"Create a Replit project configured for a full-stack TypeScript application. The project must include a production-ready Dockerfile that builds the backend Express.js server and the React frontend. The Dockerfile should use a multi-stage build to optimize the final image size. The first stage should build both the client and server applications, and the second stage should be a lightweight production image that only contains the necessary build artifacts and production dependencies. The image must expose port 5000 and be configured to accept production environment variables such as NODE_ENV, PORT, DATABASE_URL, and JWT_SECRET."
+
+2. GitHub Actions CI/CD Pipeline Prompt
+"Create a GitHub Actions workflow for a Replit-hosted, full-stack TypeScript application. The pipeline should be named "CI/CD Pipeline" and trigger on pushes to the main and develop branches. It should consist of two main jobs:
+
+build-and-test: This job must build the Docker image, run unit and integration tests for both the backend and frontend, and then push the image to a container registry (e.g., Docker Hub or GitHub Packages).
+
+deploy: This job must be dependent on the successful completion of the build-and-test job. Its purpose is to pull the latest Docker image from the container registry and deploy it to a hosting provider, setting the required production environment variables securely via GitHub Secrets."
+
+3. Flyway Database Configuration Prompt
+"Given an existing Flyway configuration, update the project's package.json file with npm scripts that automate the database management for different environments. The scripts should be:
+
+dev:db:clean-and-migrate: A script that runs flyway clean to drop all database objects, followed by flyway migrate to re-create the schema. This ensures a clean slate for local development.
+
+start:db:migrate: A script that only runs flyway migrate to apply any new schema changes without destroying existing data. This is crucial for staging and production environments to preserve data.
+
+The dev and start scripts should be updated to first execute these database scripts before starting the application, ensuring the database state is always correct for the respective environment."
