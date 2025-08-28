@@ -263,6 +263,7 @@ const authSlice = createSlice({
         if (typeof window !== 'undefined') {
           localStorage.removeItem('authToken');
         }
+        console.log('Token validation failed, clearing auth state');
       })
       // Logout
       .addCase(logout.pending, (state) => {

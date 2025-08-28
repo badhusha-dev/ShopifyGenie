@@ -60,8 +60,25 @@ const AppContent = () => {
   const { user, isLoading, isAuthenticated, token } = useAppSelector((state) => state.auth); // Use Redux state
   const [showRegister, setShowRegister] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [location, setLocation] = useLocation();
 
-  console.log('Auth state:', { user: !!user, isLoading, isAuthenticated, token: !!token });
+  // Only log in development mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Auth state:', { 
+      user: !!user, 
+      isLoading, 
+      isAuthenticated, 
+      token: !!token, 
+      location 
+    });
+  }
+
+  // Redirect to dashboard after successful authentication
+  useEffect(() => {
+    if (user && isAuthenticated && (location === '/' || location === '')) {
+      setLocation('/dashboard');
+    }
+  }, [user, isAuthenticated, location, setLocation]);
 
   if (isLoading) {
     return (
@@ -102,6 +119,8 @@ const AppContent = () => {
     </>
   );
 
+  // Debug info removed for cleaner production
+
   return (
     <div className="d-flex" style={{minHeight: '100vh'}}>
       {/* Mobile Overlay */}
@@ -115,6 +134,13 @@ const AppContent = () => {
 
       {/* Main Content */}
       <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div style={{position: 'fixed', top: 0, right: 0, background: 'red', color: 'white', padding: '5px', zIndex: 9999}}>
+            Authenticated: {isAuthenticated ? 'YES' : 'NO'} | Location: {location}
+          </div>
+        )}
+        
         <Route path="/" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
         <Route path="/dashboard" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
         <Route path="/inventory" component={() => renderPage("Inventory Management", "Manage your products and stock levels", Inventory)} />
