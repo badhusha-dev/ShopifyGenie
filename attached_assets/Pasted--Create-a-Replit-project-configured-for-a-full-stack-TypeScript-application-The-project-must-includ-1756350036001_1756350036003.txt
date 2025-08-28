@@ -1,0 +1,51 @@
+"Create a Replit project configured for a full-stack TypeScript application. The project must include a Dockerfile for containerization and a GitHub Actions workflow for CI/CD.
+
+Dockerfile
+Purpose: The Dockerfile should build a production-ready image for the backend Express.js server and the React frontend.
+
+Multi-stage build: Use a multi-stage build to optimize the final image size.
+
+Stage 1 (Build): Use a Node.js base image to install dependencies and build both the client and server applications.
+
+Stage 2 (Production): Use a lightweight base image (e.g., node:18-alpine) to run the compiled application. Copy only the necessary build artifacts and production dependencies.
+
+Expose Port: Expose port 5000, as specified in the project's API documentation.
+
+Environment Variables: The image should be configured to accept production environment variables like NODE_ENV, PORT, DATABASE_URL, and JWT_SECRET.
+
+GitHub Actions CI/CD Pipeline
+Workflow Name: The pipeline should be named "CI/CD Pipeline" and should trigger on pushes to the main and develop branches.
+
+Jobs: Include two main jobs: build-and-test and deploy.
+
+build-and-test Job:
+
+Purpose: Build the Docker image and run tests.
+
+Steps:
+
+Checkout the repository.
+
+Login to a container registry (e.g., Docker Hub or GitHub Packages).
+
+Build the Docker image using the Dockerfile.
+
+Run unit and integration tests for both the backend and frontend.
+
+Push the image to the container registry if all tests pass.
+
+deploy Job:
+
+Purpose: Deploy the Docker image.
+
+Dependencies: This job should be dependent on the successful completion of the build-and-test job.
+
+Steps:
+
+Pull the latest Docker image from the container registry.
+
+Deploy the image to a hosting provider (e.g., Replit, AWS, or DigitalOcean).
+
+Set the required production environment variables during deployment.
+
+Security: Ensure that sensitive information like registry credentials and environment variables are stored as GitHub Secrets and accessed securely within the workflow."
