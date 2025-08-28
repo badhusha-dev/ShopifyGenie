@@ -5,6 +5,48 @@ import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, R
 import AnimatedCard from '../components/ui/AnimatedCard';
 import { designTokens } from '../design/tokens';
 
+interface FinancialReportData {
+  profitAndLoss: {
+    revenue: Array<{ accountName: string; amount: number; }>;
+    expenses: Array<{ accountName: string; amount: number; }>;
+    totalRevenue: number;
+    totalExpenses: number;
+    netIncome: number;
+  };
+  balanceSheet: {
+    assets: {
+      currentAssets: Array<{ accountName: string; amount: number; }>;
+      fixedAssets: Array<{ accountName: string; amount: number; }>;
+      totalCurrentAssets: number;
+      totalFixedAssets: number;
+      totalAssets: number;
+    };
+    liabilities: {
+      currentLiabilities: Array<{ accountName: string; amount: number; }>;
+      longTermLiabilities: Array<{ accountName: string; amount: number; }>;
+      totalCurrentLiabilities: number;
+      totalLongTermLiabilities: number;
+      totalLiabilities: number;
+    };
+    equity: {
+      equityAccounts: Array<{ accountName: string; amount: number; }>;
+      retainedEarnings: number;
+      totalEquity: number;
+    };
+  };
+  cashFlow: {
+    operatingActivities: Array<{ description: string; amount: number; }>;
+    investingActivities: Array<{ description: string; amount: number; }>;
+    financingActivities: Array<{ description: string; amount: number; }>;
+    netOperatingCash: number;
+    netInvestingCash: number;
+    netFinancingCash: number;
+    netCashFlow: number;
+    beginningCash: number;
+    endingCash: number;
+  };
+}
+
 // Chart colors for consistent theming
 const CHART_COLORS = ['#00d4aa', '#0969da', '#8b5cf6', '#f59e0b', '#ef4444', '#84cc16', '#ec4899', '#06b6d4'];
 
@@ -15,6 +57,30 @@ const FinancialReports = () => {
     endDate: new Date().toISOString().split('T')[0] // Today
   });
   const [chartType, setChartType] = useState<'bar' | 'line' | 'area'>('bar');
+
+  // Fetch financial report data with proper error handling
+  const { data: reportData, isLoading, error } = useQuery<FinancialReportData>({
+    queryKey: ['financial-reports', selectedReport, dateRange.startDate, dateRange.endDate],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams({
+          type: selectedReport,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        });
+        const response = await fetch(`/api/financial-reports?${params}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch financial reports:', error);
+        throw error;
+      }
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
 
   const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
     setDateRange(prev => ({ ...prev, [field]: value }));
@@ -43,8 +109,12 @@ const FinancialReports = () => {
     return amount < 0 ? 'text-danger' : amount > 0 ? 'text-success' : 'text-muted';
   };
 
-  // Mock data for demonstration
-  const mockData = useMemo(() => ({
+  // Use real data if available, otherwise fall back to mock data
+  const mockData = useMemo(() => {
+    if (reportData) {
+      return reportData;
+    }
+    return {
     profitAndLoss: {
       revenue: [
         { accountName: 'Sales Revenue', amount: 150000 },
@@ -132,6 +202,29 @@ const FinancialReports = () => {
     return [];
   }, [selectedReport, mockData]);
 
+  if (error) {
+    return (
+      <div className="container-fluid py-4">
+        <AnimatedCard className="border-0 shadow-sm">
+          <div className="card-body p-4 text-center">
+            <div className="alert alert-danger" role="alert">
+              <FaChartBar className="me-2" />
+              Failed to load financial reports. 
+              <br />
+              <small>Error: {error instanceof Error ? error.message : 'Unknown error'}</small>
+            </div>
+            <button 
+              className="btn btn-primary"
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </button>
+          </div>
+        </AnimatedCard>
+      </div>
+    );
+  }
+
   return (
     <div className="container-fluid py-4 animate__animated animate__fadeIn">
       {/* Header */}
@@ -177,7 +270,13 @@ const FinancialReports = () => {
               </div>
               <div className="mb-2">
                 <div className="h3 mb-1 text-success fw-bold" data-testid="text-total-revenue">
-                  {formatCurrency(mockData.profitAndLoss?.totalRevenue || 0)}
+                  {isLoading ? (
+                    <div className="placeholder-glow">
+                      <span className="placeholder col-8"></span>
+                    </div>
+                  ) : (
+                    formatCurrency(mockData.profitAndLoss?.totalRevenue || 0)
+                  )}
                 </div>
                 <div className="text-muted small">Total Revenue</div>
               </div>
@@ -197,7 +296,13 @@ const FinancialReports = () => {
               </div>
               <div className="mb-2">
                 <div className="h3 mb-1 text-danger fw-bold" data-testid="text-total-expenses">
-                  {formatCurrency(mockData.profitAndLoss?.totalExpenses || 0)}
+                  {isLoading ? (
+                    <div className="placeholder-glow">
+                      <span className="placeholder col-8"></span>
+                    </div>
+                  ) : (
+                    formatCurrency(mockData.profitAndLoss?.totalExpenses || 0)
+                  )}
                 </div>
                 <div className="text-muted small">Total Expenses</div>
               </div>
@@ -217,7 +322,13 @@ const FinancialReports = () => {
               </div>
               <div className="mb-2">
                 <div className={`h3 mb-1 fw-bold ${getAmountClass(mockData.profitAndLoss?.netIncome || 0)}`} data-testid="text-net-income">
-                  {formatCurrency(mockData.profitAndLoss?.netIncome || 0)}
+                  {isLoading ? (
+                    <div className="placeholder-glow">
+                      <span className="placeholder col-8"></span>
+                    </div>
+                  ) : (
+                    formatCurrency(mockData.profitAndLoss?.netIncome || 0)
+                  )}
                 </div>
                 <div className="text-muted small">Net Income</div>
               </div>
@@ -237,7 +348,13 @@ const FinancialReports = () => {
               </div>
               <div className="mb-2">
                 <div className={`h3 mb-1 fw-bold ${getAmountClass(mockData.cashFlow?.netCashFlow || 0)}`} data-testid="text-net-cash-flow">
-                  {formatCurrency(mockData.cashFlow?.netCashFlow || 0)}
+                  {isLoading ? (
+                    <div className="placeholder-glow">
+                      <span className="placeholder col-8"></span>
+                    </div>
+                  ) : (
+                    formatCurrency(mockData.cashFlow?.netCashFlow || 0)
+                  )}
                 </div>
                 <div className="text-muted small">Net Cash Flow</div>
               </div>
