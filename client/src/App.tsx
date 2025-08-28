@@ -38,6 +38,10 @@ import ManualJournalEntry from './pages/ManualJournalEntry';
 import BankReconciliation from './pages/BankReconciliation';
 import InvoiceManagement from './pages/InvoiceManagement';
 import TaxManagement from './pages/TaxManagement';
+import EditProfile from './pages/EditProfile';
+import AccountSettings from './pages/AccountSettings';
+import BillingPlans from './pages/BillingPlans';
+import HelpSupport from './pages/HelpSupport';
 import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import SafeComponent from './components/ui/SafeComponent';
@@ -136,6 +140,10 @@ const AppContent = () => {
         <Route path="/accounting/bank-reconciliation" component={() => renderPage("Bank Reconciliation", "Upload and match bank statements with general ledger", BankReconciliation)} />
         <Route path="/accounting/invoices" component={() => renderPage("Invoice Management", "Enhanced invoice management with aging reports", InvoiceManagement)} />
         <Route path="/tax-management" component={() => renderPage("Tax Management", "Manage tax rates and generate tax reports", TaxManagement)} />
+        <Route path="/profile" component={() => renderPage("Edit Profile", "Update your personal information and account settings", EditProfile)} />
+        <Route path="/account-settings" component={() => renderPage("Account Settings", "Configure your organization settings and preferences", AccountSettings)} />
+        <Route path="/billing" component={() => renderPage("Billing & Plans", "Manage your subscription and billing information", BillingPlans)} />
+        <Route path="/help" component={() => renderPage("Help & Support", "Get help, find answers, and contact our support team", HelpSupport)} />
 
         {/* Catch-all route for 404 - MUST BE LAST */}
         <Route>
@@ -149,7 +157,7 @@ const AppContent = () => {
               '/accounting/chart-of-accounts', '/accounting/general-ledger', '/accounting/journal-entries',
               '/accounting/manual-journal-entry', '/accounting/accounts-receivable', '/accounting/accounts-payable',
               '/accounting/wallets', '/accounting/financial-reports', '/accounting/bank-reconciliation',
-              '/accounting/invoices', '/tax-management'
+              '/accounting/invoices', '/tax-management', '/profile', '/account-settings', '/billing', '/help'
             ];
 
             if (!validPaths.includes(currentPath)) {

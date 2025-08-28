@@ -155,22 +155,42 @@ const menuSections = [
     ]
   },
   {
-    title: 'System',
+    title: 'Account',
+    icon: 'fas fa-user-circle',
+    permission: 'read',
     items: [
       {
-        title: 'Settings',
+        title: 'Edit Profile',
+        path: '/profile',
+        icon: 'fas fa-user-edit',
+        permission: 'read',
+      },
+      {
+        title: 'Account Settings',
+        path: '/account-settings',
         icon: 'fas fa-cog',
-        href: '/settings',
-        roles: ['superadmin', 'admin']
-      }
-    ]
-  }
+        permission: 'admin',
+      },
+      {
+        title: 'Billing & Plans',
+        path: '/billing',
+        icon: 'fas fa-credit-card',
+        permission: 'admin',
+      },
+      {
+        title: 'Help & Support',
+        path: '/help',
+        icon: 'fas fa-question-circle',
+        permission: 'read',
+      },
+    ],
+  },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
-  
+
   const handleLogout = () => {
     dispatch(logout());
   };
@@ -187,9 +207,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       <div className="sidebar-brand">
         <div className="d-flex align-items-center">
           <div className="brand-icon">
-            <img 
-              src={logoImage} 
-              alt="Shopify Gennie" 
+            <img
+              src={logoImage}
+              alt="Shopify Gennie"
               style={{ width: '32px', height: '32px', objectFit: 'contain' }}
             />
           </div>
@@ -206,15 +226,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       <div className="p-3 border-bottom border-white border-opacity-10">
         <div className="d-flex align-items-center">
           <div className="position-relative">
-            <div 
-              className="rounded-circle d-flex align-items-center justify-content-center bg-gradient-shopify" 
+            <div
+              className="rounded-circle d-flex align-items-center justify-content-center bg-gradient-shopify"
               style={{width: '40px', height: '40px'}}
             >
               <span className="text-white fw-bold">
                 {user?.name?.charAt(0).toUpperCase()}
               </span>
             </div>
-            <div 
+            <div
               className="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white"
               style={{width: '12px', height: '12px'}}
             ></div>
@@ -237,7 +257,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
             <div key={section.title} className="mb-3">
               {!collapsed && (
                 <div className="px-3 mb-2">
-                  <small className="text-white-50 fw-semibold text-uppercase tracking-wider" 
+                  <small className="text-white-50 fw-semibold text-uppercase tracking-wider"
                          style={{fontSize: '0.7rem', letterSpacing: '0.05em'}}>
                     {section.title}
                   </small>
@@ -247,11 +267,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
                 const isActive = location === item.href;
                 return (
                   <div key={item.href} className="sidebar-nav-item">
-                    <Link 
-                      to={item.href} 
+                    <Link
+                      to={item.href}
                       className={`sidebar-nav-link ${isActive ? 'active' : ''}`}
-                      data-bs-toggle="tooltip" 
-                      data-bs-placement="right" 
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="right"
                       title={collapsed ? item.title : ''}
                     >
                       <i className={`${item.icon} sidebar-nav-icon`}></i>
@@ -273,7 +293,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       {/* Footer Actions */}
       <div className="p-3 border-top border-white border-opacity-10">
         <div className="sidebar-nav-item">
-          <button 
+          <button
             onClick={handleLogout}
             className="sidebar-nav-link w-100 border-0 bg-transparent text-start"
             style={{color: 'rgba(255, 107, 107, 0.9)'}}
