@@ -188,7 +188,8 @@ const FinancialReports = () => {
       beginningCash: 75000,
       endingCash: 186000
     }
-  }), []);
+  };
+  }, [reportData]);
 
   // Chart data preparation
   const chartData = useMemo(() => {
@@ -445,8 +446,8 @@ const FinancialReports = () => {
               </div>
               {chartData.length > 0 && (
                 <div style={{ width: '100%', height: '400px' }}>
-                  <ResponsiveContainer>
-                    {chartType === 'bar' && (
+                  <ResponsiveContainer width="100%" height="100%">
+                    {chartType === 'bar' ? (
                       <BarChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
@@ -455,8 +456,7 @@ const FinancialReports = () => {
                         <Legend />
                         <Bar dataKey="amount" fill={CHART_COLORS[0]} />
                       </BarChart>
-                    )}
-                    {chartType === 'line' && (
+                    ) : chartType === 'line' ? (
                       <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
@@ -465,8 +465,7 @@ const FinancialReports = () => {
                         <Legend />
                         <Line type="monotone" dataKey="amount" stroke={CHART_COLORS[1]} strokeWidth={3} />
                       </LineChart>
-                    )}
-                    {chartType === 'area' && (
+                    ) : (
                       <AreaChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />

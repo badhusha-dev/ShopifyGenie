@@ -9,126 +9,161 @@ interface SidebarProps {
   onToggle?: () => void;
 }
 
-const menuItems = [
+const menuSections = [
   {
-    title: 'Dashboard',
-    icon: 'fas fa-chart-line',
-    href: '/',
-    roles: ['superadmin', 'admin', 'staff']
+    title: 'Business Overview',
+    items: [
+      {
+        title: 'Dashboard',
+        icon: 'fas fa-chart-line',
+        href: '/',
+        roles: ['superadmin', 'admin', 'staff']
+      },
+      {
+        title: 'AI Insights',
+        icon: 'fas fa-brain',
+        href: '/ai-insights',
+        roles: ['superadmin', 'admin', 'staff']
+      }
+    ]
   },
   {
-    title: 'Inventory',
-    icon: 'fas fa-boxes',
-    href: '/inventory',
-    roles: ['superadmin', 'admin', 'staff']
+    title: 'Operations',
+    items: [
+      {
+        title: 'Inventory',
+        icon: 'fas fa-boxes',
+        href: '/inventory',
+        roles: ['superadmin', 'admin', 'staff']
+      },
+      {
+        title: 'Customers',
+        icon: 'fas fa-users',
+        href: '/customers',
+        roles: ['superadmin', 'admin', 'staff']
+      },
+      {
+        title: 'Loyalty Program',
+        icon: 'fas fa-heart',
+        href: '/loyalty',
+        roles: ['superadmin', 'admin', 'staff']
+      },
+      {
+        title: 'Subscriptions',
+        icon: 'fas fa-credit-card',
+        href: '/subscriptions',
+        roles: ['superadmin', 'admin', 'staff']
+      },
+      {
+        title: 'Vendor Management',
+        icon: 'fas fa-building',
+        href: '/vendors',
+        roles: ['superadmin', 'admin']
+      }
+    ]
   },
   {
-    title: 'Customers',
-    icon: 'fas fa-users',
-    href: '/customers',
-    roles: ['superadmin', 'admin', 'staff']
+    title: 'Financial Management',
+    items: [
+      {
+        title: 'Finance Dashboard',
+        icon: 'fas fa-chart-pie',
+        href: '/reports',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Financial Reports',
+        icon: 'fas fa-chart-bar',
+        href: '/accounting/financial-reports',
+        roles: ['superadmin', 'admin']
+      }
+    ]
   },
   {
-    title: 'Loyalty',
-    icon: 'fas fa-heart',
-    href: '/loyalty',
-    roles: ['superadmin', 'admin', 'staff']
+    title: 'Accounting',
+    items: [
+      {
+        title: 'Chart of Accounts',
+        icon: 'fas fa-list-alt',
+        href: '/accounting/chart-of-accounts',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'General Ledger',
+        icon: 'fas fa-book',
+        href: '/accounting/general-ledger',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Journal Entries',
+        icon: 'fas fa-pen-to-square',
+        href: '/accounting/journal-entries',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Manual Entry',
+        icon: 'fas fa-edit',
+        href: '/accounting/manual-journal-entry',
+        roles: ['superadmin', 'admin']
+      }
+    ]
   },
   {
-    title: 'Subscriptions',
-    icon: 'fas fa-credit-card',
-    href: '/subscriptions',
-    roles: ['superadmin', 'admin', 'staff']
+    title: 'Receivables & Payables',
+    items: [
+      {
+        title: 'Accounts Receivable',
+        icon: 'fas fa-file-invoice-dollar',
+        href: '/accounting/accounts-receivable',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Accounts Payable',
+        icon: 'fas fa-file-invoice',
+        href: '/accounting/accounts-payable',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Invoice Management',
+        icon: 'fas fa-receipt',
+        href: '/accounting/invoices',
+        roles: ['superadmin', 'admin']
+      }
+    ]
   },
   {
-    title: 'Vendors',
-    icon: 'fas fa-building',
-    href: '/vendors',
-    roles: ['superadmin', 'admin']
+    title: 'Banking & Compliance',
+    items: [
+      {
+        title: 'Bank Reconciliation',
+        icon: 'fas fa-university',
+        href: '/accounting/bank-reconciliation',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Wallets & Credits',
+        icon: 'fas fa-wallet',
+        href: '/accounting/wallets',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Tax Management',
+        icon: 'fas fa-percentage',
+        href: '/tax-management',
+        roles: ['superadmin', 'admin']
+      }
+    ]
   },
   {
-    title: 'AI Insights',
-    icon: 'fas fa-brain',
-    href: '/ai-insights',
-    roles: ['superadmin', 'admin', 'staff']
-  },
-  {
-    title: 'Finance',
-    icon: 'fas fa-dollar-sign',
-    href: '/reports',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Chart of Accounts',
-    icon: 'fas fa-balance-scale',
-    href: '/accounting/chart-of-accounts',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'General Ledger',
-    icon: 'fas fa-book',
-    href: '/accounting/general-ledger',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Journal Entries',
-    icon: 'fas fa-pen-to-square',
-    href: '/accounting/journal-entries',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Manual Journal Entry',
-    icon: 'fas fa-balance-scale-right',
-    href: '/accounting/manual-journal-entry',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Accounts Receivable',
-    icon: 'fas fa-file-invoice-dollar',
-    href: '/accounting/accounts-receivable',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Accounts Payable',
-    icon: 'fas fa-file-invoice',
-    href: '/accounting/accounts-payable',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Bank Reconciliation',
-    icon: 'fas fa-university',
-    href: '/accounting/bank-reconciliation',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Invoice Management',
-    icon: 'fas fa-file-invoice-dollar',
-    href: '/accounting/invoices',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Wallets & Credits',
-    icon: 'fas fa-wallet',
-    href: '/accounting/wallets',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Financial Reports',
-    icon: 'fas fa-chart-bar',
-    href: '/accounting/financial-reports',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Tax Management',
-    icon: 'fas fa-percentage',
-    href: '/tax-management',
-    roles: ['superadmin', 'admin']
-  },
-  {
-    title: 'Settings',
-    icon: 'fas fa-cog',
-    href: '/settings',
-    roles: ['superadmin', 'admin']
+    title: 'System',
+    items: [
+      {
+        title: 'Settings',
+        icon: 'fas fa-cog',
+        href: '/settings',
+        roles: ['superadmin', 'admin']
+      }
+    ]
   }
 ];
 
@@ -141,9 +176,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   };
   const [location] = useLocation();
 
-  const filteredMenuItems = menuItems.filter(item => 
-    user && item.roles.includes(user.role)
-  );
+  const filteredMenuSections = menuSections.map(section => ({
+    ...section,
+    items: section.items.filter(item => user && item.roles.includes(user.role))
+  })).filter(section => section.items.length > 0);
 
   return (
     <div className={`modern-sidebar animate-slide-in-left ${collapsed ? 'collapsed' : ''}`}>
@@ -197,29 +233,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       {/* Navigation Menu */}
       <div className="flex-fill py-3" style={{overflowY: 'auto'}}>
         <nav>
-          {filteredMenuItems.map((item) => {
-            const isActive = location === item.href;
-
-            return (
-              <div key={item.href} className="sidebar-nav-item">
-                <Link 
-                  to={item.href} 
-                  className={`sidebar-nav-link ${isActive ? 'active' : ''}`}
-                  data-bs-toggle="tooltip" 
-                  data-bs-placement="right" 
-                  title={collapsed ? item.title : ''}
-                >
-                  <i className={`${item.icon} sidebar-nav-icon`}></i>
-                  {!collapsed && (
-                    <>
-                      <span className="flex-fill">{item.title}</span>
-                      {isActive && <i className="fas fa-chevron-right ms-auto"></i>}
-                    </>
-                  )}
-                </Link>
-              </div>
-            );
-          })}
+          {filteredMenuSections.map((section, sectionIndex) => (
+            <div key={section.title} className="mb-3">
+              {!collapsed && (
+                <div className="px-3 mb-2">
+                  <small className="text-white-50 fw-semibold text-uppercase tracking-wider" 
+                         style={{fontSize: '0.7rem', letterSpacing: '0.05em'}}>
+                    {section.title}
+                  </small>
+                </div>
+              )}
+              {section.items.map((item) => {
+                const isActive = location === item.href;
+                return (
+                  <div key={item.href} className="sidebar-nav-item">
+                    <Link 
+                      to={item.href} 
+                      className={`sidebar-nav-link ${isActive ? 'active' : ''}`}
+                      data-bs-toggle="tooltip" 
+                      data-bs-placement="right" 
+                      title={collapsed ? item.title : ''}
+                    >
+                      <i className={`${item.icon} sidebar-nav-icon`}></i>
+                      {!collapsed && (
+                        <>
+                          <span className="flex-fill">{item.title}</span>
+                          {isActive && <i className="fas fa-chevron-right ms-auto"></i>}
+                        </>
+                      )}
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </div>
 

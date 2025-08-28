@@ -56,6 +56,12 @@ const Reports: React.FC = () => {
   const [adjustmentAmount, setAdjustmentAmount] = useState('');
   const [adjustmentReason, setAdjustmentReason] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [dateFilter, setDateFilter] = useState({
+    startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [amountFilter, setAmountFilter] = useState({ min: '', max: '' });
 
   const queryClient = useQueryClient();
 
@@ -223,7 +229,7 @@ const Reports: React.FC = () => {
       title: 'Gross Margin',
       value: `${financeMetrics.grossMargin}%`,
       change: `${financeMetrics.marginGrowth > 0 ? '+' : ''}${financeMetrics.marginGrowth}%`,
-      changeType: financeMetrics.marginGrowth > 0 ? 'positive' : 'negative' as const,
+      changeType: financeMetrics.marginGrowth > 0 ? 'positive' as const : 'negative' as const,
       icon: 'fas fa-chart-line',
       gradient: 'purple' as const
     },
@@ -255,10 +261,38 @@ const Reports: React.FC = () => {
                 <i className="fas fa-download me-2"></i>
                 Export Report
               </button>
-              <button className="btn btn-shopify">
-                <i className="fas fa-sync-alt me-2"></i>
-                Refresh Data
-              </button>
+              <div className="d-flex gap-2">
+                <select 
+                  className="form-select form-select-sm"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{width: '150px'}}
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={dateFilter.startDate}
+                  onChange={(e) => setDateFilter(prev => ({...prev, startDate: e.target.value}))}
+                  style={{width: '150px'}}
+                />
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={dateFilter.endDate}
+                  onChange={(e) => setDateFilter(prev => ({...prev, endDate: e.target.value}))}
+                  style={{width: '150px'}}
+                />
+                <button className="btn btn-shopify btn-sm">
+                  <i className="fas fa-sync-alt me-2"></i>
+                  Refresh
+                </button>
+              </div>
             </div>
           </div>
         </div>
