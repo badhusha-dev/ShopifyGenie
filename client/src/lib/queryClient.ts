@@ -24,7 +24,7 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('authToken');
   const headers: Record<string, string> = {};
 
   if (data) {
@@ -52,7 +52,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('authToken');
     const headers: Record<string, string> = {};
 
     if (token) {
@@ -91,10 +91,7 @@ const customFetch = (url: string | URL | Request, options?: RequestInit): Promis
   return fetch(finalUrl, options);
 };
 
-// Set global fetch for React Query
-if (typeof window !== 'undefined') {
-  window.fetch = customFetch;
-}
+// Note: Removed global fetch override to prevent recursion issues
 
 export const queryClient = new QueryClient({
   defaultOptions: {

@@ -103,7 +103,7 @@ export const registerUser = createAsyncThunk(
         return rejectWithValue(data.error || 'Registration failed');
       }
 
-      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('authToken', data.token);
       return data;
     } catch (error) {
       return rejectWithValue('Network error occurred');
