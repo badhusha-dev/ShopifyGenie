@@ -1,5 +1,5 @@
 modules = ["nodejs-20", "web"]
-run = "npm run dev"
+run = "node index.js"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
@@ -7,8 +7,7 @@ channel = "stable-25_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["npm", "run", "start"]
-build = ["npm", "run", "build"]
+run = ["sh", "-c", "node index.js"]
 
 [[ports]]
 localPort = 5000
@@ -38,6 +37,9 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow]]
 name = "Development Server"
 author = 46858437
@@ -62,3 +64,4 @@ args = "cd server && npm run dev"
 
 [agent]
 integrations = ["javascript_mem_db==1.0.0"]
+expertMode = true
