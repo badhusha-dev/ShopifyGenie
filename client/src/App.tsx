@@ -57,9 +57,11 @@ import { fetchCurrentUser } from './store/slices/authSlice';
 
 
 const AppContent = () => {
-  const { user, isLoading } = useAppSelector((state) => state.auth); // Use Redux state
+  const { user, isLoading, isAuthenticated, token } = useAppSelector((state) => state.auth); // Use Redux state
   const [showRegister, setShowRegister] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  console.log('Auth state:', { user: !!user, isLoading, isAuthenticated, token: !!token });
 
   if (isLoading) {
     return (
@@ -74,7 +76,7 @@ const AppContent = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-coral-50 to-emerald-50">
         <LoginForm
@@ -186,8 +188,14 @@ function App() {
   const { token, user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    // Initialize app by fetching current user if token exists
-    if (token && !user) { // Check if user is not already loaded
+    // Initialize token from localStorage on app startup
+    const savedToken = localStorage.getItem('authToken');
+    if (savedToken && !token) {
+      // Set token in state and fetch user info
+      dispatch({ type: 'auth/setToken', payload: savedToken });
+      dispatch(fetchCurrentUser());
+    } else if (token && !user) {
+      // If token exists in state but no user, fetch user info
       dispatch(fetchCurrentUser());
     }
   }, [dispatch, token, user]);

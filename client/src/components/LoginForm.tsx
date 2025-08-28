@@ -25,19 +25,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
 
     try {
       if (showRegister) {
-        await dispatch(registerUser({
+        const result = await dispatch(registerUser({
           name: formData.name,
           email: formData.email,
           password: formData.password,
           role: formData.role
         })).unwrap();
+        console.log('Registration successful:', result);
+        // Navigate will happen automatically when user state updates
       } else {
-        await dispatch(login({
+        const result = await dispatch(login({
           email: formData.email,
           password: formData.password
         })).unwrap();
+        console.log('Login successful:', result);
+        // Navigate will happen automatically when user state updates
       }
     } catch (err) {
+      console.error('Auth error:', err);
       // Error handled by Redux slice
     }
   };
