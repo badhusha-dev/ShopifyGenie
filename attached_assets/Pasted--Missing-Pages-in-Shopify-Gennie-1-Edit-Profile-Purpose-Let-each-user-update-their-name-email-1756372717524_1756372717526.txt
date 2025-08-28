@@ -1,0 +1,92 @@
+🛠 Missing Pages in Shopify Gennie
+1️⃣ Edit Profile
+
+Purpose: Let each user update their name, email, password, profile picture.
+
+Frontend (React + shadcn/ui):
+
+Form with fields: Name, Email, Password (with confirm), Profile Picture upload.
+
+Use Dialog or dedicated Profile page.
+
+Backend (Express + PostgreSQL):
+
+Endpoint: PUT /api/users/:id/profile
+
+Validate with Zod; hash password with bcrypt if updated.
+
+Database: Extend users table → add avatar_url.
+
+2️⃣ Account Settings
+
+Purpose: Global organization/shop settings (timezone, currency, tax rates, branding).
+
+Frontend:
+
+“Settings” page in sidebar → Tabs: General | Branding | Taxes.
+
+Backend:
+
+Table: settings (id, shop_id, key, value, updated_at)
+
+Endpoints: GET /api/settings, PUT /api/settings/:key.
+
+Examples: Default currency = USD, Timezone = UTC+8, Logo URL.
+
+3️⃣ Billing & Plans
+
+Purpose: Handle SaaS subscriptions (Free, Pro, Growth, Enterprise).
+
+Frontend:
+
+“Billing & Plans” page → show current plan, upgrade/downgrade buttons.
+
+Show usage (orders processed, storage, API calls).
+
+Backend:
+
+Integrate Stripe Billing (or Paddle).
+
+Endpoints:
+
+GET /api/billing/plan
+
+POST /api/billing/subscribe
+
+POST /api/billing/webhook (Stripe events)
+
+Store subscription info in subscriptions (id, user_id, plan, status, renewal_date).
+
+4️⃣ Help & Support
+
+Purpose: Allow users to get help, raise tickets, or see docs.
+
+Frontend:
+
+“Help & Support” page → FAQ accordion + “Contact Support” form.
+
+Optionally: link to docs + demo video.
+
+Backend:
+
+Table: support_tickets (id, user_id, subject, message, status, created_at)
+
+Endpoint: POST /api/support/tickets → email notification (SendGrid).
+
+Extras: Real-time chat (WebSocket) for enterprise clients.
+
+🎯 Deployment Fit
+
+These pages live under User/Account module separate from Inventory/Finance.
+
+Sidebar → Add section “Account” with sub-links:
+
+Profile
+
+Account Settings
+
+Billing & Plans
+
+Help & Support
+
+✅ With this, you’ll cover all missing account-level features and make Shopify Gennie feel like a complete SaaS app.
