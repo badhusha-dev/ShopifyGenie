@@ -130,12 +130,13 @@ const AGDataGrid: React.FC<AGDataGridProps> = ({
   return (
     <div className={`ag-data-grid-container ${className}`}>
       {showExportButtons && enableExport && (
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex justify-content-between align-items-center mb-3 export-options-stack">
           <div className="d-flex align-items-center">
             <FaDownload className="text-muted me-2" />
-            <span className="text-muted small">Export Options:</span>
+            <span className="text-muted small d-none d-sm-inline">Export Options:</span>
+            <span className="text-muted small d-sm-none">Export:</span>
           </div>
-          <div className="btn-group" role="group">
+          <div className="btn-group export-buttons-mobile" role="group">
             <button
               type="button"
               className="btn btn-outline-success btn-sm"

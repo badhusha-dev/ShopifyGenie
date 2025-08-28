@@ -182,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   })).filter(section => section.items.length > 0);
 
   return (
-    <div className={`modern-sidebar animate-slide-in-left ${collapsed ? 'collapsed' : ''}`}>
+    <div className={`modern-sidebar animate-slide-in-left ${collapsed ? 'collapsed' : 'show'}`}>
       {/* Brand Section */}
       <div className="sidebar-brand">
         <div className="d-flex align-items-center">

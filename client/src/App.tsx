@@ -98,6 +98,12 @@ const AppContent = () => {
 
   return (
     <div className="d-flex" style={{minHeight: '100vh'}}>
+      {/* Mobile Overlay */}
+      <div 
+        className={`sidebar-overlay ${sidebarCollapsed ? '' : 'show'} d-lg-none`}
+        onClick={() => setSidebarCollapsed(true)}
+      ></div>
+
       {/* Sidebar */}
       <Sidebar collapsed={sidebarCollapsed} />
 

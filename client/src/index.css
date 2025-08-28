@@ -999,22 +999,76 @@ html {
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* Mobile overlay for sidebar */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.sidebar-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .modern-sidebar {
     transform: translateX(-100%);
+    z-index: 1001;
   }
 
   .modern-sidebar.show {
     transform: translateX(0);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
   }
 
   .main-content {
-    margin-left: 0;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .main-content.sidebar-collapsed {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 
   .kpi-card {
     margin-bottom: 1rem;
+  }
+
+  /* Hide search on small screens */
+  .search-container {
+    display: none !important;
+  }
+
+  /* Make AG Grid responsive */
+  .ag-data-grid-container {
+    overflow-x: auto;
+  }
+
+  .ag-theme-alpine {
+    min-width: 300px;
+  }
+
+  /* Export buttons responsive layout */
+  .export-buttons-mobile {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .export-buttons-mobile .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
   }
 }
 
@@ -1062,5 +1116,39 @@ html {
 
   .language-switcher-btn {
     min-width: 50px !important;
+  }
+
+  /* Hide navbar elements on extra small screens */
+  .d-none-xs {
+    display: none !important;
+  }
+
+  /* Compact user menu */
+  .user-menu-compact .text-start {
+    display: none !important;
+  }
+
+  /* Compact notifications */
+  .navbar .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* Stack export options */
+  .export-options-stack {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .export-options-stack .btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Hide clock on small screens */
+  .clock-display {
+    display: none !important;
   }
 }
