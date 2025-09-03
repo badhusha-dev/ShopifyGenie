@@ -5,7 +5,7 @@ import { toggleDarkMode } from '../store/slices/themeSlice';
 import LanguageSwitcher from './LanguageSwitcher';
 import ThemeSettings from './ThemeSettings';
 import { useTranslation } from '../hooks/useTranslation';
-import logoImage from '../assets/logo.jpeg';
+import logoImage from '../assets/logo.png';
 
 interface TopNavProps {
   title: string;

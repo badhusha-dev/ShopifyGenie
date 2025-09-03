@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
-import logoImage from '../assets/logo.jpeg';
+import logoImage from '../assets/logo.png';
 
 interface SidebarProps {
   collapsed?: boolean;
