@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: shopify-genie-postgres
+    environment:
+      POSTGRES_DB: shopify_genie
+      POSTGRES_USER: shopify_user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopify_user -d shopify_genie"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: shopify-genie-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shopify_genie
+      SPRING_DATASOURCE_USERNAME: shopify_user
+      SPRING_DATASOURCE_PASSWORD: password
+      JWT_SECRET: your-256-bit-secret-key-here-make-it-long-and-secure
+      SHOPIFY_WEBHOOK_SECRET: your-webhook-secret
+      SHOPIFY_CLIENT_ID: your-client-id
+      SHOPIFY_CLIENT_SECRET: your-client-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
