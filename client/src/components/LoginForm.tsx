@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loginUser, registerUser, clearError } from '../store/slices/authSlice';
 import { useAppSelector as useThemeSelector } from '../store/hooks';
+import { useLogin, useRegister } from '../hooks/useApi';
 
 interface LoginFormProps {
   onToggleMode: () => void;
@@ -12,6 +13,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
   const dispatch = useAppDispatch();
   const { error, isLoading } = useAppSelector((state) => state.auth);
   const { isDark } = useThemeSelector((state) => state.theme);
+  
+  // API hooks
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,20 +31,33 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
 
     try {
       if (showRegister) {
-        await dispatch(registerUser({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role
-        })).unwrap();
-      } else {
-        await dispatch(loginUser({
-          email: formData.email,
+        // Use API hook for registration
+        const response = await registerMutation.mutateAsync({
+          username: formData.email, // Backend expects username field
           password: formData.password
-        })).unwrap();
+        });
+        
+        // Update Redux store with the response
+        dispatch(loginUser({
+          email: response.user.email,
+          password: formData.password
+        }));
+      } else {
+        // Use API hook for login
+        const response = await loginMutation.mutateAsync({
+          username: formData.email, // Backend expects username field
+          password: formData.password
+        });
+        
+        // Update Redux store with the response
+        dispatch(loginUser({
+          email: response.user.email,
+          password: formData.password
+        }));
       }
     } catch (err) {
       // Error handled by Redux slice
+      console.error('Authentication error:', err);
     }
   };
 
@@ -133,9 +152,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
             <button
               type="submit"
               className="btn btn-primary w-100 mb-3"
-              disabled={isLoading}
+              disabled={isLoading || loginMutation.isPending || registerMutation.isPending}
             >
-              {isLoading ? (
+              {(isLoading || loginMutation.isPending || registerMutation.isPending) ? (
                 <div className="spinner-border spinner-border-sm me-2" role="status">
                   <span className="visually-hidden">Loading...</span>
                 </div>

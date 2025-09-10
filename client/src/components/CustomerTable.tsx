@@ -1,17 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import type { Customer } from "@shared/schema";
+import { useCustomers } from "../hooks/useApi";
+import type { Customer } from "../lib/api";
 
 const CustomerTable = () => {
-  const { data: customers, isLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
-  });
+  const { data: customers, isLoading, error } = useCustomers();
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
   };
 
   const getAvatarColor = (name: string) => {
@@ -28,6 +22,19 @@ const CustomerTable = () => {
             <span className="placeholder col-12"></span>
             <span className="placeholder col-8"></span>
             <span className="placeholder col-6"></span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card">
+        <div className="card-body">
+          <div className="alert alert-danger" role="alert">
+            <i className="fas fa-exclamation-triangle me-2"></i>
+            Error loading customers: {error.message}
           </div>
         </div>
       </div>
@@ -63,21 +70,21 @@ const CustomerTable = () => {
                       <div className="me-2">
                         <div
                           className={`${getAvatarColor(
-                            customer.name
+                            customer.firstName + customer.lastName
                           )} rounded-circle d-flex align-items-center justify-content-center text-white`}
                           style={{ width: "35px", height: "35px" }}
                         >
-                          <small>{getInitials(customer.name)}</small>
+                          <small>{getInitials(customer.firstName, customer.lastName)}</small>
                         </div>
                       </div>
                       <div>
-                        <div className="fw-semibold">{customer.name}</div>
+                        <div className="fw-semibold">{customer.firstName} {customer.lastName}</div>
                         <small className="text-muted">{customer.email}</small>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <span className="badge bg-info">{customer.loyaltyPoints} pts</span>
+                    <span className="badge bg-info">0 pts</span>
                   </td>
                   <td>
                     <span className="badge bg-success">0 active</span>
@@ -86,7 +93,7 @@ const CustomerTable = () => {
                     <small className="text-muted">N/A</small>
                   </td>
                   <td>
-                    <strong>${customer.totalSpent}</strong>
+                    <strong>$0.00</strong>
                   </td>
                   <td>
                     <div className="btn-group btn-group-sm">

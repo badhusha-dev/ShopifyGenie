@@ -52,11 +52,12 @@ public class SecurityConfig {
             .cors(cors -> cors.and())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> 
-                auth.requestMatchers("/auth/**").permitAll()
-                    .requestMatchers("/webhooks/**").permitAll()
-                    .requestMatchers("/api-docs/**").permitAll()
-                    .requestMatchers("/swagger-ui/**").permitAll()
-                    .requestMatchers("/swagger-ui.html").permitAll()
+                auth.requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/webhooks/**").permitAll()
+                    .requestMatchers("/api/api-docs/**").permitAll()
+                    .requestMatchers("/api/swagger-ui/**").permitAll()
+                    .requestMatchers("/api/swagger-ui.html").permitAll()
+                    .requestMatchers("/h2-console/**").permitAll()
                     .anyRequest().authenticated()
             );
         

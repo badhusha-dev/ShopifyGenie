@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -173,10 +174,12 @@ public class OrderService {
         try {
             // Build line items for Shopify
             List<Map<String, Object>> lineItems = order.getOrderItems().stream()
-                    .map(item -> Map.of(
-                            "variant_id", Long.parseLong(item.getProduct().getShopifyVariantId()),
-                            "quantity", item.getQuantity()
-                    ))
+                    .map(item -> {
+                        Map<String, Object> itemMap = new HashMap<>();
+                        itemMap.put("variant_id", Long.parseLong(item.getProduct().getShopifyVariantId()));
+                        itemMap.put("quantity", item.getQuantity());
+                        return itemMap;
+                    })
                     .toList();
             
             Map<String, Object> orderData = Map.of(
