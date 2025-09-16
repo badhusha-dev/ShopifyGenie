@@ -1,0 +1,175 @@
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:15
+    container_name: shopifygenie-postgres
+    environment:
+      POSTGRES_DB: shopify_genie
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: badsha@123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - shopifygenie-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: shopifygenie-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - shopifygenie-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: shopifygenie-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - shopifygenie-network
+
+  # Service Discovery
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: shopifygenie-eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - shopifygenie-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    container_name: shopifygenie-api-gateway
+    depends_on:
+      - eureka-server
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - shopifygenie-network
+
+  # Microservices
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./auth-service/Dockerfile
+    container_name: shopifygenie-auth-service
+    depends_on:
+      - postgres
+      - kafka
+      - eureka-server
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shopify_genie
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - shopifygenie-network
+
+  customer-service:
+    build:
+      context: .
+      dockerfile: ./customer-service/Dockerfile
+    container_name: shopifygenie-customer-service
+    depends_on:
+      - postgres
+      - kafka
+      - eureka-server
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shopify_genie
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - shopifygenie-network
+
+  product-service:
+    build:
+      context: .
+      dockerfile: ./product-service/Dockerfile
+    container_name: shopifygenie-product-service
+    depends_on:
+      - postgres
+      - kafka
+      - eureka-server
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shopify_genie
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - shopifygenie-network
+
+  order-service:
+    build:
+      context: .
+      dockerfile: ./order-service/Dockerfile
+    container_name: shopifygenie-order-service
+    depends_on:
+      - postgres
+      - kafka
+      - eureka-server
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shopify_genie
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - shopifygenie-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./notification-service/Dockerfile
+    container_name: shopifygenie-notification-service
+    depends_on:
+      - kafka
+      - eureka-server
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - shopifygenie-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ../client
+      dockerfile: Dockerfile
+    container_name: shopifygenie-frontend
+    depends_on:
+      - api-gateway
+    ports:
+      - "3000:80"
+    networks:
+      - shopifygenie-network
+
+volumes:
+  postgres_data:
+
+networks:
+  shopifygenie-network:
+    driver: bridge

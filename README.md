@@ -1,491 +1,208 @@
 
-# ShopifyApp - Complete Business Management Suite
+# ShopifyGenie - Microservices Architecture
 
-A comprehensive business management application built with React 18, TypeScript, Express.js, and modern web technologies for complete e-commerce business management including inventory, loyalty, AI insights, vendor management, and professional-grade accounting features.
+A modern e-commerce management platform built with microservices architecture, featuring event-driven communication and scalable design.
 
-## 🚀 **Replit Environment Ready** - Updated January 2025 ✅
+## 🏗️ Architecture Overview
 
-This application has been successfully optimized for the Replit environment:
-- ✅ **Express + Vite Integration**: Unified server running on port 5000
-- ✅ **Hot Module Replacement**: Development server with live reloading
-- ✅ **WebSocket Support**: Real-time features enabled
-- ✅ **Progressive Web App**: PWA capabilities for offline usage
-- ✅ **Database Integration**: PostgreSQL with Drizzle ORM ready
-- ✅ **Authentication System**: JWT-based user authentication
-- ✅ **API Documentation**: Swagger/OpenAPI documentation at `/api-docs`
-- ✅ **Modern UI**: Complete shadcn/ui + Tailwind CSS integration
+This application uses a microservices architecture with the following components:
 
-## 🎨 Modern UI Design System - COMPLETED ✅
+### **Frontend**
+- **React + TypeScript** - Modern UI with Vite build system
+- **Tailwind CSS** - Utility-first CSS framework
+- **Redux Toolkit** - State management
+- **React Query** - Server state management
 
-**Complete UI/UX Overhaul with shadcn/ui (Updated January 2025)**
-- ✅ **Modern Component Library**: Full shadcn/ui integration with Radix UI primitives
-- ✅ **Tailwind CSS Design System**: Utility-first styling with custom design tokens
-- ✅ **Responsive Layout**: Mobile-first approach with collapsible sidebar navigation
-- ✅ **Advanced Data Tables**: Interactive tables with search, filtering, and pagination
-- ✅ **KPI Dashboard Cards**: Animated cards with gradient highlights and real-time data
-- ✅ **Form Validation**: React Hook Form with Zod validation schemas
-- ✅ **Toast Notification System**: Real-time user feedback with shadcn/ui toast
-- ✅ **Progressive Web App**: PWA-ready with service worker and manifest
-- ✅ **Dark/Light Theme Support**: Theme context with system preference detection
-- ✅ **Replit Optimization**: Optimized for Replit development environment
+### **Backend Microservices**
+- **Eureka Server** (Port 8761) - Service discovery and registration
+- **API Gateway** (Port 8080) - Single entry point with load balancing
+- **Auth Service** (Port 8081) - Authentication and user management
+- **Customer Service** (Port 8082) - Customer management and loyalty programs
+- **Product Service** (Port 8083) - Product/inventory management
+- **Order Service** (Port 8084) - Order processing and management
+- **Notification Service** (Port 8085) - Event-driven notifications
 
-## 🚀 Current Feature Status
+### **Infrastructure**
+- **PostgreSQL** (Port 5432) - Primary database
+- **Apache Kafka** (Port 9092) - Event streaming platform
+- **Zookeeper** (Port 2181) - Kafka coordination service
 
-### ✅ Completed Core Features
+## 🚀 Quick Start
 
-**🏠 Application Infrastructure**
-- ✅ Modern React 18 with TypeScript and Vite build system
-- ✅ Express.js API server with WebSocket support
-- ✅ Role-based authentication system with JWT tokens
-- ✅ Multi-language support with i18n internationalization
-- ✅ Progressive Web App capabilities with offline support
-- ✅ Real-time notifications and alert system
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+
+- Java 17+
 
-**👤 User & Role Management**
-- ✅ Complete user management system with CRUD operations
-- ✅ Role-based permission system (Super Admin, Admin, Manager, Staff, Customer)
-- ✅ Dynamic permission management with fine-grained controls
-- ✅ Role switching and permission gates for UI components
-- ✅ User authentication with secure JWT implementation
+### Running the Application
 
-**📊 Advanced Dashboard & Analytics**
-- ✅ Comprehensive business overview dashboard
-- ✅ Real-time KPI cards with animated counters
-- ✅ Sales trends and revenue analytics
-- ✅ Customer insights and behavior analytics
-- ✅ Interactive charts using Recharts library
-- ✅ Inventory performance metrics
-
-**📦 Complete Inventory Management**
-- ✅ Advanced inventory system with CRUD operations
-- ✅ Stock level tracking and low stock alerts
-- ✅ Product categorization and pricing management
-- ✅ FIFO (First-In-First-Out) inventory tracking
-- ✅ Expiry date management and alerts
-- ✅ Multi-location inventory support
-- ✅ Automated restock recommendations
-
-**👥 Customer Relationship Management**
-- ✅ Complete customer database with analytics
-- ✅ Customer order history and purchase tracking
-- ✅ Loyalty points system with tier management
-- ✅ Customer portal for self-service access
-- ✅ Customer segmentation and insights
-- ✅ Communication history tracking
-
-**🎯 Loyalty & Subscription Systems**
-- ✅ Points earning and redemption system
-- ✅ Customer tier management with benefits
-- ✅ Subscription management with scheduling
-- ✅ Recurring order processing
-- ✅ Loyalty analytics and reporting
-- ✅ Customer retention tracking
-
-**💼 Vendor & Purchase Management**
-- ✅ Complete vendor database management
-- ✅ Purchase order system with approval workflows
-- ✅ Vendor performance tracking and analytics
-- ✅ Payment tracking and accounts payable
-- ✅ Supplier relationship management
-
-**💰 Professional Accounting System**
-- ✅ Complete Chart of Accounts with standard structure
-- ✅ Double-entry bookkeeping system
-- ✅ General Ledger with transaction history
-- ✅ Journal Entries with automated posting
-- ✅ Accounts Receivable and Payable management
-- ✅ Financial reporting (P&L, Balance Sheet, Cash Flow)
-- ✅ Multi-currency wallet system
-- ✅ Bank reconciliation features
-- ✅ Tax management and compliance
-
-**🤖 AI-Powered Intelligence**
-- ✅ AI recommendations engine
-- ✅ Sales forecasting algorithms
-- ✅ Customer behavior analysis
-- ✅ Inventory optimization suggestions
-- ✅ Churn prediction models
-- ✅ Smart business insights generation
-
-**🔗 System Integrations**
-- ✅ Shopify API integration framework
-- ✅ OAuth 2.0 authentication setup
-- ✅ Webhook processing system
-- ✅ Third-party integration management
-- ✅ API rate limiting and error handling
-
-### 🚧 In Development
-
-**📱 Enhanced Mobile Experience**
-- 🔄 Mobile app optimization
-- 🔄 Offline sync capabilities
-- 🔄 Push notification system
-- 🔄 Mobile-specific UI components
-
-**🔐 Advanced Security**
-- 🔄 Two-factor authentication
-- 🔄 Audit logging system
-- 🔄 Data encryption at rest
-- 🔄 GDPR compliance features
-
-### 📋 Planned Features
-
-**🌐 Production Deployment**
-- ⏳ PostgreSQL database migration
-- ⏳ Production environment configuration
-- ⏳ Automated backup systems
-- ⏳ Performance monitoring
-
-**📈 Advanced Analytics**
-- ⏳ Custom report builder
-- ⏳ Data export capabilities
-- ⏳ Advanced filtering and segmentation
-- ⏳ Scheduled report generation
-
-## 🛠️ Technical Stack
-
-### Frontend Technologies
-- **React 18**: Modern component architecture with concurrent features
-- **TypeScript**: Full type safety across the application
-- **Tailwind CSS**: Utility-first styling framework
-- **shadcn/ui**: Modern component library built on Radix UI
-- **Lucide React**: Comprehensive icon library
-- **Wouter**: Lightweight client-side routing
-- **TanStack Query**: Advanced data fetching and caching
-- **React Hook Form**: Performant form handling
-- **Zod**: Runtime type validation
-- **Recharts**: Interactive data visualization
-- **Framer Motion**: Smooth animations and transitions
-
-### Backend Technologies
-- **Express.js**: Fast, minimalist web framework
-- **TypeScript**: Type-safe server-side development
-- **WebSocket**: Real-time communication
-- **JWT**: Secure authentication tokens
-- **Drizzle ORM**: Type-safe database operations
-- **PostgreSQL**: Production-ready database (configured)
-- **In-Memory Storage**: Current development storage
-
-### Development Tools
-- **Vite**: Lightning-fast build tool and dev server
-- **ESLint + Prettier**: Code quality and formatting
-- **PostCSS**: CSS processing and optimization
-- **Autoprefixer**: Automatic vendor prefix handling
-
-### Shopify Integration
-- **Shopify Admin API**: REST and GraphQL integration
-- **OAuth 2.0**: Secure app authentication
-- **Webhook Processing**: Real-time data synchronization
-- **Inventory Sync**: Bi-directional stock updates
-- **Order Processing**: Automated loyalty calculations
-
-## 🚀 Quick Start Guide
-
-### For Replit Environment (Ready to Use)
-
-The application is already configured and ready to run in Replit:
-
-1. **Start Development Server**
-   - Click the "Run" button or use the "Start application" workflow
-   - The server will start automatically on port 5000
-
-2. **Access Application**
-   - Frontend: Use the webview or navigate to your Replit app URL  
-   - API Documentation: `/api-docs` (Swagger interface)
-   - WebSocket: `ws://0.0.0.0:5000/ws`
-
-3. **Default Login Credentials**
-   - Email: `admin@shopifyapp.com`
-   - Password: `admin123`
-   - Role: Super Admin (full access)
-
-### For Local Development
-
-1. **Prerequisites**
-   - Node.js 18+ installed
-   - Modern web browser with ES2020+ support
-
-2. **Clone and Install Dependencies**
+1. **Start Microservices (Recommended)**
    ```bash
-   git clone <repository-url>
-   cd shopify-app
-   npm install
+   cd microservices
+   docker-compose up -d
    ```
 
-3. **Start Development Server**
+2. **Start Frontend**
    ```bash
+   npm install
    npm run dev
    ```
 
-4. **Access Application**
-   - Frontend: http://localhost:5000
-   - API: http://localhost:5000/api
-   - WebSocket: ws://localhost:5000/ws
+3. **Access the Application**
+   - Frontend: http://localhost:5173
+   - API Gateway: http://localhost:8080
+   - Eureka Dashboard: http://localhost:8761
+## 📁 Project Structure
 
-## 🎨 Design System
-
-### Color Palette
-- **Primary**: Modern neutral tones with accent colors
-- **Secondary**: Emerald (#10B981) - Success states and positive metrics
-- **Background**: Clean whites and subtle grays
-- **Surface**: Gray 50 (#F9FAFB) - Card backgrounds and surfaces
-- **Text**: Slate 700 (#334155) - Primary text content
-- **Muted**: Gray 500 (#6B7280) - Secondary text and descriptions
-
-### Typography System
-- **Font Family**: System fonts for optimal performance
-- **Scale**: 
-  - Display: 36px (2.25rem) for hero text
-  - Heading: 24px (1.5rem) for page titles
-  - Subheading: 18px (1.125rem) for section headers
-  - Body: 16px (1rem) for content
-  - Small: 14px (0.875rem) for captions
-
-### Component Design
-- **Cards**: Rounded corners, subtle shadows, proper spacing
-- **Buttons**: Consistent padding, hover states, focus indicators
-- **Forms**: Clear labels, validation feedback, logical grouping
-- **Tables**: Responsive design, sorting, filtering capabilities
-- **Navigation**: Intuitive hierarchy, clear active states
-
-## 📱 Application Features
-
-### 🏠 Dashboard Overview
-- **KPI Metrics**: Revenue, orders, customers, inventory levels
-- **Sales Charts**: Trend analysis with interactive visualizations
-- **Quick Actions**: Shortcut buttons for common tasks
-- **Recent Activity**: Latest orders, customers, and inventory changes
-- **Performance Insights**: AI-generated business recommendations
-
-### 📦 Advanced Inventory Management
-- **Product Catalog**: Complete product information management
-- **Stock Tracking**: Real-time inventory levels across locations
-- **FIFO Management**: First-in-first-out inventory rotation
-- **Expiry Alerts**: Automated notifications for expiring products
-- **Restock Recommendations**: AI-powered inventory optimization
-- **Batch Tracking**: Lot number and supplier batch management
-
-### 👥 Customer Intelligence
-- **360° Customer View**: Complete customer profile with history
-- **Loyalty Management**: Points, tiers, and rewards tracking
-- **Behavior Analytics**: Purchase patterns and preferences
-- **Churn Prevention**: AI-powered retention strategies
-- **Communication Hub**: Email, SMS, and notification management
-
-### 💼 Vendor Relations
-- **Supplier Database**: Comprehensive vendor information
-- **Purchase Orders**: Complete procurement workflow
-- **Performance Metrics**: Delivery times, quality scores, costs
-- **Payment Management**: Invoice tracking and payment history
-- **Contract Management**: Terms, agreements, and renewals
-
-### 💰 Financial Management
-- **Professional Accounting**: Complete double-entry bookkeeping system
-- **Financial Reports**: P&L, Balance Sheet, Cash Flow statements
-- **Invoice Management**: Automated billing and collections
-- **Multi-Currency**: International transaction support
-- **Tax Compliance**: Automated tax calculations and reporting
-- **Bank Reconciliation**: Automated matching and reconciliation
-
-### 🤖 AI-Powered Insights
-- **Sales Forecasting**: Predictive analytics for revenue planning
-- **Customer Segmentation**: Automated grouping and targeting
-- **Inventory Optimization**: Demand prediction and stock planning
-- **Price Optimization**: Dynamic pricing recommendations
-- **Fraud Detection**: Anomaly detection for transactions
-
-## 🔧 Environment Configuration
-
-### Required Environment Variables
-```env
-# Shopify Integration
-SHOPIFY_API_KEY=your_api_key_here
-SHOPIFY_API_SECRET=your_api_secret_here
-SHOPIFY_SCOPES=read_products,write_products,read_orders,write_orders
-SHOPIFY_APP_URL=https://your-repl-name.replit.app
-
-# Database Configuration
-DATABASE_URL=postgresql://user:pass@localhost:5432/shopifyapp
-
-# Authentication
-JWT_SECRET=your_jwt_secret_here
-SESSION_SECRET=your_session_secret_here
-
-# Server Configuration
-PORT=5000
-NODE_ENV=development
-
-# AI Features (Optional)
-OPENAI_API_KEY=your_openai_key_here
+```
+ShopifyGenie/
+├── client/                    # React frontend
+│   ├── src/
+│   │   ├── components/       # Reusable UI components
+│   │   ├── pages/           # Page components
+│   │   ├── store/           # Redux store
+│   │   └── lib/             # Utilities and API client
+│   └── package.json
+├── microservices/           # Backend microservices
+│   ├── shared-library/      # Common DTOs and events
+│   ├── eureka-server/      # Service discovery
+│   ├── api-gateway/        # API Gateway
+│   ├── auth-service/       # Authentication
+│   ├── customer-service/   # Customer management
+│   ├── product-service/    # Product management
+│   ├── order-service/       # Order processing
+│   ├── notification-service/ # Notifications
+│   └── docker-compose.yml  # Docker orchestration
+└── README.md
 ```
 
-## 🚀 Deployment on Replit
+## 🔧 Development
 
-This application is optimized for Replit deployment:
+### Frontend Development
+```bash
+cd client
+npm install
+npm run dev
+```
 
-1. **Import Project**: Fork this repository to your Replit account
-2. **Configure Secrets**: Add environment variables in Replit Secrets
-3. **Install Dependencies**: Run `npm install` in the shell
-4. **Start Application**: Click the Run button or use `npm run dev`
-5. **Access Application**: Use the provided Replit URL
+### Microservices Development
+```bash
+cd microservices
+# Start infrastructure
+docker-compose up -d postgres kafka zookeeper
 
-### Replit-Specific Features
-- **Automatic SSL**: HTTPS enabled by default
-- **Port Forwarding**: Port 5000 automatically forwarded
-- **Domain Mapping**: Custom domains supported
-- **Always-On**: Keep your app running 24/7
-- **Database**: Replit Database integration available
+# Build shared library
+cd shared-library
+mvn clean install
 
-## 📊 API Documentation
+# Start services individually
+cd ../eureka-server
+mvn spring-boot:run
 
-### Interactive API Documentation
+cd ../api-gateway
+mvn spring-boot:run
 
-This project includes comprehensive Swagger/OpenAPI documentation for all API endpoints. Once the server is running, you can access the interactive API documentation at:
+# ... and so on for other services
+```
 
-- **Swagger UI**: `http://0.0.0.0:5000/api-docs`
-- **OpenAPI JSON**: `http://0.0.0.0:5000/api-docs.json`
+## 🌐 API Endpoints
 
-The Swagger UI provides:
-- Complete API endpoint documentation
-- Interactive request/response testing
-- Schema definitions for all data models
-- Authentication testing with JWT tokens
-- Request/response examples
+All API requests go through the API Gateway at `http://localhost:8080/api`:
 
-### Core API Endpoints
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile
 
-#### Authentication
-- `POST /api/auth/login` - User authentication
-- `POST /api/auth/logout` - Session termination
-- `GET /api/auth/me` - Current user information
+### Customers
+- `GET /api/customers` - Get all customers
+- `POST /api/customers` - Create customer
+- `GET /api/customers/{id}` - Get customer by ID
+- `PUT /api/customers/{id}` - Update customer
+- `DELETE /api/customers/{id}` - Delete customer
 
-#### Dashboard
-- `GET /api/dashboard` - Business metrics and KPIs
-- `GET /api/dashboard/analytics` - Advanced analytics data
+### Products
+- `GET /api/products` - Get all products
+- `POST /api/products` - Create product
+- `GET /api/products/{id}` - Get product by ID
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product
 
-#### Inventory Management
-- `GET /api/inventory` - Product listing with filtering
-- `POST /api/inventory` - Create new product
-- `PUT /api/inventory/:id` - Update product information
-- `DELETE /api/inventory/:id` - Remove product
-- `POST /api/inventory/:id/restock` - Add stock levels
+### Orders
+- `GET /api/orders` - Get all orders
+- `POST /api/orders` - Create order
+- `GET /api/orders/{id}` - Get order by ID
+- `PUT /api/orders/{id}/status` - Update order status
 
-#### Customer Management
-- `GET /api/customers` - Customer database
-- `POST /api/customers` - Create customer profile
-- `GET /api/customers/:id/orders` - Customer order history
-- `POST /api/customers/:id/loyalty` - Update loyalty points
+## 🔄 Event-Driven Architecture
 
-#### Loyalty System
-- `GET /api/loyalty` - Loyalty program overview
-- `POST /api/loyalty/transactions` - Process point transaction
-- `GET /api/loyalty/tiers` - Customer tier information
+The microservices communicate through Kafka events:
 
-#### Accounting System
-- `GET /api/accounts` - Chart of accounts
-- `GET /api/journal-entries` - Journal entries
-- `GET /api/general-ledger` - General ledger transactions
-- `GET /api/accounts-receivable` - Customer invoices
-- `GET /api/accounts-payable` - Vendor bills
-- `GET /api/wallets` - Customer/vendor credit balances
+### Event Types
+- **Customer Events**: `CUSTOMER_CREATED`, `CUSTOMER_UPDATED`, `LOYALTY_POINTS_ADDED`
+- **Product Events**: `PRODUCT_CREATED`, `PRODUCT_UPDATED`, `STOCK_UPDATED`
+- **Order Events**: `ORDER_CREATED`, `ORDER_UPDATED`, `ORDER_COMPLETED`
+- **Notification Events**: `USER_REGISTERED`, `LOYALTY_POINTS_ADDED`
 
-#### AI Insights
-- `GET /api/ai/recommendations` - AI-generated suggestions
-- `GET /api/ai/forecasting` - Sales predictions
-- `GET /api/ai/insights` - Business intelligence
+## 🐳 Docker Commands
 
-### Shopify Webhooks
-- `POST /webhooks/orders/create` - New order processing
-- `POST /webhooks/orders/updated` - Order status changes
-- `POST /webhooks/products/create` - New product sync
-- `POST /webhooks/inventory/update` - Stock level changes
+```bash
+# Start all services
+docker-compose up -d
 
-## 🔒 Security Features
+# View logs
+docker-compose logs -f [service-name]
 
-### Authentication & Authorization
-- **JWT Tokens**: Secure, stateless authentication
-- **Role-Based Access**: Fine-grained permission system
-- **Session Management**: Secure session handling
-- **Password Security**: Bcrypt hashing with salt
+# Stop all services
+docker-compose down
 
-### Data Protection
-- **Input Validation**: Comprehensive data sanitization
-- **SQL Injection Prevention**: Parameterized queries
-- **XSS Protection**: Content Security Policy headers
-- **CORS Configuration**: Controlled cross-origin requests
+# Rebuild and start
+docker-compose up -d --build
+```
 
-### API Security
-- **Rate Limiting**: Request throttling per IP
-- **API Key Management**: Secure credential storage
-- **Webhook Verification**: Shopify signature validation
-- **Error Handling**: Secure error responses
+## 🧪 Testing
 
-## 📈 Performance Optimization
+```bash
+# Test microservices
+cd microservices
+./test-microservices.sh
 
-### Frontend Performance
-- **Code Splitting**: Lazy loading for route components
-- **Bundle Optimization**: Tree shaking and minification
-- **Caching Strategy**: Service worker and browser caching
-- **Image Optimization**: WebP format and lazy loading
+# Test frontend
+cd client
+npm run test
+```
 
-### Backend Performance
-- **Query Optimization**: Efficient database queries
-- **Response Caching**: Memory-based caching layer
-- **Connection Pooling**: Database connection management
-- **Compression**: Gzip response compression
+## 📊 Monitoring
 
-### Monitoring & Analytics
-- **Error Tracking**: Comprehensive error logging
-- **Performance Metrics**: Response time monitoring
-- **User Analytics**: Behavior tracking and insights
-- **Health Checks**: Application status monitoring
+- **Eureka Dashboard**: http://localhost:8761
+- **Service Health**: `GET /actuator/health` on each service
+- **Metrics**: `GET /actuator/metrics` on each service
 
-## 🤝 Contributing Guidelines
+## 🚀 Production Deployment
 
-### Development Workflow
-1. **Fork Repository**: Create your own copy
-2. **Create Feature Branch**: `git checkout -b feature/amazing-feature`
-3. **Make Changes**: Follow coding standards
-4. **Test Thoroughly**: Ensure all tests pass
-5. **Submit PR**: Detailed description of changes
+1. **Environment Variables**
+   - Set production database URLs
+   - Configure Kafka bootstrap servers
+   - Set JWT secrets
 
-### Code Standards
-- **TypeScript**: Strict type checking enabled
-- **ESLint**: Code quality enforcement
-- **Prettier**: Consistent code formatting
-- **Conventional Commits**: Standardized commit messages
+2. **Scaling**
+   - Scale individual services independently
+   - Use load balancers for high availability
+   - Implement circuit breakers
 
-### Testing Requirements
-- **Unit Tests**: Component and utility testing
-- **Integration Tests**: API endpoint testing
-- **E2E Tests**: Full user flow testing
-- **Performance Tests**: Load and stress testing
+3. **Security**
+   - Enable HTTPS
+   - Implement proper authentication
+   - Use secrets management
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support & Documentation
-
-### Getting Help
-- **Issues**: Report bugs and feature requests on GitHub
-- **Discussions**: Community support and questions
-- **Documentation**: Comprehensive guides and tutorials
-- **API Reference**: Complete endpoint documentation
-
-### Additional Documentation
-- **[Accounting Module Documentation](README-ACCOUNTS.md)**: Complete guide to the accounting system
-- **[Design System Documentation](README-DESIGN.md)**: UI/UX design guidelines and components
-
-### Resources
-- **Shopify Developer Guide**: [shopify.dev](https://shopify.dev)
-- **React Documentation**: [react.dev](https://react.dev)
-- **TypeScript Guide**: [typescriptlang.org](https://typescriptlang.org)
-- **Tailwind CSS**: [tailwindcss.com](https://tailwindcss.com)
-- **shadcn/ui**: [ui.shadcn.com](https://ui.shadcn.com)
-
----
-
-**Built with ❤️ for modern e-commerce management**
-
-*ShopifyApp - Empowering businesses with intelligent, scalable solutions*
+This project is licensed under the MIT License.

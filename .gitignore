@@ -4,3 +4,63 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor/IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+Thumbs.db
+
+# Java/Maven/Gradle
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+**/.project
+**/.classpath
+**/.settings/
+**/.factorypath
+
+# Spring Boot
+**/bin/
+**/out/
+
+# Node/Vite
+client/.vite/
+client/.cache/
+**/.cache/
+**/.eslintcache
+
+# Coverage
+**/coverage/
+**/.nyc_output/
+
+# Env files
+.env
+.env.*
+microservices/**/.env
+
+# Docker
+**/.docker/
+**/.env.docker
+
+# Build outputs
+microservices/**/build/
+microservices/**/dist/
+
+# Generated assets
+dist/
+dist/**
+client/dist/
+dist/public/
+
+# Misc
+*.log
+*.tmp
+*.swp
