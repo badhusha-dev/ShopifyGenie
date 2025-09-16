@@ -1,0 +1,7 @@
+com\shopifygenie\auth\entity\User$Role.class
+com\shopifygenie\auth\controller\AuthController.class
+com\shopifygenie\auth\config\AuthConfig.class
+com\shopifygenie\auth\service\UserService.class
+com\shopifygenie\auth\AuthServiceApplication.class
+com\shopifygenie\auth\repository\UserRepository.class
+com\shopifygenie\auth\entity\User.class
