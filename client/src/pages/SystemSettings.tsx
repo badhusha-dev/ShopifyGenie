@@ -185,6 +185,16 @@ const SystemSettings: React.FC = () => {
             </li>
             <li className="nav-item" role="presentation">
               <button
+                className={`nav-link ${activeTab === 'shopify' ? 'active' : ''}`}
+                onClick={() => setActiveTab('shopify')}
+                type="button"
+              >
+                <i className="fab fa-shopify me-2"></i>
+                Shopify Integration
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button
                 className={`nav-link ${activeTab === 'theme' ? 'active' : ''}`}
                 onClick={() => setActiveTab('theme')}
                 type="button"
@@ -537,6 +547,221 @@ const SystemSettings: React.FC = () => {
                       value={settings.maxLoginAttempts || '5'}
                       onChange={(e) => handleSettingChange('maxLoginAttempts', e.target.value)}
                     />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Shopify Integration Tab */}
+        {activeTab === 'shopify' && (
+          <div className="row g-4 animate-slide-in">
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fab fa-shopify me-2 text-primary"></i>
+                  Shopify Store Credentials
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <label htmlFor="shopifyDomain" className="form-label fw-semibold">Shop Domain</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="shopifyDomain"
+                      value={settings.shopifyDomain || ''}
+                      onChange={(e) => handleSettingChange('shopifyDomain', e.target.value)}
+                      placeholder="your-store.myshopify.com"
+                    />
+                    <div className="form-text">Enter your Shopify store domain (e.g., your-store.myshopify.com)</div>
+                  </div>
+                  <div className="col-12">
+                    <label htmlFor="shopifyApiKey" className="form-label fw-semibold">API Key</label>
+                    <input
+                      type="password"
+                      className="form-control"
+                      id="shopifyApiKey"
+                      value={settings.shopifyApiKey || ''}
+                      onChange={(e) => handleSettingChange('shopifyApiKey', e.target.value)}
+                      placeholder="Enter your Shopify API key"
+                    />
+                    <div className="form-text">Your Shopify app's API key</div>
+                  </div>
+                  <div className="col-12">
+                    <label htmlFor="shopifyApiSecret" className="form-label fw-semibold">API Secret</label>
+                    <input
+                      type="password"
+                      className="form-control"
+                      id="shopifyApiSecret"
+                      value={settings.shopifyApiSecret || ''}
+                      onChange={(e) => handleSettingChange('shopifyApiSecret', e.target.value)}
+                      placeholder="Enter your Shopify API secret"
+                    />
+                    <div className="form-text">Your Shopify app's API secret key</div>
+                  </div>
+                  <div className="col-12">
+                    <label htmlFor="shopifyAccessToken" className="form-label fw-semibold">Access Token</label>
+                    <input
+                      type="password"
+                      className="form-control"
+                      id="shopifyAccessToken"
+                      value={settings.shopifyAccessToken || ''}
+                      onChange={(e) => handleSettingChange('shopifyAccessToken', e.target.value)}
+                      placeholder="Enter your Shopify access token"
+                    />
+                    <div className="form-text">Private app access token for API authentication</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-6">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-cog me-2 text-success"></i>
+                  Integration Settings
+                </h5>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="shopifySyncEnabled"
+                        checked={settings.shopifySyncEnabled === 'true'}
+                        onChange={(e) => handleSettingChange('shopifySyncEnabled', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="shopifySyncEnabled">
+                        <i className="fas fa-sync me-2"></i>
+                        Enable Shopify Sync
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="autoSyncProducts"
+                        checked={settings.autoSyncProducts === 'true'}
+                        onChange={(e) => handleSettingChange('autoSyncProducts', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="autoSyncProducts">
+                        <i className="fas fa-boxes me-2"></i>
+                        Auto-sync Products
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="autoSyncOrders"
+                        checked={settings.autoSyncOrders === 'true'}
+                        onChange={(e) => handleSettingChange('autoSyncOrders', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="autoSyncOrders">
+                        <i className="fas fa-shopping-cart me-2"></i>
+                        Auto-sync Orders
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="autoSyncCustomers"
+                        checked={settings.autoSyncCustomers === 'true'}
+                        onChange={(e) => handleSettingChange('autoSyncCustomers', e.target.checked.toString())}
+                      />
+                      <label className="form-check-label fw-semibold" htmlFor="autoSyncCustomers">
+                        <i className="fas fa-users me-2"></i>
+                        Auto-sync Customers
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <label htmlFor="syncInterval" className="form-label fw-semibold">Sync Interval (minutes)</label>
+                    <select
+                      className="form-select"
+                      id="syncInterval"
+                      value={settings.syncInterval || '30'}
+                      onChange={(e) => handleSettingChange('syncInterval', e.target.value)}
+                    >
+                      <option value="15">15 minutes</option>
+                      <option value="30">30 minutes</option>
+                      <option value="60">1 hour</option>
+                      <option value="120">2 hours</option>
+                      <option value="240">4 hours</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-12">
+              <div className="modern-card p-4">
+                <h5 className="fw-bold text-dark mb-4">
+                  <i className="fas fa-info-circle me-2 text-info"></i>
+                  Connection Status & Test
+                </h5>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <div className="d-flex align-items-center p-3 bg-light rounded">
+                      <div className="me-3">
+                        <i className="fas fa-circle text-success fs-4"></i>
+                      </div>
+                      <div>
+                        <h6 className="mb-1">Connection Status</h6>
+                        <p className="text-muted mb-0">Connected to Shopify</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="d-flex align-items-center p-3 bg-light rounded">
+                      <div className="me-3">
+                        <i className="fas fa-clock text-warning fs-4"></i>
+                      </div>
+                      <div>
+                        <h6 className="mb-1">Last Sync</h6>
+                        <p className="text-muted mb-0">2 minutes ago</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <div className="d-flex gap-2">
+                      <button
+                        className="btn btn-outline-primary d-flex align-items-center"
+                        onClick={() => {
+                          // Test connection logic
+                          console.log('Testing Shopify connection...');
+                        }}
+                      >
+                        <i className="fas fa-plug me-2"></i>
+                        Test Connection
+                      </button>
+                      <button
+                        className="btn btn-outline-success d-flex align-items-center"
+                        onClick={() => {
+                          // Manual sync logic
+                          console.log('Starting manual sync...');
+                        }}
+                      >
+                        <i className="fas fa-sync me-2"></i>
+                        Manual Sync
+                      </button>
+                      <button
+                        className="btn btn-outline-warning d-flex align-items-center"
+                        onClick={() => {
+                          // Clear cache logic
+                          console.log('Clearing sync cache...');
+                        }}
+                      >
+                        <i className="fas fa-trash me-2"></i>
+                        Clear Cache
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
