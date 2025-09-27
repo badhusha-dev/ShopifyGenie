@@ -42,15 +42,15 @@ const Subscriptions = () => {
   });
 
   const { data: subscriptions, refetch } = useQuery<Subscription[]>({
-    queryKey: ["/api/subscriptions"],
+    queryKey: ["/subscriptions"],
   });
 
   const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: ["/customers"],
   });
 
   const { data: products } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/products"],
   });
 
   const createSubscriptionMutation = useMutation({

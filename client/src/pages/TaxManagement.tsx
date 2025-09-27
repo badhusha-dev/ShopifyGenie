@@ -67,12 +67,12 @@ const TaxManagement = () => {
 
   // Fetch tax rates
   const { data: taxRates = [], isLoading: loadingRates } = useQuery<TaxRate[]>({
-    queryKey: ['/api/tax-rates'],
+    queryKey: ['/tax-rates'],
   });
 
   // Fetch accounts (liability accounts for tax payable)
   const { data: accounts = [] } = useQuery<Account[]>({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/accounts'],
     select: (data) => data.filter(account => 
       account.accountType === 'liability' && 
       (account.accountName.toLowerCase().includes('tax') || 
@@ -108,7 +108,7 @@ const TaxManagement = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tax-rates'] });
+      queryClient.invalidateQueries({ queryKey: ['/tax-rates'] });
       setShowModal(false);
       setEditingTaxRate(null);
       reset();

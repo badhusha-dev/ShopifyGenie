@@ -16,7 +16,7 @@ const ThemeSettings: React.FC = () => {
       return apiRequest('PUT', '/api/system/theme', { theme });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/system/settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/system/settings'] });
       setIsPreviewMode(false);
     },
   });

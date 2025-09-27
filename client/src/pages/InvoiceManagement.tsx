@@ -71,7 +71,7 @@ const InvoiceManagement = () => {
 
   // Fetch aging report
   const { data: agingReport, isLoading: loadingAging } = useQuery<AgingReport>({
-    queryKey: ['/api/aging-report'],
+    queryKey: ['/aging-report'],
     enabled: showAgingReport,
   });
 
@@ -85,7 +85,7 @@ const InvoiceManagement = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['/invoices'] });
       setShowPaymentModal(false);
       setSelectedInvoice(null);
       reset();

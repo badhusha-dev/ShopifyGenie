@@ -15,6 +15,7 @@ import { store } from './store'; // Import the Redux store
 // Pages
 import Home from './pages/Home';
 import Inventory from './pages/Inventory';
+import InventoryReports from './pages/InventoryReports';
 import AdvancedInventory from './pages/AdvancedInventory';
 import Customers from './pages/Customers';
 import CustomerPortal from './pages/CustomerPortal';
@@ -112,6 +113,7 @@ const AppContent = () => {
         <Route path="/" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
         <Route path="/dashboard" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
         <Route path="/inventory" component={() => renderPage("Inventory Management", "Manage your products and stock levels", Inventory)} />
+        <Route path="/inventory-reports" component={() => renderPage("Inventory Reports", "Comprehensive inventory analytics and reports", InventoryReports)} />
         <Route path="/advanced-inventory" component={() => renderPage("Advanced Inventory", "AI-powered inventory insights and forecasting", AdvancedInventory)} />
         <Route path="/customers" component={() => renderPage("Customer Management", "Manage customer relationships and data", Customers)} />
         <Route path="/customer-portal" component={() => renderPage("Customer Portal", "Customer-facing dashboard and account management", CustomerPortal)} />
@@ -143,7 +145,7 @@ const AppContent = () => {
             // Only show NotFound for unmatched routes
             const currentPath = window.location.pathname;
             const validPaths = [
-              '/', '/dashboard', '/inventory', '/advanced-inventory', '/customers', '/customer-portal',
+              '/', '/dashboard', '/inventory', '/inventory-reports', '/advanced-inventory', '/customers', '/customer-portal',
               '/loyalty', '/subscriptions', '/vendors', '/ai-recommendations', '/ai-insights', '/reports',
               '/settings', '/user-management', '/role-permissions', '/integrations',
               '/accounting/chart-of-accounts', '/accounting/general-ledger', '/accounting/journal-entries',

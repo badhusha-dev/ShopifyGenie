@@ -37,6 +37,12 @@ const menuSections = [
         roles: ['superadmin', 'admin', 'staff']
       },
       {
+        title: 'Inventory Reports',
+        icon: 'fas fa-chart-bar',
+        href: '/inventory-reports',
+        roles: ['superadmin', 'admin', 'staff']
+      },
+      {
         title: 'Customers',
         icon: 'fas fa-users',
         href: '/customers',

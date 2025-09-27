@@ -44,7 +44,7 @@ const CustomerPortal = () => {
   const [showRedeemModal, setShowRedeemModal] = useState(false);
 
   const { data: portalData, refetch } = useQuery<PortalData>({
-    queryKey: [`/api/customer/portal/${customerId}`],
+    queryKey: [`/customer/portal/${customerId}`],
   });
 
   const redeemPointsMutation = useMutation({

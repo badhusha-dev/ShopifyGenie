@@ -35,7 +35,7 @@ const Integrations: React.FC = () => {
 
   // Fetch integrations
   const { data: integrations = [], isLoading } = useQuery({
-    queryKey: ['/api/integrations'],
+    queryKey: ['/integrations'],
   });
 
   // Update integration mutation
@@ -43,7 +43,7 @@ const Integrations: React.FC = () => {
     mutationFn: (data: { name: string; config?: any; credentials?: any; isEnabled?: boolean }) =>
       apiRequest('PUT', `/api/integrations/${data.name}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/integrations'] });
+      queryClient.invalidateQueries({ queryKey: ['/integrations'] });
       setShowConfigModal(false);
       setSelectedIntegration(null);
     },

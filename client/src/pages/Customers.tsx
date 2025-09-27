@@ -115,6 +115,7 @@ const Customers: React.FC = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -122,8 +123,39 @@ const Customers: React.FC = () => {
     address: ''
   });
 
+  // Bulk operations handlers
+  const handleSelectAll = () => {
+    if (selectedCustomers.length === filteredAndSortedCustomers.length) {
+      setSelectedCustomers([]);
+    } else {
+      setSelectedCustomers(filteredAndSortedCustomers.map((c: Customer) => c.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedCustomers.length === 0) return;
+    if (confirm(`Delete ${selectedCustomers.length} selected customers?`)) {
+      bulkOperationMutation.mutate({ action: 'delete', customerIds: selectedCustomers });
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedCustomers.length === 0) return;
+    bulkOperationMutation.mutate({ action: 'export', customerIds: selectedCustomers });
+  };
+
   // AG-Grid Column Definitions
   const columnDefs: ColDef[] = useMemo(() => [
+    {
+      headerName: '',
+      field: 'selected',
+      sortable: false,
+      filter: false,
+      width: 50,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      headerCheckboxSelectionFilteredOnly: true
+    },
     {
       headerName: 'Customer',
       field: 'name',
@@ -359,6 +391,33 @@ const Customers: React.FC = () => {
     }
   });
 
+  const bulkOperationMutation = useMutation({
+    mutationFn: async (data: { action: string; customerIds: string[]; updates?: any }) => {
+      const response = await fetch('/api/customers/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to perform bulk operation');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setSelectedCustomers([]);
+      toast({
+        title: "Success",
+        description: "Bulk operation completed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to perform bulk operation",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Calculate customer stats
   const customerStats: CustomerStats = useMemo(() => {
     const totalCustomers = customers.length;
@@ -547,74 +606,96 @@ const Customers: React.FC = () => {
               <h1 className="h2 fw-bold text-dark mb-1">Customer Management</h1>
               <p className="text-muted mb-0">Manage relationships, loyalty, and customer insights</p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <button 
-                  className="btn btn-primary btn-ripple d-flex align-items-center"
-                  onClick={resetForm}
-                >
-                  <Plus className="me-2" size={16} />
-                  Add Customer
-                </button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {selectedCustomer ? 'Edit Customer' : 'Add New Customer'}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="row g-3">
-                  <div className="col-12">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="col-12">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      required
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <Label htmlFor="phone">Phone (Optional)</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <Label htmlFor="address">Address (Optional)</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="col-12 d-flex justify-content-end gap-2 pt-3">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="btn btn-primary">
-                      {selectedCustomer ? 'Update' : 'Create'} Customer
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <div className="d-flex gap-2">
+              {selectedCustomers.length > 0 && (
+                <div className="btn-group me-2">
+                  <button
+                    className="btn btn-outline-danger d-flex align-items-center"
+                    onClick={handleBulkDelete}
+                    disabled={bulkOperationMutation.isPending}
+                  >
+                    <Trash2 className="me-2" size={16} />
+                    Delete ({selectedCustomers.length})
+                  </button>
+                  <button
+                    className="btn btn-outline-info d-flex align-items-center"
+                    onClick={handleBulkExport}
+                    disabled={bulkOperationMutation.isPending}
+                  >
+                    <Eye className="me-2" size={16} />
+                    Export Selected
+                  </button>
+                </div>
+              )}
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <button 
+                    className="btn btn-primary btn-ripple d-flex align-items-center"
+                    onClick={resetForm}
+                  >
+                    <Plus className="me-2" size={16} />
+                    Add Customer
+                  </button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedCustomer ? 'Edit Customer' : 'Add New Customer'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="row g-3">
+                    <div className="col-12">
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        required
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-12">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        required
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <Label htmlFor="phone">Phone (Optional)</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <Label htmlFor="address">Address (Optional)</Label>
+                      <Input
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-12 d-flex justify-content-end gap-2 pt-3">
+                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" className="btn btn-primary">
+                        {selectedCustomer ? 'Update' : 'Create'} Customer
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </div>
@@ -745,6 +826,7 @@ const Customers: React.FC = () => {
                 enableSorting={true}
                 enableResizing={true}
                 sideBar={false}
+                rowSelection="multiple"
                 onRowDoubleClicked={(event) => handleViewCustomer(event.data)}
               />
             </div>

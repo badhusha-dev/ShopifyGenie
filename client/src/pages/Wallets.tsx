@@ -82,17 +82,17 @@ const Wallets = () => {
 
   // Fetch wallets
   const { data: wallets = [], isLoading, error } = useQuery<Wallet[]>({
-    queryKey: ['/api/wallets'],
+    queryKey: ['/wallets'],
   });
 
   // Fetch customers for dropdown
   const { data: customers = [] } = useQuery<Entity[]>({
-    queryKey: ['/api/customers'],
+    queryKey: ['/customers'],
   });
 
   // Fetch vendors for dropdown
   const { data: vendors = [] } = useQuery<Entity[]>({
-    queryKey: ['/api/vendors'],
+    queryKey: ['/vendors'],
   });
 
   // Fetch wallet transactions
@@ -123,7 +123,7 @@ const Wallets = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/wallets'] });
       setShowWalletModal(false);
       setEditingWallet(null);
       resetWallet();
@@ -142,8 +142,8 @@ const Wallets = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/wallet-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/wallet-transactions'] });
       setShowTransactionModal(false);
       resetTransaction();
     },
@@ -159,7 +159,7 @@ const Wallets = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/wallets'] });
     },
   });
 

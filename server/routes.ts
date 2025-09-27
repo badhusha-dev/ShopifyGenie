@@ -695,6 +695,1136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/products/{id}:
+   *   delete:
+   *     tags: [Products]
+   *     summary: Delete a product
+   *     description: Delete a product from inventory
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Product ID
+   *     responses:
+   *       200:
+   *         description: Product deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: Product deleted successfully
+   *       404:
+   *         description: Product not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: Product not found
+   *       500:
+   *         description: Failed to delete product
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: Failed to delete product
+   */
+  app.delete("/api/products/:id", authenticateToken, requirePermission('inventory:delete'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteProduct(id);
+      if (!success) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/bulk:
+   *   post:
+   *     tags: [Products]
+   *     summary: Bulk operations on products
+   *     description: Perform bulk operations like delete multiple, update multiple
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               action:
+   *                 type: string
+   *                 enum: [delete, update, export]
+   *               productIds:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *               updates:
+   *                 type: object
+   *                 description: Fields to update (for bulk update)
+   *     responses:
+   *       200:
+   *         description: Bulk operation completed successfully
+   *       400:
+   *         description: Invalid bulk operation data
+   *       500:
+   *         description: Failed to perform bulk operation
+   */
+  app.post("/api/products/bulk", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { action, productIds, updates } = req.body;
+      
+      if (!action || !Array.isArray(productIds) || productIds.length === 0) {
+        return res.status(400).json({ error: "Invalid bulk operation data" });
+      }
+
+      let results: any = {};
+
+      switch (action) {
+        case 'delete':
+          const deleteResults = await Promise.allSettled(
+            productIds.map(id => storage.deleteProduct(id))
+          );
+          results = {
+            action: 'delete',
+            requested: productIds.length,
+            successful: deleteResults.filter(r => r.status === 'fulfilled' && r.value).length,
+            failed: deleteResults.filter(r => r.status === 'rejected' || !r.value).length
+          };
+          break;
+
+        case 'update':
+          if (!updates) {
+            return res.status(400).json({ error: "Updates required for bulk update operation" });
+          }
+          const updateResults = await Promise.allSettled(
+            productIds.map(id => storage.updateProduct(id, updates))
+          );
+          results = {
+            action: 'update',
+            requested: productIds.length,
+            successful: updateResults.filter(r => r.status === 'fulfilled' && r.value).length,
+            failed: updateResults.filter(r => r.status === 'rejected' || !r.value).length
+          };
+          break;
+
+        case 'export':
+          const products = await Promise.all(
+            productIds.map(id => storage.getProduct(id))
+          );
+          const validProducts = products.filter(p => p !== undefined);
+          results = {
+            action: 'export',
+            data: validProducts,
+            count: validProducts.length
+          };
+          break;
+
+        default:
+          return res.status(400).json({ error: "Unsupported bulk action" });
+      }
+
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to perform bulk operation" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/categories:
+   *   get:
+   *     tags: [Products]
+   *     summary: Get all product categories
+   *     description: Retrieve all product categories
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Categories retrieved successfully
+   *       500:
+   *         description: Failed to fetch categories
+   */
+  app.get("/api/products/categories", authenticateToken, async (req, res) => {
+    try {
+      const categories = await storage.getProductCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/categories:
+   *   post:
+   *     tags: [Products]
+   *     summary: Create a new product category
+   *     description: Create a new product category
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *               description:
+   *                 type: string
+   *               parentId:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: Category created successfully
+   *       400:
+   *         description: Invalid category data
+   *       500:
+   *         description: Failed to create category
+   */
+  app.post("/api/products/categories", authenticateToken, requirePermission('inventory:create'), async (req, res) => {
+    try {
+      const category = await storage.createProductCategory(req.body);
+      res.status(201).json(category);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create category" });
+    }
+  });
+
+  app.put("/api/products/categories/:id", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const category = await storage.updateProductCategory(id, req.body);
+      if (!category) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update category" });
+    }
+  });
+
+  app.delete("/api/products/categories/:id", authenticateToken, requirePermission('inventory:delete'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteProductCategory(id);
+      if (!success) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete category" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/{id}/upload-image:
+   *   post:
+   *     tags: [Products]
+   *     summary: Upload product image
+   *     description: Upload an image for a product
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Product ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         multipart/form-data:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               image:
+   *                 type: string
+   *                 format: binary
+   *     responses:
+   *       200:
+   *         description: Image uploaded successfully
+   *       400:
+   *         description: Invalid image file
+   *       404:
+   *         description: Product not found
+   *       500:
+   *         description: Failed to upload image
+   */
+  app.post("/api/products/:id/upload-image", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if product exists
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      // In a real implementation, you would:
+      // 1. Use multer or similar middleware to handle file uploads
+      // 2. Validate image file type and size
+      // 3. Upload to cloud storage (AWS S3, Cloudinary, etc.)
+      // 4. Store the image URL in the product
+      
+      // For demo purposes, we'll simulate this
+      const imageUrl = `https://via.placeholder.com/300x300?text=${encodeURIComponent(product.name)}`;
+      
+      const updatedProduct = await storage.updateProduct(id, {
+        imageUrl,
+        images: [...(product.images || []), imageUrl]
+      });
+
+      res.json({ message: "Image uploaded successfully", imageUrl, product: updatedProduct });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
+
+  app.get("/api/products/:id/images", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      
+      res.json({ images: product.images || [] });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch product images" });
+    }
+  });
+
+  app.delete("/api/products/:id/images/:imageIndex", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id, imageIndex } = req.params;
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const images = product.images || [];
+      const index = parseInt(imageIndex);
+      if (index < 0 || index >= images.length) {
+        return res.status(400).json({ error: "Invalid image index" });
+      }
+
+      images.splice(index, 1);
+      const updatedProduct = await storage.updateProduct(id, { images });
+
+      res.json({ message: "Image deleted successfully", product: updatedProduct });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete image" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/{id}/variants:
+   *   get:
+   *     tags: [Products]
+   *     summary: Get product variants
+   *     description: Retrieve all variants for a product
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Product ID
+   *     responses:
+   *       200:
+   *         description: Variants retrieved successfully
+   *       404:
+   *         description: Product not found
+   *       500:
+   *         description: Failed to fetch variants
+   */
+  app.get("/api/products/:id/variants", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const variants = await storage.getProductVariants(id);
+      res.json(variants);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch variants" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/{id}/variants:
+   *   post:
+   *     tags: [Products]
+   *     summary: Create product variant
+   *     description: Create a new variant for a product
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Product ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *               sku:
+   *                 type: string
+   *               price:
+   *                 type: number
+   *               stock:
+   *                 type: number
+   *               attributes:
+   *                 type: object
+   *               isDefault:
+   *                 type: boolean
+   *     responses:
+   *       201:
+   *         description: Variant created successfully
+   *       404:
+   *         description: Product not found
+   *       500:
+   *         description: Failed to create variant
+   */
+  app.post("/api/products/:id/variants", authenticateToken, requirePermission('inventory:create'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const variant = await storage.createProductVariant({
+        ...req.body,
+        productId: id
+      });
+      res.status(201).json(variant);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create variant" });
+    }
+  });
+
+  app.put("/api/products/variants/:id", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const variant = await storage.updateProductVariant(id, req.body);
+      if (!variant) {
+        return res.status(404).json({ error: "Variant not found" });
+      }
+      res.json(variant);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update variant" });
+    }
+  });
+
+  app.delete("/api/products/variants/:id", authenticateToken, requirePermission('inventory:delete'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteProductVariant(id);
+      if (!success) {
+        return res.status(404).json({ error: "Variant not found" });
+      }
+      res.json({ message: "Variant deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete variant" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/{id}/barcode:
+   *   get:
+   *     tags: [Products]
+   *     summary: Generate product barcode
+   *     description: Generate a barcode for a product
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Product ID
+   *       - in: query
+   *         name: format
+   *         schema:
+   *           type: string
+   *           enum: [EAN13, CODE128, QR]
+   *         description: Barcode format
+   *     responses:
+   *       200:
+   *         description: Barcode generated successfully
+   *       404:
+   *         description: Product not found
+   *       500:
+   *         description: Failed to generate barcode
+   */
+  app.get("/api/products/:id/barcode", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { format = 'EAN13' } = req.query;
+      
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      // Generate barcode data (in real implementation, use a barcode library)
+      const barcodeData = {
+        productId: id,
+        sku: product.sku,
+        format,
+        value: product.sku || id,
+        imageUrl: `https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(product.sku || id)}&code=${format}&translate-esc=on`,
+        createdAt: new Date().toISOString()
+      };
+
+      res.json(barcodeData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate barcode" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/scan-barcode:
+   *   post:
+   *     tags: [Products]
+   *     summary: Scan product barcode
+   *     description: Find product by barcode value
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               barcode:
+   *                 type: string
+   *                 description: Barcode value to scan
+   *     responses:
+   *       200:
+   *         description: Product found
+   *       404:
+   *         description: Product not found
+   *       500:
+   *         description: Failed to scan barcode
+   */
+  app.post("/api/products/scan-barcode", authenticateToken, async (req, res) => {
+    try {
+      const { barcode } = req.body;
+      
+      if (!barcode) {
+        return res.status(400).json({ error: "Barcode value is required" });
+      }
+
+      // Find product by SKU or ID
+      const products = await storage.getProducts();
+      const product = products.find(p => p.sku === barcode || p.id === barcode);
+
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      res.json({ product, barcode });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to scan barcode" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/inventory/alerts:
+   *   get:
+   *     tags: [Inventory]
+   *     summary: Get inventory alerts
+   *     description: Retrieve all active inventory alerts
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: type
+   *         schema:
+   *           type: string
+   *           enum: [low_stock, out_of_stock, expiring, overstock]
+   *         description: Filter alerts by type
+   *       - in: query
+   *         name: severity
+   *         schema:
+   *           type: string
+   *           enum: [low, medium, high, critical]
+   *         description: Filter alerts by severity
+   *     responses:
+   *       200:
+   *         description: Alerts retrieved successfully
+   *       500:
+   *         description: Failed to fetch alerts
+   */
+  app.get("/api/inventory/alerts", authenticateToken, async (req, res) => {
+    try {
+      const { type, severity } = req.query;
+      const alerts = await storage.getInventoryAlerts(type as string, severity as string);
+      res.json(alerts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch alerts" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/inventory/alerts:
+   *   post:
+   *     tags: [Inventory]
+   *     summary: Create inventory alert
+   *     description: Create a new inventory alert
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               productId:
+   *                 type: string
+   *               type:
+   *                 type: string
+   *                 enum: [low_stock, out_of_stock, expiring, overstock]
+   *               severity:
+   *                 type: string
+   *                 enum: [low, medium, high, critical]
+   *               message:
+   *                 type: string
+   *               threshold:
+   *                 type: number
+   *     responses:
+   *       201:
+   *         description: Alert created successfully
+   *       500:
+   *         description: Failed to create alert
+   */
+  app.post("/api/inventory/alerts", authenticateToken, requirePermission('inventory:create'), async (req, res) => {
+    try {
+      const alert = await storage.createInventoryAlert(req.body);
+      res.status(201).json(alert);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create alert" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/inventory/alerts/{id}/acknowledge:
+   *   post:
+   *     tags: [Inventory]
+   *     summary: Acknowledge inventory alert
+   *     description: Mark an alert as acknowledged
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Alert ID
+   *     responses:
+   *       200:
+   *         description: Alert acknowledged successfully
+   *       404:
+   *         description: Alert not found
+   *       500:
+   *         description: Failed to acknowledge alert
+   */
+  app.post("/api/inventory/alerts/:id/acknowledge", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const alert = await storage.acknowledgeInventoryAlert(id);
+      if (!alert) {
+        return res.status(404).json({ error: "Alert not found" });
+      }
+      res.json(alert);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to acknowledge alert" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/inventory/check-alerts:
+   *   post:
+   *     tags: [Inventory]
+   *     summary: Check and generate inventory alerts
+   *     description: Automatically check inventory levels and generate alerts
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Alert check completed
+   *       500:
+   *         description: Failed to check alerts
+   */
+  app.post("/api/inventory/check-alerts", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const alerts = await storage.checkAndGenerateAlerts();
+      res.json({ message: "Alert check completed", alertsGenerated: alerts.length, alerts });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check alerts" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/purchase-orders:
+   *   get:
+   *     tags: [Inventory]
+   *     summary: Get purchase orders
+   *     description: Retrieve all purchase orders
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [draft, pending, approved, ordered, received, cancelled]
+   *         description: Filter by status
+   *       - in: query
+   *         name: vendorId
+   *         schema:
+   *           type: string
+   *         description: Filter by vendor ID
+   *     responses:
+   *       200:
+   *         description: Purchase orders retrieved successfully
+   *       500:
+   *         description: Failed to fetch purchase orders
+   */
+  app.get("/api/purchase-orders", authenticateToken, async (req, res) => {
+    try {
+      const { status, vendorId } = req.query;
+      const purchaseOrders = await storage.getPurchaseOrders(status as string, vendorId as string);
+      res.json(purchaseOrders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch purchase orders" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/purchase-orders:
+   *   post:
+   *     tags: [Inventory]
+   *     summary: Create purchase order
+   *     description: Create a new purchase order
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               vendorId:
+   *                 type: string
+   *               items:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     productId:
+   *                       type: string
+   *                     quantity:
+   *                       type: number
+   *                     unitPrice:
+   *                       type: number
+   *               expectedDeliveryDate:
+   *                 type: string
+   *                 format: date
+   *               notes:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: Purchase order created successfully
+   *       500:
+   *         description: Failed to create purchase order
+   */
+  app.post("/api/purchase-orders", authenticateToken, requirePermission('inventory:create'), async (req, res) => {
+    try {
+      const purchaseOrder = await storage.createPurchaseOrder(req.body);
+      res.status(201).json(purchaseOrder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create purchase order" });
+    }
+  });
+
+  app.get("/api/purchase-orders/:id", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const purchaseOrder = await storage.getPurchaseOrder(id);
+      if (!purchaseOrder) {
+        return res.status(404).json({ error: "Purchase order not found" });
+      }
+      res.json(purchaseOrder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch purchase order" });
+    }
+  });
+
+  app.put("/api/purchase-orders/:id", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const purchaseOrder = await storage.updatePurchaseOrder(id, req.body);
+      if (!purchaseOrder) {
+        return res.status(404).json({ error: "Purchase order not found" });
+      }
+      res.json(purchaseOrder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update purchase order" });
+    }
+  });
+
+  app.delete("/api/purchase-orders/:id", authenticateToken, requirePermission('inventory:delete'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deletePurchaseOrder(id);
+      if (!success) {
+        return res.status(404).json({ error: "Purchase order not found" });
+      }
+      res.json({ message: "Purchase order deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete purchase order" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/purchase-orders/{id}/approve:
+   *   post:
+   *     tags: [Inventory]
+   *     summary: Approve purchase order
+   *     description: Approve a purchase order
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Purchase order ID
+   *     responses:
+   *       200:
+   *         description: Purchase order approved successfully
+   *       404:
+   *         description: Purchase order not found
+   *       500:
+   *         description: Failed to approve purchase order
+   */
+  app.post("/api/purchase-orders/:id/approve", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const purchaseOrder = await storage.approvePurchaseOrder(id);
+      if (!purchaseOrder) {
+        return res.status(404).json({ error: "Purchase order not found" });
+      }
+      res.json(purchaseOrder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to approve purchase order" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/purchase-orders/{id}/receive:
+   *   post:
+   *     tags: [Inventory]
+   *     summary: Receive purchase order
+   *     description: Mark purchase order as received and update inventory
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Purchase order ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               receivedItems:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     productId:
+   *                       type: string
+   *                     quantity:
+   *                       type: number
+   *     responses:
+   *       200:
+   *         description: Purchase order received successfully
+   *       404:
+   *         description: Purchase order not found
+   *       500:
+   *         description: Failed to receive purchase order
+   */
+  app.post("/api/purchase-orders/:id/receive", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { receivedItems } = req.body;
+      const purchaseOrder = await storage.receivePurchaseOrder(id, receivedItems);
+      if (!purchaseOrder) {
+        return res.status(404).json({ error: "Purchase order not found" });
+      }
+      res.json(purchaseOrder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to receive purchase order" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/vendors:
+   *   get:
+   *     tags: [Inventory]
+   *     summary: Get vendors/suppliers
+   *     description: Retrieve all vendors/suppliers
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [active, inactive, suspended]
+   *         description: Filter by status
+   *     responses:
+   *       200:
+   *         description: Vendors retrieved successfully
+   *       500:
+   *         description: Failed to fetch vendors
+   */
+  app.get("/api/vendors", authenticateToken, async (req, res) => {
+    try {
+      const { status } = req.query;
+      const vendors = await storage.getVendors(status as string);
+      res.json(vendors);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendors" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/vendors:
+   *   post:
+   *     tags: [Inventory]
+   *     summary: Create vendor/supplier
+   *     description: Create a new vendor/supplier
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *               contactPerson:
+   *                 type: string
+   *               email:
+   *                 type: string
+   *               phone:
+   *                 type: string
+   *               address:
+   *                 type: string
+   *               paymentTerms:
+   *                 type: string
+   *               status:
+   *                 type: string
+   *                 enum: [active, inactive, suspended]
+   *     responses:
+   *       201:
+   *         description: Vendor created successfully
+   *       500:
+   *         description: Failed to create vendor
+   */
+  app.post("/api/vendors", authenticateToken, requirePermission('inventory:create'), async (req, res) => {
+    try {
+      const vendor = await storage.createVendor(req.body);
+      res.status(201).json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create vendor" });
+    }
+  });
+
+  app.get("/api/vendors/:id", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const vendor = await storage.getVendor(id);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+      res.json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendor" });
+    }
+  });
+
+  app.put("/api/vendors/:id", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const vendor = await storage.updateVendor(id, req.body);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+      res.json(vendor);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update vendor" });
+    }
+  });
+
+  app.delete("/api/vendors/:id", authenticateToken, requirePermission('inventory:delete'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteVendor(id);
+      if (!success) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+      res.json({ message: "Vendor deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete vendor" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/products/{id}/assign-vendor:
+   *   post:
+   *     tags: [Products]
+   *     summary: Assign vendor to product
+   *     description: Assign a vendor/supplier to a product
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Product ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               vendorId:
+   *                 type: string
+   *               isPrimary:
+   *                 type: boolean
+   *               cost:
+   *                 type: number
+   *               leadTime:
+   *                 type: number
+   *     responses:
+   *       200:
+   *         description: Vendor assigned successfully
+   *       404:
+   *         description: Product or vendor not found
+   *       500:
+   *         description: Failed to assign vendor
+   */
+  app.post("/api/products/:id/assign-vendor", authenticateToken, requirePermission('inventory:edit'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { vendorId, isPrimary, cost, leadTime } = req.body;
+      
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const vendor = await storage.getVendor(vendorId);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+
+      const assignment = await storage.assignVendorToProduct(id, {
+        vendorId,
+        isPrimary: isPrimary || false,
+        cost: cost || 0,
+        leadTime: leadTime || 0
+      });
+
+      res.json(assignment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to assign vendor" });
+    }
+  });
+
+  app.get("/api/products/:id/vendors", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const vendors = await storage.getProductVendors(id);
+      res.json(vendors);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch product vendors" });
+    }
+  });
+
   // Shopify sync endpoint
   app.post("/api/shopify/sync", async (req, res) => {
     try {
@@ -809,6 +1939,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(customer);
     } catch (error) {
       res.status(500).json({ error: "Failed to update customer" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/customers/{id}:
+   *   delete:
+   *     tags: [Customers]
+   *     summary: Delete a customer
+   *     description: Delete a customer from the system
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Customer ID
+   *     responses:
+   *       200:
+   *         description: Customer deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: Customer deleted successfully
+   *       404:
+   *         description: Customer not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: Customer not found
+   *       500:
+   *         description: Failed to delete customer
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: Failed to delete customer
+   */
+  app.delete("/api/customers/:id", authenticateToken, requirePermission('customers:delete'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteCustomer(id);
+      if (!success) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.json({ message: "Customer deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete customer" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/customers/bulk:
+   *   post:
+   *     tags: [Customers]
+   *     summary: Bulk operations on customers
+   *     description: Perform bulk operations like delete multiple, update multiple
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               action:
+   *                 type: string
+   *                 enum: [delete, update, export]
+   *               customerIds:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *               updates:
+   *                 type: object
+   *                 description: Fields to update (for bulk update)
+   *     responses:
+   *       200:
+   *         description: Bulk operation completed successfully
+   *       400:
+   *         description: Invalid bulk operation data
+   *       500:
+   *         description: Failed to perform bulk operation
+   */
+  app.post("/api/customers/bulk", authenticateToken, requirePermission('customers:edit'), async (req, res) => {
+    try {
+      const { action, customerIds, updates } = req.body;
+      
+      if (!action || !Array.isArray(customerIds) || customerIds.length === 0) {
+        return res.status(400).json({ error: "Invalid bulk operation data" });
+      }
+
+      let results: any = {};
+
+      switch (action) {
+        case 'delete':
+          const deleteResults = await Promise.allSettled(
+            customerIds.map(id => storage.deleteCustomer(id))
+          );
+          results = {
+            action: 'delete',
+            requested: customerIds.length,
+            successful: deleteResults.filter(r => r.status === 'fulfilled' && r.value).length,
+            failed: deleteResults.filter(r => r.status === 'rejected' || !r.value).length
+          };
+          break;
+
+        case 'update':
+          if (!updates) {
+            return res.status(400).json({ error: "Updates required for bulk update operation" });
+          }
+          const updateResults = await Promise.allSettled(
+            customerIds.map(id => storage.updateCustomer(id, updates))
+          );
+          results = {
+            action: 'update',
+            requested: customerIds.length,
+            successful: updateResults.filter(r => r.status === 'fulfilled' && r.value).length,
+            failed: updateResults.filter(r => r.status === 'rejected' || !r.value).length
+          };
+          break;
+
+        case 'export':
+          const customers = await Promise.all(
+            customerIds.map(id => storage.getCustomer(id))
+          );
+          const validCustomers = customers.filter(c => c !== undefined);
+          results = {
+            action: 'export',
+            data: validCustomers,
+            count: validCustomers.length
+          };
+          break;
+
+        default:
+          return res.status(400).json({ error: "Unsupported bulk action" });
+      }
+
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to perform bulk operation" });
     }
   });
 
@@ -1297,6 +2582,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stock Adjustment Endpoint
+  app.post("/api/inventory/adjust-stock", async (req, res) => {
+    try {
+      const { productId, adjustmentType, quantity, reason } = req.body;
+      
+      const product = await storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      let newStock = product.stock;
+      switch (adjustmentType) {
+        case 'add':
+          newStock += quantity;
+          break;
+        case 'remove':
+          newStock -= quantity;
+          break;
+        case 'set':
+          newStock = quantity;
+          break;
+        default:
+          return res.status(400).json({ error: "Invalid adjustment type" });
+      }
+
+      if (newStock < 0) {
+        return res.status(400).json({ error: "Stock cannot be negative" });
+      }
+
+      // Update product stock
+      const updatedProduct = await storage.updateProduct(productId, { stock: newStock });
+
+      // Create stock adjustment record
+      await storage.createStockAdjustment({
+        productId,
+        adjustmentType,
+        quantity: adjustmentType === 'remove' ? -quantity : quantity,
+        reason,
+        performedBy: 'system', // TODO: Get from auth
+        previousStock: product.stock,
+        newStock
+      });
+
+      res.json(updatedProduct);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to adjust stock: " + (error as Error).message });
+    }
+  });
+
   // Warehouse Management
   app.get("/api/warehouses", async (req, res) => {
     try {
@@ -1347,6 +2681,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(vendor);
     } catch (error) {
       res.status(500).json({ error: "Failed to update vendor" });
+    }
+  });
+
+  // Inventory Reports Endpoints
+  app.get("/api/inventory/reports/low-stock", async (req, res) => {
+    try {
+      const threshold = parseInt(req.query.threshold as string) || 10;
+      const lowStockProducts = await storage.getLowStockProducts(threshold);
+      res.json(lowStockProducts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch low stock report" });
+    }
+  });
+
+  app.get("/api/inventory/reports/stock-movements", async (req, res) => {
+    try {
+      const movements = await storage.getStockMovements();
+      res.json(movements);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch stock movements" });
+    }
+  });
+
+  app.get("/api/inventory/reports/stock-adjustments", async (req, res) => {
+    try {
+      const adjustments = await storage.getStockAdjustments();
+      res.json(adjustments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch stock adjustments" });
+    }
+  });
+
+  app.get("/api/inventory/reports/expiring-stock", async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const expiringStock = await storage.getExpiringStock(days);
+      res.json(expiringStock);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch expiring stock report" });
     }
   });
 
@@ -1983,6 +3356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch accounts receivable" });
     }
   });
+
 
   app.get("/api/accounts-receivable/aging-report", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
     try {

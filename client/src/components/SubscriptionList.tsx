@@ -6,15 +6,15 @@ import AGDataGrid from './ui/AGDataGrid';
 
 const SubscriptionList = () => {
   const { data: subscriptions, isLoading } = useQuery<Subscription[]>({
-    queryKey: ["/api/subscriptions"],
+    queryKey: ["/subscriptions"],
   });
 
   const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: ["/customers"],
   });
 
   const { data: products } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/products"],
   });
 
   const getCustomerName = (customerId: string | null) => {

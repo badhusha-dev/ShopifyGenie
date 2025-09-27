@@ -58,12 +58,12 @@ const AccountsReceivable = () => {
 
   // Fetch accounts receivable
   const { data: receivables = [], isLoading, error } = useQuery<AccountsReceivable[]>({
-    queryKey: ['/api/accounts-receivable'],
+    queryKey: ['/accounts-receivable'],
   });
 
   // Fetch customers for dropdown
   const { data: customers = [] } = useQuery<Customer[]>({
-    queryKey: ['/api/customers'],
+    queryKey: ['/customers'],
   });
 
   // Create/Update receivable mutation
@@ -93,7 +93,7 @@ const AccountsReceivable = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts-receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts-receivable'] });
       setShowModal(false);
       setEditingReceivable(null);
       reset();
@@ -112,7 +112,7 @@ const AccountsReceivable = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts-receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts-receivable'] });
     },
   });
 
@@ -126,7 +126,7 @@ const AccountsReceivable = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts-receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts-receivable'] });
     },
   });
 

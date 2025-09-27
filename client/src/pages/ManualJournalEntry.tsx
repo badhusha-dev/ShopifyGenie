@@ -45,7 +45,7 @@ const ManualJournalEntry = () => {
 
   // Fetch accounts for dropdown
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery<Account[]>({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/accounts'],
   });
 
   // Create manual journal entry mutation
@@ -57,7 +57,7 @@ const ManualJournalEntry = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/journal-entries'] });
       reset();
       setShowPreview(false);
     },

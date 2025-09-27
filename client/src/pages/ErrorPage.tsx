@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 
 interface ErrorPageProps {
@@ -11,7 +11,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
   error = "Internal Server Error",
   message = "An unexpected error occurred on the server."
 }) => {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const handleRefresh = () => {
     window.location.reload();
@@ -32,7 +32,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
         <div className="d-flex gap-3 justify-content-center">
           <button 
             className="btn btn-primary d-flex align-items-center"
-            onClick={() => setLocation('/')}
+            onClick={() => navigate('/')}
           >
             <Home size={16} className="me-2" />
             Go Home

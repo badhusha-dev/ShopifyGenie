@@ -77,18 +77,18 @@ const GeneralLedger = () => {
 
   // Fetch accounts for filter dropdown
   const { data: accounts = [] } = useQuery<any[]>({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/accounts'],
   });
 
   // Fetch ledger entries with filters
   const { data: ledgerEntries = [], isLoading, error } = useQuery<LedgerEntry[]>({
-    queryKey: ['/api/general-ledger', watchedFilters],
+    queryKey: ['/general-ledger', watchedFilters],
     enabled: true
   });
 
   // Fetch journal entries for modal
   const { data: journalEntries = [] } = useQuery<JournalEntry[]>({
-    queryKey: ['/api/journal-entries'],
+    queryKey: ['/journal-entries'],
   });
 
   // Export ledger mutation

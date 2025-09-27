@@ -3,7 +3,7 @@ import type { Customer } from "@shared/schema";
 
 const CustomerTable = () => {
   const { data: customers, isLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: ["/customers"],
   });
 
   const getInitials = (name: string) => {

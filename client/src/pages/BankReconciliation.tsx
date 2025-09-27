@@ -45,7 +45,7 @@ const BankReconciliation = () => {
 
   // Fetch bank accounts (cash/bank type accounts only)
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery<Account[]>({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/accounts'],
     select: (data) => data.filter(account => 
       account.accountType === 'asset' && 
       (account.accountName.toLowerCase().includes('cash') || 
@@ -80,7 +80,7 @@ const BankReconciliation = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-statements'] });
+      queryClient.invalidateQueries({ queryKey: ['/bank-statements'] });
       setUploadFile(null);
     },
   });
@@ -97,7 +97,7 @@ const BankReconciliation = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-statements'] });
+      queryClient.invalidateQueries({ queryKey: ['/bank-statements'] });
       setSelectedStatement(null);
       setMatchingEntries([]);
     },

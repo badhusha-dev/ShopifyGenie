@@ -7,7 +7,7 @@ const AlertSystem = () => {
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
   const { data: alerts } = useQuery({
-    queryKey: ['/api/alerts', userRole],
+    queryKey: ['/alerts', userRole],
     enabled: !!userRole,
   });
 

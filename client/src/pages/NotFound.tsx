@@ -1,9 +1,9 @@
 import React from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft } from 'lucide-react';
 
 const NotFound: React.FC = () => {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light" data-testid="not-found-page">
@@ -19,7 +19,7 @@ const NotFound: React.FC = () => {
         <div className="d-flex gap-3 justify-content-center">
           <button 
             className="btn btn-primary d-flex align-items-center"
-            onClick={() => setLocation('/')}
+            onClick={() => navigate('/')}
           >
             <Home size={16} className="me-2" />
             Go Home

@@ -50,7 +50,7 @@ const ChartOfAccounts = () => {
 
   // Fetch accounts
   const { data: accounts = [], isLoading, error } = useQuery<Account[]>({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/accounts'],
   });
 
   // Create/Update account mutation
@@ -75,7 +75,7 @@ const ChartOfAccounts = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts'] });
       setShowModal(false);
       setEditingAccount(null);
       reset();
@@ -92,7 +92,7 @@ const ChartOfAccounts = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts'] });
     },
   });
 

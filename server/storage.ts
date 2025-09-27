@@ -61,8 +61,45 @@ export interface IStorage {
   getProductByShopifyId(shopifyId: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined>;
+  deleteProduct(id: string): Promise<boolean>;
   getLowStockProducts(threshold?: number, shopDomain?: string): Promise<Product[]>;
   syncProductsFromShopify(shopDomain: string): Promise<Product[]>;
+
+  // Product Categories
+  getProductCategories(): Promise<any[]>;
+  createProductCategory(categoryData: any): Promise<any>;
+  updateProductCategory(id: string, updates: any): Promise<any>;
+  deleteProductCategory(id: string): Promise<boolean>;
+
+  // Product Variants
+  getProductVariants(productId: string): Promise<any[]>;
+  createProductVariant(variantData: any): Promise<any>;
+  updateProductVariant(id: string, updates: any): Promise<any>;
+  deleteProductVariant(id: string): Promise<boolean>;
+
+  // Inventory Alerts
+  getInventoryAlerts(type?: string, severity?: string): Promise<any[]>;
+  createInventoryAlert(alertData: any): Promise<any>;
+  acknowledgeInventoryAlert(id: string): Promise<any>;
+  checkAndGenerateAlerts(): Promise<any[]>;
+
+  // Purchase Orders
+  getPurchaseOrders(status?: string, vendorId?: string): Promise<any[]>;
+  getPurchaseOrder(id: string): Promise<any>;
+  createPurchaseOrder(orderData: any): Promise<any>;
+  updatePurchaseOrder(id: string, updates: any): Promise<any>;
+  deletePurchaseOrder(id: string): Promise<boolean>;
+  approvePurchaseOrder(id: string): Promise<any>;
+  receivePurchaseOrder(id: string, receivedItems: any[]): Promise<any>;
+
+  // Vendors
+  getVendors(status?: string): Promise<any[]>;
+  getVendor(id: string): Promise<any>;
+  createVendor(vendorData: any): Promise<any>;
+  updateVendor(id: string, updates: any): Promise<any>;
+  deleteVendor(id: string): Promise<boolean>;
+  assignVendorToProduct(productId: string, assignment: any): Promise<any>;
+  getProductVendors(productId: string): Promise<any[]>;
 
   // Customers - now with Shopify integration
   getCustomers(shopDomain?: string): Promise<Customer[]>;
@@ -71,6 +108,7 @@ export interface IStorage {
   getCustomerByEmail(email: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer | undefined>;
+  deleteCustomer(id: string): Promise<boolean>;
   syncCustomersFromShopify(shopDomain: string): Promise<Customer[]>;
 
   // Orders - now with Shopify integration
@@ -233,6 +271,10 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<string, User> = new Map();
   private products: Map<string, Product> = new Map();
+  private productCategories: any[] = [];
+  private productVariants: any[] = [];
+  private inventoryAlerts: any[] = [];
+  private purchaseOrders: any[] = [];
   private customers: Map<string, Customer> = new Map();
   private orders: Map<string, Order> = new Map();
   private subscriptions: Map<string, Subscription> = new Map();
@@ -270,7 +312,6 @@ export class MemStorage implements IStorage {
 
   private inventoryBatches: any[] = [];
   private stockAdjustments: any[] = [];
-  private purchaseOrders: any[] = [];
   private purchaseOrderItems: any[] = [];
   private vendorPayments: any[] = [];
   private stockMovements: any[] = [];
@@ -1471,16 +1512,377 @@ export class MemStorage implements IStorage {
 
     const updatedProduct = { 
       ...product, 
-      ...updates, 
-      lastUpdated: new Date() 
+      ...updates,
+      lastUpdated: new Date()
     };
     this.products.set(id, updatedProduct);
     return updatedProduct;
   }
 
+  async deleteProduct(id: string): Promise<boolean> {
+    const exists = this.products.has(id);
+    if (!exists) return false;
+    
+    this.products.delete(id);
+    return true;
+  }
+
   async getLowStockProducts(threshold = 10, shopDomain?: string): Promise<Product[]> {
     const products = shopDomain ? await this.getProducts(shopDomain) : Array.from(this.products.values());
     return products.filter(p => p.stock < threshold);
+  }
+
+  // Product Categories methods
+  async getProductCategories(): Promise<any[]> {
+    return this.productCategories;
+  }
+
+  async createProductCategory(categoryData: any): Promise<any> {
+    const category = {
+      id: randomUUID(),
+      name: categoryData.name,
+      description: categoryData.description || '',
+      parentId: categoryData.parentId || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.productCategories.push(category);
+    return category;
+  }
+
+  async updateProductCategory(id: string, updates: any): Promise<any> {
+    const categoryIndex = this.productCategories.findIndex(c => c.id === id);
+    if (categoryIndex === -1) return null;
+
+    const updatedCategory = {
+      ...this.productCategories[categoryIndex],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    this.productCategories[categoryIndex] = updatedCategory;
+    return updatedCategory;
+  }
+
+  async deleteProductCategory(id: string): Promise<boolean> {
+    const categoryIndex = this.productCategories.findIndex(c => c.id === id);
+    if (categoryIndex === -1) return false;
+
+    // Check if any products use this category
+    const productsInCategory = Array.from(this.products.values()).filter(p => p.category === this.productCategories[categoryIndex].name);
+    if (productsInCategory.length > 0) {
+      throw new Error('Cannot delete category with associated products');
+    }
+
+    this.productCategories.splice(categoryIndex, 1);
+    return true;
+  }
+
+  // Product Variants methods
+  async getProductVariants(productId: string): Promise<any[]> {
+    return this.productVariants.filter(v => v.productId === productId);
+  }
+
+  async createProductVariant(variantData: any): Promise<any> {
+    const variant = {
+      id: randomUUID(),
+      productId: variantData.productId,
+      name: variantData.name,
+      sku: variantData.sku,
+      price: variantData.price || 0,
+      stock: variantData.stock || 0,
+      attributes: variantData.attributes || {},
+      isDefault: variantData.isDefault || false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.productVariants.push(variant);
+    return variant;
+  }
+
+  async updateProductVariant(id: string, updates: any): Promise<any> {
+    const variantIndex = this.productVariants.findIndex(v => v.id === id);
+    if (variantIndex === -1) return null;
+
+    const updatedVariant = {
+      ...this.productVariants[variantIndex],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    this.productVariants[variantIndex] = updatedVariant;
+    return updatedVariant;
+  }
+
+  async deleteProductVariant(id: string): Promise<boolean> {
+    const variantIndex = this.productVariants.findIndex(v => v.id === id);
+    if (variantIndex === -1) return false;
+
+    this.productVariants.splice(variantIndex, 1);
+    return true;
+  }
+
+  // Inventory Alerts methods
+  async getInventoryAlerts(type?: string, severity?: string): Promise<any[]> {
+    let alerts = this.inventoryAlerts.filter(a => !a.acknowledged);
+    
+    if (type) {
+      alerts = alerts.filter(a => a.type === type);
+    }
+    
+    if (severity) {
+      alerts = alerts.filter(a => a.severity === severity);
+    }
+    
+    return alerts;
+  }
+
+  async createInventoryAlert(alertData: any): Promise<any> {
+    const alert = {
+      id: randomUUID(),
+      productId: alertData.productId,
+      type: alertData.type,
+      severity: alertData.severity || 'medium',
+      message: alertData.message,
+      threshold: alertData.threshold,
+      acknowledged: false,
+      createdAt: new Date().toISOString(),
+      acknowledgedAt: null
+    };
+    this.inventoryAlerts.push(alert);
+    return alert;
+  }
+
+  async acknowledgeInventoryAlert(id: string): Promise<any> {
+    const alertIndex = this.inventoryAlerts.findIndex(a => a.id === id);
+    if (alertIndex === -1) return null;
+
+    const updatedAlert = {
+      ...this.inventoryAlerts[alertIndex],
+      acknowledged: true,
+      acknowledgedAt: new Date().toISOString()
+    };
+    this.inventoryAlerts[alertIndex] = updatedAlert;
+    return updatedAlert;
+  }
+
+  async checkAndGenerateAlerts(): Promise<any[]> {
+    const products = Array.from(this.products.values());
+    const newAlerts: any[] = [];
+
+    for (const product of products) {
+      // Check for low stock
+      if (product.stock <= (product as any).lowStockThreshold) {
+        const existingAlert = this.inventoryAlerts.find(a => 
+          a.productId === product.id && 
+          a.type === 'low_stock' && 
+          !a.acknowledged
+        );
+
+        if (!existingAlert) {
+          const alert = await this.createInventoryAlert({
+            productId: product.id,
+            type: 'low_stock',
+            severity: product.stock === 0 ? 'critical' : 'high',
+            message: `Product "${product.name}" is ${product.stock === 0 ? 'out of stock' : 'running low on stock'}`,
+            threshold: (product as any).lowStockThreshold
+          });
+          newAlerts.push(alert);
+        }
+      }
+
+      // Check for overstock (if stock > 1000)
+      if (product.stock > 1000) {
+        const existingAlert = this.inventoryAlerts.find(a => 
+          a.productId === product.id && 
+          a.type === 'overstock' && 
+          !a.acknowledged
+        );
+
+        if (!existingAlert) {
+          const alert = await this.createInventoryAlert({
+            productId: product.id,
+            type: 'overstock',
+            severity: 'low',
+            message: `Product "${product.name}" has high stock levels (${product.stock} units)`,
+            threshold: 1000
+          });
+          newAlerts.push(alert);
+        }
+      }
+    }
+
+    return newAlerts;
+  }
+
+  // Purchase Orders methods
+  async getPurchaseOrders(status?: string, vendorId?: string): Promise<any[]> {
+    let orders = this.purchaseOrders;
+    
+    if (status) {
+      orders = orders.filter(o => o.status === status);
+    }
+    
+    if (vendorId) {
+      orders = orders.filter(o => o.vendorId === vendorId);
+    }
+    
+    return orders;
+  }
+
+  async getPurchaseOrder(id: string): Promise<any> {
+    return this.purchaseOrders.find(o => o.id === id);
+  }
+
+  async createPurchaseOrder(orderData: any): Promise<any> {
+    const order = {
+      id: randomUUID(),
+      vendorId: orderData.vendorId,
+      items: orderData.items || [],
+      status: 'draft',
+      totalAmount: orderData.items?.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0) || 0,
+      expectedDeliveryDate: orderData.expectedDeliveryDate,
+      notes: orderData.notes || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      approvedAt: null,
+      receivedAt: null
+    };
+    this.purchaseOrders.push(order);
+    return order;
+  }
+
+  async updatePurchaseOrder(id: string, updates: any): Promise<any> {
+    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
+    if (orderIndex === -1) return null;
+
+    const updatedOrder = {
+      ...this.purchaseOrders[orderIndex],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    this.purchaseOrders[orderIndex] = updatedOrder;
+    return updatedOrder;
+  }
+
+  async deletePurchaseOrder(id: string): Promise<boolean> {
+    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
+    if (orderIndex === -1) return false;
+
+    this.purchaseOrders.splice(orderIndex, 1);
+    return true;
+  }
+
+  async approvePurchaseOrder(id: string): Promise<any> {
+    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
+    if (orderIndex === -1) return null;
+
+    const updatedOrder = {
+      ...this.purchaseOrders[orderIndex],
+      status: 'approved',
+      approvedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.purchaseOrders[orderIndex] = updatedOrder;
+    return updatedOrder;
+  }
+
+  async receivePurchaseOrder(id: string, receivedItems: any[]): Promise<any> {
+    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
+    if (orderIndex === -1) return null;
+
+    // Update inventory for received items
+    for (const item of receivedItems) {
+      const product = this.products.get(item.productId);
+      if (product) {
+        await this.updateProduct(item.productId, {
+          stock: product.stock + item.quantity
+        });
+      }
+    }
+
+    const updatedOrder = {
+      ...this.purchaseOrders[orderIndex],
+      status: 'received',
+      receivedAt: new Date().toISOString(),
+      receivedItems,
+      updatedAt: new Date().toISOString()
+    };
+    this.purchaseOrders[orderIndex] = updatedOrder;
+    return updatedOrder;
+  }
+
+  // Vendors methods
+  async getVendors(status?: string): Promise<any[]> {
+    let vendors = this.vendors;
+    
+    if (status) {
+      vendors = vendors.filter(v => v.status === status);
+    }
+    
+    return vendors;
+  }
+
+  async getVendor(id: string): Promise<any> {
+    return this.vendors.find(v => v.id === id);
+  }
+
+  async createVendor(vendorData: any): Promise<any> {
+    const vendor = {
+      id: randomUUID(),
+      name: vendorData.name,
+      contactPerson: vendorData.contactPerson || '',
+      email: vendorData.email || '',
+      phone: vendorData.phone || '',
+      address: vendorData.address || '',
+      paymentTerms: vendorData.paymentTerms || '30',
+      status: vendorData.status || 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.vendors.push(vendor);
+    return vendor;
+  }
+
+  async updateVendor(id: string, updates: any): Promise<any> {
+    const vendorIndex = this.vendors.findIndex(v => v.id === id);
+    if (vendorIndex === -1) return null;
+
+    const updatedVendor = {
+      ...this.vendors[vendorIndex],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    this.vendors[vendorIndex] = updatedVendor;
+    return updatedVendor;
+  }
+
+  async deleteVendor(id: string): Promise<boolean> {
+    const vendorIndex = this.vendors.findIndex(v => v.id === id);
+    if (vendorIndex === -1) return false;
+
+    this.vendors.splice(vendorIndex, 1);
+    return true;
+  }
+
+  async assignVendorToProduct(productId: string, assignment: any): Promise<any> {
+    const assignmentData = {
+      id: randomUUID(),
+      productId,
+      vendorId: assignment.vendorId,
+      isPrimary: assignment.isPrimary || false,
+      cost: assignment.cost || 0,
+      leadTime: assignment.leadTime || 0,
+      createdAt: new Date().toISOString()
+    };
+    
+    // In a real implementation, you would store this in a separate table
+    // For now, we'll just return the assignment data
+    return assignmentData;
+  }
+
+  async getProductVendors(productId: string): Promise<any[]> {
+    // In a real implementation, you would query a separate table
+    // For now, return empty array
+    return [];
   }
 
   // Customer methods - now with Shopify integration
@@ -1561,6 +1963,14 @@ export class MemStorage implements IStorage {
     const updatedCustomer = { ...customer, ...updates };
     this.customers.set(id, updatedCustomer);
     return updatedCustomer;
+  }
+
+  async deleteCustomer(id: string): Promise<boolean> {
+    const exists = this.customers.has(id);
+    if (!exists) return false;
+    
+    this.customers.delete(id);
+    return true;
   }
 
   // Order methods - now with Shopify integration
@@ -1802,36 +2212,7 @@ export class MemStorage implements IStorage {
     return this.stockMovements.filter(m => m.itemId === itemId).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
-  // Multi-Vendor Management methods
-  async getVendors(): Promise<any[]> {
-    return this.vendors;
-  }
-
-  async getVendor(vendorId: string): Promise<any> {
-    return this.vendors.find(vendor => vendor.id === vendorId);
-  }
-
-  async createVendor(vendor: any): Promise<any> {
-    const newVendor = { ...vendor, id: randomUUID(), createdAt: new Date(), totalSpent: "0.00", outstandingDues: "0.00" };
-    this.vendors.push(newVendor);
-    return newVendor;
-  }
-
-  async updateVendor(id: string, updates: Partial<any>): Promise<any | undefined> {
-    const vendor = this.vendors.find(v => v.id === id);
-    if (!vendor) return undefined;
-    const updatedVendor = { ...vendor, ...updates };
-    this.vendors = this.vendors.map(v => v.id === id ? updatedVendor : v);
-    return updatedVendor;
-  }
-
-  async getPurchaseOrders(): Promise<any[]> {
-    return this.purchaseOrders;
-  }
-
-  async getPurchaseOrder(poId: string): Promise<any> {
-    return this.purchaseOrders.find(po => po.id === poId);
-  }
+  // Multi-Vendor Management methods (duplicate - removing)
 
   async getPurchaseOrderItems(poId: string): Promise<any[]> {
     return this.purchaseOrderItems.filter(item => item.purchaseOrderId === poId);
@@ -2546,33 +2927,76 @@ export class MemStorage implements IStorage {
 
   // Accounts Receivable
   async getAccountsReceivable(shopDomain?: string, filters?: any): Promise<AccountsReceivable[]> {
-    const mockAR: AccountsReceivable[] = [
+    const customers = await this.getCustomers();
+    const customer1 = customers[0] || { id: 'cust_001', name: 'John Doe', email: 'john@example.com' };
+    const customer2 = customers[1] || { id: 'cust_002', name: 'Jane Smith', email: 'jane@example.com' };
+    
+    const invoiceDate1 = new Date('2023-10-15');
+    const dueDate1 = new Date('2023-11-14');
+    const invoiceDate2 = new Date('2023-10-20');
+    const dueDate2 = new Date('2023-11-19');
+    
+    const today = new Date();
+    const daysPastDue1 = Math.max(0, Math.floor((today.getTime() - dueDate1.getTime()) / (1000 * 60 * 60 * 24)));
+    const daysPastDue2 = Math.max(0, Math.floor((today.getTime() - dueDate2.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    const mockAR: any[] = [
       {
         id: randomUUID(),
-        customerId: 'cust_001',
+        customerId: customer1.id,
+        customerName: customer1.name,
+        customerEmail: customer1.email,
+        orderId: 'ORD001',
         invoiceNumber: 'INV001',
-        invoiceDate: new Date('2023-10-15'),
-        dueDate: new Date('2023-11-14'),
-        amount: 500.00,
-        status: 'Open',
-        shopDomain: shopDomain || 'demo-store.myshopify.com',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        invoiceDate: invoiceDate1.toISOString(),
+        dueDate: dueDate1.toISOString(),
+        totalAmount: '500.00',
+        paidAmount: '0.00',
+        outstandingAmount: '500.00',
+        status: 'overdue',
+        paymentTerms: 30,
+        daysPastDue: daysPastDue1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       },
       {
         id: randomUUID(),
-        customerId: 'cust_002',
+        customerId: customer2.id,
+        customerName: customer2.name,
+        customerEmail: customer2.email,
+        orderId: 'ORD002',
         invoiceNumber: 'INV002',
-        invoiceDate: new Date('2023-10-20'),
-        dueDate: new Date('2023-11-19'),
-        amount: 750.50,
-        status: 'Open',
-        shopDomain: shopDomain || 'demo-store.myshopify.com',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        invoiceDate: invoiceDate2.toISOString(),
+        dueDate: dueDate2.toISOString(),
+        totalAmount: '750.50',
+        paidAmount: '200.00',
+        outstandingAmount: '550.50',
+        status: 'overdue',
+        paymentTerms: 30,
+        daysPastDue: daysPastDue2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: randomUUID(),
+        customerId: customer1.id,
+        customerName: customer1.name,
+        customerEmail: customer1.email,
+        orderId: 'ORD003',
+        invoiceNumber: 'INV003',
+        invoiceDate: new Date().toISOString(),
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        totalAmount: '1200.00',
+        paidAmount: '0.00',
+        outstandingAmount: '1200.00',
+        status: 'open',
+        paymentTerms: 30,
+        daysPastDue: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
     ];
-    return mockAR.filter(ar => !shopDomain || ar.shopDomain === shopDomain);
+    return mockAR;
   }
 
   async getReceivable(id: string): Promise<AccountsReceivable | undefined> {

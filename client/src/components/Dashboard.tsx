@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const Dashboard = () => {
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["/api/stats"],
+    queryKey: ["/stats"],
   });
 
   if (isLoading) {

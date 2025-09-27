@@ -36,15 +36,15 @@ const AdvancedInventory = () => {
   const [adjustmentModal, setAdjustmentModal] = useState({ show: false, batch: null });
 
   const { data: forecast } = useQuery<StockForecast[]>({
-    queryKey: ['/api/inventory/advanced-forecast'],
+    queryKey: ['/inventory/advanced-forecast'],
   });
 
   const { data: expiringStock } = useQuery<ExpiringStock[]>({
-    queryKey: ['/api/inventory/expiring-stock'],
+    queryKey: ['/inventory/expiring-stock'],
   });
 
   const { data: warehouses } = useQuery({
-    queryKey: ['/api/warehouses'],
+    queryKey: ['/warehouses'],
   });
 
   const adjustmentMutation = useMutation({

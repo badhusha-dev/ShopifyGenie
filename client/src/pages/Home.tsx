@@ -4,32 +4,38 @@ import { useQuery } from '@tanstack/react-query';
 import AnimatedKPICard from '@/components/ui/AnimatedKPICard';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
+// 3D Components
+import SalesVisualization from '../components/3d/SalesVisualization';
+import ProductDistribution from '../components/3d/ProductDistribution';
+import RevenueFlow from '../components/3d/RevenueFlow';
+import CustomerLoyalty3D from '../components/3d/CustomerLoyalty3D';
+
 const Dashboard = () => {
   const { user, token } = useAppSelector((state) => state.auth);
 
   // Fetch dashboard data
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['/api/stats'],
+    queryKey: ['/stats'],
     enabled: !!token,
   });
 
   const { data: salesTrends, isLoading: trendsLoading } = useQuery({
-    queryKey: ['/api/analytics/sales-trends'],
+    queryKey: ['/analytics/sales-trends'],
     enabled: !!token,
   });
 
   const { data: topProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ['/api/analytics/top-products'],
+    queryKey: ['/analytics/top-products'],
     enabled: !!token,
   });
 
   const { data: loyaltyData, isLoading: loyaltyLoading } = useQuery({
-    queryKey: ['/api/analytics/loyalty-points'],
+    queryKey: ['/analytics/loyalty-points'],
     enabled: !!token,
   });
 
   const { data: businessInsights, isLoading: insightsLoading } = useQuery({
-    queryKey: ['/api/ai/business-insights'],
+    queryKey: ['/ai/business-insights'],
     enabled: !!token,
   });
 
@@ -83,6 +89,38 @@ const Dashboard = () => {
     { name: 'Silver', value: 300, color: '#C0C0C0' },
     { name: 'Gold', value: 200, color: '#FFD700' },
     { name: 'Platinum', value: 100, color: '#E5E4E2' },
+  ];
+
+  // 3D Data
+  const sales3DData = [
+    { month: 'Jan', sales: 2400, maxSales: 10000 },
+    { month: 'Feb', sales: 1398, maxSales: 10000 },
+    { month: 'Mar', sales: 9800, maxSales: 10000 },
+    { month: 'Apr', sales: 3908, maxSales: 10000 },
+    { month: 'May', sales: 4800, maxSales: 10000 },
+    { month: 'Jun', sales: 3800, maxSales: 10000 },
+  ];
+
+  const product3DData = [
+    { name: 'Electronics', value: 35, color: '#3B82F6' },
+    { name: 'Clothing', value: 25, color: '#10B981' },
+    { name: 'Home & Garden', value: 20, color: '#F59E0B' },
+    { name: 'Sports', value: 15, color: '#EF4444' },
+    { name: 'Books', value: 5, color: '#8B5CF6' },
+  ];
+
+  const revenue3DData = [
+    { source: 'Online Sales', amount: 18500, color: '#10B981' },
+    { source: 'Retail Stores', amount: 12000, color: '#3B82F6' },
+    { source: 'Wholesale', amount: 8500, color: '#F59E0B' },
+    { source: 'Subscriptions', amount: 3200, color: '#8B5CF6' },
+  ];
+
+  const loyalty3DData = [
+    { tier: 'Bronze', count: 400, color: '#CD7F32', height: 1.5 },
+    { tier: 'Silver', count: 300, color: '#C0C0C0', height: 2.0 },
+    { tier: 'Gold', count: 200, color: '#FFD700', height: 2.5 },
+    { tier: 'Platinum', count: 100, color: '#E5E4E2', height: 3.0 },
   ];
 
   if (statsLoading) {
@@ -226,6 +264,76 @@ const Dashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3D Visualizations Row */}
+      <div className="row g-4 mb-4">
+        {/* 3D Sales Visualization */}
+        <div className="col-lg-6">
+          <div className="modern-card p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold text-dark mb-0">
+                <i className="fas fa-cube me-2 text-primary"></i>
+                3D Sales Trends
+              </h5>
+              <span className="badge bg-primary-subtle text-primary px-3 py-2">
+                Interactive
+              </span>
+            </div>
+            <SalesVisualization data={sales3DData} width="100%" height={300} />
+          </div>
+        </div>
+
+        {/* 3D Product Distribution */}
+        <div className="col-lg-6">
+          <div className="modern-card p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold text-dark mb-0">
+                <i className="fas fa-globe me-2 text-info"></i>
+                3D Product Distribution
+              </h5>
+              <span className="badge bg-info-subtle text-info px-3 py-2">
+                Real-time
+              </span>
+            </div>
+            <ProductDistribution data={product3DData} width="100%" height={300} />
+          </div>
+        </div>
+      </div>
+
+      {/* 3D Revenue & Loyalty Row */}
+      <div className="row g-4 mb-4">
+        {/* 3D Revenue Flow */}
+        <div className="col-lg-6">
+          <div className="modern-card p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold text-dark mb-0">
+                <i className="fas fa-coins me-2 text-warning"></i>
+                3D Revenue Sources
+              </h5>
+              <span className="badge bg-warning-subtle text-warning px-3 py-2">
+                Animated
+              </span>
+            </div>
+            <RevenueFlow data={revenue3DData} width="100%" height={300} />
+          </div>
+        </div>
+
+        {/* 3D Customer Loyalty */}
+        <div className="col-lg-6">
+          <div className="modern-card p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold text-dark mb-0">
+                <i className="fas fa-crown me-2 text-danger"></i>
+                3D Loyalty Pyramid
+              </h5>
+              <span className="badge bg-danger-subtle text-danger px-3 py-2">
+                Dynamic
+              </span>
+            </div>
+            <CustomerLoyalty3D data={loyalty3DData} width="100%" height={300} />
           </div>
         </div>
       </div>

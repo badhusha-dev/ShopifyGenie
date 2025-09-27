@@ -68,12 +68,12 @@ const AccountsPayable = () => {
 
   // Fetch accounts payable
   const { data: payables = [], isLoading, error } = useQuery<AccountsPayable[]>({
-    queryKey: ['/api/accounts-payable'],
+    queryKey: ['/accounts-payable'],
   });
 
   // Fetch vendors for dropdown
   const { data: vendors = [] } = useQuery<Vendor[]>({
-    queryKey: ['/api/vendors'],
+    queryKey: ['/vendors'],
   });
 
   // Create/Update payable mutation
@@ -103,7 +103,7 @@ const AccountsPayable = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts-payable'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts-payable'] });
       setShowModal(false);
       setEditingPayable(null);
       reset();
@@ -122,7 +122,7 @@ const AccountsPayable = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts-payable'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts-payable'] });
     },
   });
 
@@ -136,7 +136,7 @@ const AccountsPayable = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts-payable'] });
+      queryClient.invalidateQueries({ queryKey: ['/accounts-payable'] });
     },
   });
 

@@ -12,21 +12,21 @@ interface ProductRecommendation {
 
 const AIRecommendations = () => {
   const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: ["/customers"],
   });
 
   const { data: recommendations } = useQuery<ProductRecommendation[]>({
-    queryKey: ["/api/ai/recommendations", customers?.[0]?.id],
+    queryKey: ["/ai/recommendations", customers?.[0]?.id],
     enabled: !!customers?.[0]?.id,
   });
 
   const { data: forecast } = useQuery({
-    queryKey: ["/api/ai/sales-forecast"],
+    queryKey: ["/ai/sales-forecast"],
     queryFn: () => fetch("/api/ai/sales-forecast?days=30").then(res => res.json()),
   });
 
   const { data: tierDistribution } = useQuery({
-    queryKey: ["/api/loyalty/tier-distribution"],
+    queryKey: ["/loyalty/tier-distribution"],
   });
 
   return (

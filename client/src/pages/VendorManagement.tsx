@@ -33,19 +33,19 @@ const VendorManagement = () => {
   const [poModal, setPOModal] = useState<{ show: boolean; po: PurchaseOrder | null }>({ show: false, po: null });
 
   const { data: vendors } = useQuery<Vendor[]>({
-    queryKey: ['/api/vendors'],
+    queryKey: ['/vendors'],
   });
 
   const { data: purchaseOrders } = useQuery<PurchaseOrder[]>({
-    queryKey: ['/api/purchase-orders'],
+    queryKey: ['/purchase-orders'],
   });
 
   const { data: vendorAnalytics } = useQuery({
-    queryKey: ['/api/vendor-analytics'],
+    queryKey: ['/vendor-analytics'],
   });
 
   const { data: poRecommendations } = useQuery({
-    queryKey: ['/api/purchase-order-recommendations'],
+    queryKey: ['/purchase-order-recommendations'],
   });
 
   const vendorMutation = useMutation({

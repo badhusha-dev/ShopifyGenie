@@ -77,12 +77,12 @@ const JournalEntries = () => {
 
   // Fetch journal entries
   const { data: journalEntries = [], isLoading, error } = useQuery<JournalEntry[]>({
-    queryKey: ['/api/journal-entries'],
+    queryKey: ['/journal-entries'],
   });
 
   // Fetch accounts for dropdown
   const { data: accounts = [] } = useQuery<Account[]>({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/accounts'],
   });
 
   // Filter active accounts for dropdown
@@ -116,7 +116,7 @@ const JournalEntries = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/journal-entries'] });
       setShowModal(false);
       setEditingEntry(null);
       reset();
@@ -133,7 +133,7 @@ const JournalEntries = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/journal-entries'] });
     },
   });
 
@@ -147,7 +147,7 @@ const JournalEntries = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/journal-entries'] });
     },
   });
 

@@ -7,7 +7,7 @@ import AGDataGrid from './ui/AGDataGrid';
 
 const InventoryTable = () => {
   const { data: products, isLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/products"],
   });
 
   // AG-Grid Column Definitions
@@ -101,8 +101,8 @@ const InventoryTable = () => {
   const syncMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/shopify/sync"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/stats"] });
     },
   });
 

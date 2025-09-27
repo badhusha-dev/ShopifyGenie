@@ -28,15 +28,15 @@ const Loyalty = () => {
   const [filterType, setFilterType] = useState<"all" | "earned" | "redeemed">("all");
 
   const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: ["/customers"],
   });
 
   const { data: transactions, refetch: refetchTransactions } = useQuery<LoyaltyTransaction[]>({
-    queryKey: ["/api/loyalty/transactions"],
+    queryKey: ["/loyalty/transactions"],
   });
 
   const { data: tierInfo } = useQuery({
-    queryKey: ["/api/loyalty/tiers"],
+    queryKey: ["/loyalty/tiers"],
   });
 
   const redeemPointsMutation = useMutation({

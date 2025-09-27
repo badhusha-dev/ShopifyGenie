@@ -5,6 +5,35 @@ import { fetchProducts, setFilters, setSelectedProduct } from '../store/slices/i
 import AGDataGrid from '../components/ui/AGDataGrid';
 import { ColDef } from 'ag-grid-community';
 import type { Product } from '@shared/schema';
+import { FaWarehouse, FaBoxes, FaExclamationTriangle, FaChartLine, FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+
+// Category Select Component
+const CategorySelect: React.FC<{ value: string; onChange: (value: string) => void }> = ({ value, onChange }) => {
+  const { data: categories = [] } = useQuery({
+    queryKey: ['/products/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/products/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
+    }
+  });
+
+  return (
+    <select
+      className="form-select"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      required
+    >
+      <option value="">Select a category</option>
+      {categories.map((category: any) => (
+        <option key={category.id} value={category.name}>
+          {category.name}
+        </option>
+      ))}
+    </select>
+  );
+};
 
 interface InventoryProduct extends Product {
   lowStockThreshold?: number;
@@ -13,9 +42,18 @@ interface InventoryProduct extends Product {
 
 const Inventory: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { products, isLoading, category, status, lowStock } = useAppSelector((state) => state.inventory);
+  const { products, isLoading } = useAppSelector((state) => state.inventory);
   const [searchTerm, setSearchTerm] = useState('');
   const [showLowStock, setShowLowStock] = useState(false);
+  const [showStockAdjustmentModal, setShowStockAdjustmentModal] = useState(false);
+  const [selectedProductForAdjustment, setSelectedProductForAdjustment] = useState<InventoryProduct | null>(null);
+  const [adjustmentData, setAdjustmentData] = useState({
+    adjustmentType: 'add',
+    quantity: '',
+    reason: ''
+  });
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -83,6 +121,46 @@ const Inventory: React.FC = () => {
     }
   });
 
+  const bulkOperationMutation = useMutation({
+    mutationFn: async (data: { action: string; productIds: string[]; updates?: any }) => {
+      const response = await fetch('/api/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to perform bulk operation');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setSelectedProducts([]);
+    },
+    onError: () => {
+      console.error('Failed to perform bulk operation');
+    }
+  });
+
+  const stockAdjustmentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/inventory/adjust-stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to adjust stock');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setShowStockAdjustmentModal(false);
+      setSelectedProductForAdjustment(null);
+      setAdjustmentData({ adjustmentType: 'add', quantity: '', reason: '' });
+    },
+    onError: () => {
+      console.error('Failed to adjust stock');
+    }
+  });
+
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -106,12 +184,12 @@ const Inventory: React.FC = () => {
   };
 
   const handleEdit = (product: InventoryProduct) => {
-    dispatch(setSelectedProduct(product));
+    dispatch(setSelectedProduct(product as any));
     setFormData({
       name: product.name || '',
       category: product.category || '',
       price: (typeof product.price === 'string' ? parseFloat(product.price) : product.price || 0).toString(),
-      stock: product.stock.toString(),
+      stock: (product as any).stock?.toString() || '0',
       lowStockThreshold: (product.lowStockThreshold || 0).toString(),
       status: (product.status as 'active' | 'draft') || 'active'
     });
@@ -136,6 +214,25 @@ const Inventory: React.FC = () => {
     }
   };
 
+  const handleStockAdjustment = (product: InventoryProduct) => {
+    setSelectedProductForAdjustment(product);
+    setShowStockAdjustmentModal(true);
+  };
+
+  const handleAdjustmentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProductForAdjustment) return;
+
+    const adjustment = {
+      productId: selectedProductForAdjustment.id,
+      adjustmentType: adjustmentData.adjustmentType,
+      quantity: parseInt(adjustmentData.quantity),
+      reason: adjustmentData.reason
+    };
+
+    stockAdjustmentMutation.mutate(adjustment);
+  };
+
   const getStockBadge = (product: InventoryProduct) => {
     if (product.stock === 0) {
       return <span className="badge bg-danger">Out of Stock</span>;
@@ -145,8 +242,39 @@ const Inventory: React.FC = () => {
     return <span className="badge bg-success">In Stock</span>;
   };
 
+  // Bulk operations handlers
+  const handleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map(p => p.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedProducts.length === 0) return;
+    if (confirm(`Delete ${selectedProducts.length} selected products?`)) {
+      bulkOperationMutation.mutate({ action: 'delete', productIds: selectedProducts });
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedProducts.length === 0) return;
+    bulkOperationMutation.mutate({ action: 'export', productIds: selectedProducts });
+  };
+
   // AG-Grid Column Definitions
   const columnDefs: ColDef[] = useMemo(() => [
+    {
+      headerName: '',
+      field: 'selected',
+      sortable: false,
+      filter: false,
+      width: 50,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      headerCheckboxSelectionFilteredOnly: true
+    },
     {
       headerName: 'Product',
       field: 'name',
@@ -254,6 +382,14 @@ const Inventory: React.FC = () => {
                 <i class="fas fa-edit me-2"></i>Edit
               </button>
             </li>
+            <li>
+              <button 
+                class="dropdown-item" 
+                onclick="window.handleStockAdjustment('${params.data.id}')"
+              >
+                <i class="fas fa-warehouse me-2"></i>Adjust Stock
+              </button>
+            </li>
             <li><hr class="dropdown-divider" /></li>
             <li>
               <button 
@@ -269,12 +405,12 @@ const Inventory: React.FC = () => {
     }
   ], []);
 
-  const filteredProducts = products.filter((product: InventoryProduct) => {
+  const filteredProducts = products.filter((product: any) => {
     const name = product.name || '';
     const category = product.category || '';
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = !showLowStock || product.stock <= (product.lowStockThreshold || 0);
+    const matchesFilter = !showLowStock || (product.stock || 0) <= (product.lowStockThreshold || 0);
     return matchesSearch && matchesFilter;
   });
 
@@ -289,17 +425,23 @@ const Inventory: React.FC = () => {
     
     (window as any).handleEditProduct = (id: string) => {
       const product = filteredProducts.find(p => p.id === id);
-      if (product) handleEdit(product as InventoryProduct);
+      if (product) handleEdit(product as any);
     };
     
     (window as any).handleDeleteProduct = (id: string) => {
       deleteProductMutation.mutate(id);
     };
     
+    (window as any).handleStockAdjustment = (id: string) => {
+      const product = filteredProducts.find(p => p.id === id);
+      if (product) handleStockAdjustment(product as any);
+    };
+    
     return () => {
       delete (window as any).toggleInventoryDropdown;
       delete (window as any).handleEditProduct;
       delete (window as any).handleDeleteProduct;
+      delete (window as any).handleStockAdjustment;
     };
   }, [filteredProducts, deleteProductMutation]);
 
@@ -327,21 +469,114 @@ const Inventory: React.FC = () => {
           <div className="d-flex justify-content-between align-items-start">
             <div>
               <h1 className="h3 fw-bold text-dark mb-2">
-                <i className="fas fa-boxes me-2 text-primary"></i>
+                <FaBoxes className="me-2 text-primary" />
                 Inventory Management
               </h1>
               <p className="text-muted mb-0">Manage your products and stock levels</p>
             </div>
-            <button
-              className="btn btn-shopify d-flex align-items-center"
-              onClick={() => {
-                resetForm();
-                setShowModal(true);
-              }}
-            >
-              <i className="fas fa-plus me-2"></i>
-              Add Product
-            </button>
+            <div className="d-flex gap-2">
+              {selectedProducts.length > 0 && (
+                <div className="btn-group me-2">
+                  <button
+                    className="btn btn-outline-danger d-flex align-items-center"
+                    onClick={handleBulkDelete}
+                    disabled={bulkOperationMutation.isPending}
+                  >
+                    <FaTrash className="me-2" />
+                    Delete ({selectedProducts.length})
+                  </button>
+                  <button
+                    className="btn btn-outline-info d-flex align-items-center"
+                    onClick={handleBulkExport}
+                    disabled={bulkOperationMutation.isPending}
+                  >
+                    <FaEye className="me-2" />
+                    Export Selected
+                  </button>
+                </div>
+              )}
+              <button
+                className="btn btn-outline-primary d-flex align-items-center"
+                onClick={() => {
+                  window.location.href = '/inventory-reports';
+                }}
+              >
+                <FaChartLine className="me-2" />
+                Reports
+              </button>
+              <button
+                className="btn btn-shopify d-flex align-items-center"
+                onClick={() => {
+                  resetForm();
+                  setShowModal(true);
+                }}
+              >
+                <FaPlus className="me-2" />
+                Add Product
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Inventory Stats Cards */}
+      <div className="row g-4 mb-4">
+        <div className="col-lg-3 col-md-6">
+          <div className="modern-card p-4">
+            <div className="d-flex align-items-center">
+              <div className="p-3 bg-primary bg-opacity-10 rounded-3 me-3">
+                <FaBoxes className="fs-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="mb-1 fw-bold">{products.length}</h3>
+                <p className="mb-0 text-muted">Total Products</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-3 col-md-6">
+          <div className="modern-card p-4">
+            <div className="d-flex align-items-center">
+              <div className="p-3 bg-success bg-opacity-10 rounded-3 me-3">
+                <FaWarehouse className="fs-4 text-success" />
+              </div>
+              <div>
+                <h3 className="mb-1 fw-bold">
+                  {products.reduce((sum, p) => sum + ((p as any).stock || 0), 0)}
+                </h3>
+                <p className="mb-0 text-muted">Total Stock</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-3 col-md-6">
+          <div className="modern-card p-4">
+            <div className="d-flex align-items-center">
+              <div className="p-3 bg-warning bg-opacity-10 rounded-3 me-3">
+                <FaExclamationTriangle className="fs-4 text-warning" />
+              </div>
+              <div>
+                <h3 className="mb-1 fw-bold">
+                  {products.filter(p => (p as any).stock <= ((p as any).lowStockThreshold || 0)).length}
+                </h3>
+                <p className="mb-0 text-muted">Low Stock Items</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-3 col-md-6">
+          <div className="modern-card p-4">
+            <div className="d-flex align-items-center">
+              <div className="p-3 bg-danger bg-opacity-10 rounded-3 me-3">
+                <FaBoxes className="fs-4 text-danger" />
+              </div>
+              <div>
+                <h3 className="mb-1 fw-bold">
+                  {products.filter(p => (p as any).stock === 0).length}
+                </h3>
+                <p className="mb-0 text-muted">Out of Stock</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -408,6 +643,12 @@ const Inventory: React.FC = () => {
               enableSorting={true}
               enableResizing={true}
               sideBar={false}
+              rowSelection="multiple"
+              onSelectionChanged={(event: any) => {
+                const selectedNodes = event.api.getSelectedNodes();
+                const selectedIds = selectedNodes.map((node: any) => node.data.id);
+                setSelectedProducts(selectedIds);
+              }}
             />
           </div>
         </div>
@@ -485,13 +726,9 @@ const Inventory: React.FC = () => {
                         </div>
                         <div className="col-12">
                           <label htmlFor="category" className="form-label fw-semibold">Category</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="category"
+                          <CategorySelect
                             value={formData.category}
-                            onChange={(e) => setFormData({...formData, category: e.target.value})}
-                            required
+                            onChange={(category) => setFormData({...formData, category})}
                           />
                         </div>
                         <div className="col-12">
@@ -583,6 +820,99 @@ const Inventory: React.FC = () => {
                       <>
                         {useAppSelector((state) => state.inventory.selectedProduct) ? 'Update' : 'Create'} Product
                       </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Adjustment Modal */}
+      {showStockAdjustmentModal && selectedProductForAdjustment && (
+        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <FaWarehouse className="me-2" />
+                  Adjust Stock - {selectedProductForAdjustment.name}
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowStockAdjustmentModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleAdjustmentSubmit}>
+                <div className="modal-body">
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <div className="alert alert-info">
+                        <strong>Current Stock:</strong> {selectedProductForAdjustment.stock} units
+                      </div>
+                    </div>
+                    <div className="col-12">
+                      <label htmlFor="adjustmentType" className="form-label fw-semibold">Adjustment Type</label>
+                      <select
+                        className="form-select"
+                        id="adjustmentType"
+                        value={adjustmentData.adjustmentType}
+                        onChange={(e) => setAdjustmentData({...adjustmentData, adjustmentType: e.target.value})}
+                        required
+                      >
+                        <option value="add">Add Stock</option>
+                        <option value="remove">Remove Stock</option>
+                        <option value="set">Set Stock Level</option>
+                      </select>
+                    </div>
+                    <div className="col-12">
+                      <label htmlFor="quantity" className="form-label fw-semibold">Quantity</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        id="quantity"
+                        value={adjustmentData.quantity}
+                        onChange={(e) => setAdjustmentData({...adjustmentData, quantity: e.target.value})}
+                        min="0"
+                        required
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label htmlFor="reason" className="form-label fw-semibold">Reason</label>
+                      <textarea
+                        className="form-control"
+                        id="reason"
+                        rows={3}
+                        value={adjustmentData.reason}
+                        onChange={(e) => setAdjustmentData({...adjustmentData, reason: e.target.value})}
+                        placeholder="Enter reason for stock adjustment..."
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setShowStockAdjustmentModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={stockAdjustmentMutation.isPending}
+                  >
+                    {stockAdjustmentMutation.isPending ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Adjusting...
+                      </>
+                    ) : (
+                      'Adjust Stock'
                     )}
                   </button>
                 </div>

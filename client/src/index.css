@@ -592,10 +592,12 @@ html {
   z-index: 1040;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
+  max-width: var(--sidebar-width);
 }
 
 .modern-sidebar.collapsed {
   width: var(--sidebar-collapsed-width);
+  max-width: var(--sidebar-collapsed-width);
 }
 
 .sidebar-brand {
@@ -682,10 +684,13 @@ html {
   min-height: 100vh;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--gray-50);
+  width: calc(100% - var(--sidebar-width));
+  overflow-x: hidden;
 }
 
 .main-content.sidebar-collapsed {
   margin-left: var(--sidebar-collapsed-width);
+  width: calc(100% - var(--sidebar-collapsed-width));
 }
 
 /* Enhanced Cards */
@@ -696,6 +701,8 @@ html {
   overflow: hidden;
   transition: all 0.3s ease;
   background: white;
+  width: 100%;
+  max-width: 100%;
 }
 
 .modern-card:hover {
@@ -712,6 +719,8 @@ html {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .kpi-card::before {
@@ -780,6 +789,8 @@ html {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 100%;
 }
 
 .modern-table th {
@@ -810,6 +821,8 @@ html {
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Gradient text for app title */
@@ -1070,6 +1083,56 @@ html {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
   }
+
+  /* Fix container padding on mobile */
+  .container-fluid {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Fix page headers on mobile */
+  .d-flex.justify-content-between.align-items-center {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  /* Fix stats cards on mobile */
+  .row.g-3, .row.g-4 {
+    margin-left: -0.5rem !important;
+    margin-right: -0.5rem !important;
+  }
+
+  .row.g-3 > *, .row.g-4 > * {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Fix modal sizing on mobile */
+  .modal-dialog {
+    margin: 0.5rem !important;
+    max-width: calc(100% - 1rem) !important;
+  }
+
+  /* Fix table responsiveness */
+  .table-responsive {
+    border: none !important;
+  }
+
+  /* Fix button groups on mobile */
+  .btn-group {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .btn-group .btn {
+    border-radius: 0.375rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .btn-group .btn:last-child {
+    margin-bottom: 0 !important;
+  }
 }
 
 /* Add any additional custom styles here */
@@ -1150,5 +1213,49 @@ html {
   /* Hide clock on small screens */
   .clock-display {
     display: none !important;
+  }
+
+  /* Extra small screen fixes */
+  .container-fluid {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Fix card padding on extra small screens */
+  .modern-card, .kpi-card {
+    padding: 1rem !important;
+  }
+
+  /* Fix button sizing on extra small screens */
+  .btn {
+    font-size: 0.875rem !important;
+    padding: 0.375rem 0.75rem !important;
+  }
+
+  /* Fix form controls on extra small screens */
+  .form-control, .form-select {
+    font-size: 0.875rem !important;
+  }
+
+  /* Fix table cells on extra small screens */
+  .table td, .table th {
+    padding: 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Fix modal on extra small screens */
+  .modal-dialog {
+    margin: 0.25rem !important;
+    max-width: calc(100% - 0.5rem) !important;
+  }
+
+  .modal-content {
+    border-radius: 0.5rem !important;
+  }
+
+  /* Fix dropdown menus on extra small screens */
+  .dropdown-menu {
+    min-width: 200px !important;
+    max-width: calc(100vw - 2rem) !important;
   }
 }

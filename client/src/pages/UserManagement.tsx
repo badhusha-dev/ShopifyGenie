@@ -39,7 +39,7 @@ const UserManagement: React.FC = () => {
   const isSuperAdmin = userRole === 'superadmin';
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['/api/users'],
+    queryKey: ['/users'],
     queryFn: async () => {
       const response = await fetch('/api/users', {
         headers: {
@@ -69,7 +69,7 @@ const UserManagement: React.FC = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/users'] });
       setShowAddModal(false);
       setFormData({ name: '', email: '', password: '', role: 'customer' });
       // Show success toast
@@ -93,7 +93,7 @@ const UserManagement: React.FC = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/users'] });
       setEditingUser(null);
       setFormData({ name: '', email: '', password: '', role: 'customer' });
     }
@@ -114,7 +114,7 @@ const UserManagement: React.FC = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/users'] });
     }
   });
 
