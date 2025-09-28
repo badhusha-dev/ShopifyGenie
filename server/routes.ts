@@ -592,10 +592,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
    */
   app.get("/api/products", authenticateToken, requirePermission('inventory:view'), async (req, res) => {
     try {
+      // Get shopDomain from query params, but don't require it
       const shopDomain = req.query.shop as string;
       const products = await storage.getProducts(shopDomain);
       res.json(products);
     } catch (error) {
+      console.error('Error fetching products:', error);
       res.status(500).json({ error: "Failed to fetch products" });
     }
   });
@@ -1898,10 +1900,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
    */
   app.get("/api/customers", authenticateToken, requirePermission('customers:view'), async (req, res) => {
     try {
+      // Get shopDomain from query params, but don't require it
       const shopDomain = req.query.shop as string;
       const customers = await storage.getCustomers(shopDomain);
       res.json(customers);
     } catch (error) {
+      console.error('Error fetching customers:', error);
       res.status(500).json({ error: "Failed to fetch customers" });
     }
   });
@@ -3145,7 +3149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/system', authenticateToken, systemRoutes);
   app.use('/api/integrations', authenticateToken, integrationsRoutes);
 
-  // System Settings endpoint
+  // System Settings endpoints
   app.get("/api/system/settings", authenticateToken, requireRole(['admin', 'superadmin']), async (req, res) => {
     try {
       const settings = await storage.getSystemSettings();
@@ -3153,6 +3157,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching system settings:', error);
       res.status(500).json({ error: 'Failed to fetch system settings' });
+    }
+  });
+
+  app.put("/api/system/settings", authenticateToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+    try {
+      const settings = await storage.updateSystemSettings(req.body);
+      res.json(settings);
+    } catch (error) {
+      console.error('Error updating system settings:', error);
+      res.status(500).json({ error: 'Failed to update system settings' });
+    }
+  });
+
+  app.get("/api/system/audit-logs", authenticateToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+    try {
+      const logs = await storage.getAuditLogs();
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+      res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+  });
+
+  app.post("/api/system/backup", authenticateToken, requireRole(['superadmin']), async (req, res) => {
+    try {
+      const backup = await storage.createSystemBackup();
+      res.json(backup);
+    } catch (error) {
+      console.error('Error creating system backup:', error);
+      res.status(500).json({ error: 'Failed to create system backup' });
+    }
+  });
+
+  app.get("/api/system/health", authenticateToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+    try {
+      const health = await storage.getSystemHealth();
+      res.json(health);
+    } catch (error) {
+      console.error('Error fetching system health:', error);
+      res.status(500).json({ error: 'Failed to fetch system health' });
+    }
+  });
+
+  app.post("/api/system/maintenance", authenticateToken, requireRole(['superadmin']), async (req, res) => {
+    try {
+      const { action } = req.body;
+      const result = await storage.performMaintenance(action);
+      res.json(result);
+    } catch (error) {
+      console.error('Error performing maintenance:', error);
+      res.status(500).json({ error: 'Failed to perform maintenance' });
     }
   });
 
@@ -3323,7 +3378,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // General Ledger Routes
   app.get("/api/general-ledger", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
     try {
+      console.log('General ledger request:', { 
+        shopDomain: req.user?.shopDomain, 
+        query: req.query,
+        userId: req.user?.id 
+      });
+      
       const ledger = await storage.getGeneralLedger(req.user?.shopDomain, req.query);
+      console.log('General ledger response:', { count: ledger.length });
       res.json(ledger);
     } catch (error) {
       console.error('Get general ledger error:', error);
@@ -3343,6 +3405,358 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Get account ledger error:', error);
       res.status(500).json({ error: "Failed to fetch account ledger" });
+    }
+  });
+
+  app.get("/api/general-ledger/export", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { format = 'csv', ...filters } = req.query;
+      const ledger = await storage.getGeneralLedger(req.user?.shopDomain, filters);
+      const exportData = await storage.exportGeneralLedger(ledger, format as string);
+      
+      const getContentType = (format: string) => {
+        switch (format) {
+          case 'csv': return 'text/csv';
+          case 'excel': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          case 'pdf': return 'application/pdf';
+          default: return 'text/csv';
+        }
+      };
+      
+      res.setHeader('Content-Type', getContentType(format as string));
+      res.setHeader('Content-Disposition', `attachment; filename="general-ledger.${format}"`);
+      res.send(exportData);
+    } catch (error) {
+      console.error('Export general ledger error:', error);
+      res.status(500).json({ error: "Failed to export general ledger" });
+    }
+  });
+
+  app.get("/api/general-ledger/summary", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const summary = await storage.getGeneralLedgerSummary(req.user?.shopDomain, req.query);
+      res.json(summary);
+    } catch (error) {
+      console.error('Get general ledger summary error:', error);
+      res.status(500).json({ error: "Failed to fetch general ledger summary" });
+    }
+  });
+
+  app.get("/api/general-ledger/transactions/:entryId", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const transactions = await storage.getJournalEntryTransactions(req.params.entryId);
+      res.json(transactions);
+    } catch (error) {
+      console.error('Get journal entry transactions error:', error);
+      res.status(500).json({ error: "Failed to fetch journal entry transactions" });
+    }
+  });
+
+  // New Advanced Features Routes
+  app.get("/api/recent-activity", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const activities = await storage.getRecentActivity(req.user?.shopDomain);
+      res.json(activities);
+    } catch (error) {
+      console.error('Get recent activity error:', error);
+      res.status(500).json({ error: "Failed to fetch recent activity" });
+    }
+  });
+
+  app.get("/api/weather", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const weather = await storage.getWeatherData();
+      res.json(weather);
+    } catch (error) {
+      console.error('Get weather data error:', error);
+      res.status(500).json({ error: "Failed to fetch weather data" });
+    }
+  });
+
+  app.get("/api/market-trends", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const trends = await storage.getMarketTrends();
+      res.json(trends);
+    } catch (error) {
+      console.error('Get market trends error:', error);
+      res.status(500).json({ error: "Failed to fetch market trends" });
+    }
+  });
+
+  app.get("/api/ai/chat", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { message, context } = req.query;
+      const response = await storage.getAIChatResponse(message as string, context as string);
+      res.json(response);
+    } catch (error) {
+      console.error('AI chat error:', error);
+      res.status(500).json({ error: "Failed to get AI response" });
+    }
+  });
+
+  app.post("/api/ai/chat", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { message, context } = req.body;
+      const response = await storage.getAIChatResponse(message, context);
+      res.json(response);
+    } catch (error) {
+      console.error('AI chat error:', error);
+      res.status(500).json({ error: "Failed to get AI response" });
+    }
+  });
+
+  app.get("/api/notifications", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const notifications = await storage.getNotifications(req.user?.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Get notifications error:', error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/notifications/mark-read", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { notificationIds } = req.body;
+      await storage.markNotificationsAsRead(notificationIds);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Mark notifications as read error:', error);
+      res.status(500).json({ error: "Failed to mark notifications as read" });
+    }
+  });
+
+  app.get("/api/backup/status", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const status = await storage.getBackupStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Get backup status error:', error);
+      res.status(500).json({ error: "Failed to fetch backup status" });
+    }
+  });
+
+  app.post("/api/backup/create", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const backup = await storage.createBackup();
+      res.json(backup);
+    } catch (error) {
+      console.error('Create backup error:', error);
+      res.status(500).json({ error: "Failed to create backup" });
+    }
+  });
+
+  app.get("/api/performance/metrics", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const metrics = await storage.getPerformanceMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Get performance metrics error:', error);
+      res.status(500).json({ error: "Failed to fetch performance metrics" });
+    }
+  });
+
+  // Export functionality routes
+  app.get("/api/export/sales", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { format = 'csv', startDate, endDate } = req.query;
+      const salesData = await storage.exportSalesData(startDate as string, endDate as string);
+      
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=sales-data.csv');
+        res.send(salesData.csv);
+      } else if (format === 'json') {
+        res.json(salesData.json);
+      } else {
+        res.status(400).json({ error: "Unsupported format. Use 'csv' or 'json'" });
+      }
+    } catch (error) {
+      console.error('Export sales data error:', error);
+      res.status(500).json({ error: "Failed to export sales data" });
+    }
+  });
+
+  app.get("/api/export/inventory", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { format = 'csv' } = req.query;
+      const inventoryData = await storage.exportInventoryData();
+      
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=inventory-data.csv');
+        res.send(inventoryData.csv);
+      } else if (format === 'json') {
+        res.json(inventoryData.json);
+      } else {
+        res.status(400).json({ error: "Unsupported format. Use 'csv' or 'json'" });
+      }
+    } catch (error) {
+      console.error('Export inventory data error:', error);
+      res.status(500).json({ error: "Failed to export inventory data" });
+    }
+  });
+
+  app.get("/api/export/customers", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { format = 'csv' } = req.query;
+      const customerData = await storage.exportCustomerData();
+      
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=customer-data.csv');
+        res.send(customerData.csv);
+      } else if (format === 'json') {
+        res.json(customerData.json);
+      } else {
+        res.status(400).json({ error: "Unsupported format. Use 'csv' or 'json'" });
+      }
+    } catch (error) {
+      console.error('Export customer data error:', error);
+      res.status(500).json({ error: "Failed to export customer data" });
+    }
+  });
+
+  app.get("/api/export/reports", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { format = 'pdf', reportType, startDate, endDate } = req.query;
+      const reportData = await storage.exportReportData(reportType as string, startDate as string, endDate as string);
+      
+      if (format === 'pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${reportType}-report.pdf`);
+        res.send(reportData.pdf);
+      } else if (format === 'excel') {
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=${reportType}-report.xlsx`);
+        res.send(reportData.excel);
+      } else {
+        res.status(400).json({ error: "Unsupported format. Use 'pdf' or 'excel'" });
+      }
+    } catch (error) {
+      console.error('Export report error:', error);
+      res.status(500).json({ error: "Failed to export report" });
+    }
+  });
+
+  // Workflow Automation Routes
+  app.get("/api/workflows", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const workflows = await storage.getWorkflows(req.user?.shopDomain);
+      res.json(workflows);
+    } catch (error) {
+      console.error('Get workflows error:', error);
+      res.status(500).json({ error: "Failed to fetch workflows" });
+    }
+  });
+
+  app.post("/api/workflows", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const workflow = await storage.createWorkflow(req.body);
+      res.status(201).json(workflow);
+    } catch (error) {
+      console.error('Create workflow error:', error);
+      res.status(500).json({ error: "Failed to create workflow" });
+    }
+  });
+
+  app.put("/api/workflows/:id", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const workflow = await storage.updateWorkflow(id, req.body);
+      if (!workflow) {
+        return res.status(404).json({ error: "Workflow not found" });
+      }
+      res.json(workflow);
+    } catch (error) {
+      console.error('Update workflow error:', error);
+      res.status(500).json({ error: "Failed to update workflow" });
+    }
+  });
+
+  app.delete("/api/workflows/:id", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteWorkflow(id);
+      if (!success) {
+        return res.status(404).json({ error: "Workflow not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete workflow error:', error);
+      res.status(500).json({ error: "Failed to delete workflow" });
+    }
+  });
+
+  app.post("/api/workflows/:id/toggle", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const workflow = await storage.toggleWorkflow(id, status);
+      if (!workflow) {
+        return res.status(404).json({ error: "Workflow not found" });
+      }
+      res.json(workflow);
+    } catch (error) {
+      console.error('Toggle workflow error:', error);
+      res.status(500).json({ error: "Failed to toggle workflow" });
+    }
+  });
+
+  app.get("/api/workflow-executions", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const executions = await storage.getWorkflowExecutions(req.user?.shopDomain);
+      res.json(executions);
+    } catch (error) {
+      console.error('Get workflow executions error:', error);
+      res.status(500).json({ error: "Failed to fetch workflow executions" });
+    }
+  });
+
+  // Global Search Routes
+  app.get("/api/search", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { q: query, type, sortBy = 'relevance' } = req.query;
+      if (!query || query.length < 3) {
+        return res.json([]);
+      }
+      const results = await storage.searchData(query as string, type as string, sortBy as string);
+      res.json(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      res.status(500).json({ error: "Failed to perform search" });
+    }
+  });
+
+  // System Monitoring Routes
+  app.get("/api/system/health", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const health = await storage.getSystemHealth();
+      res.json(health);
+    } catch (error) {
+      console.error('Get system health error:', error);
+      res.status(500).json({ error: "Failed to fetch system health" });
+    }
+  });
+
+  app.get("/api/system/metrics", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { timeRange = '1h' } = req.query;
+      const metrics = await storage.getSystemMetrics(timeRange as string);
+      res.json(metrics);
+    } catch (error) {
+      console.error('Get system metrics error:', error);
+      res.status(500).json({ error: "Failed to fetch system metrics" });
+    }
+  });
+
+  app.get("/api/system/alerts", authenticateToken, requireStaffOrAdmin, async (req: AuthRequest, res) => {
+    try {
+      const alerts = await storage.getSystemAlerts();
+      res.json(alerts);
+    } catch (error) {
+      console.error('Get system alerts error:', error);
+      res.status(500).json({ error: "Failed to fetch system alerts" });
     }
   });
 
@@ -3595,20 +4009,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bank Reconciliation Routes
   app.get("/api/bank-statements", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
-      const { bankAccountId, page = 1, limit = 50 } = req.query;
-      // TODO: Implement bank statements fetching with pagination
-      res.json([]);
+      const { bankAccountId } = req.query;
+      const statements = await storage.getBankStatements(bankAccountId as string);
+      res.json(statements);
     } catch (error) {
+      console.error('Get bank statements error:', error);
       res.status(500).json({ error: "Failed to fetch bank statements" });
     }
   });
 
   app.post("/api/bank-statements/upload", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
-      const { bankAccountId, statements } = req.body;
-      // TODO: Process CSV/OFX bank statement upload
-      res.json({ imported: statements?.length || 0, errors: [] });
+      const { bankAccountId } = req.body;
+      // In a real implementation, you would parse the uploaded file
+      // For now, we'll create mock statements
+      const mockStatements = await storage.createMockBankStatements(bankAccountId);
+      res.json({ imported: mockStatements.length, errors: [] });
     } catch (error) {
+      console.error('Upload bank statements error:', error);
       res.status(500).json({ error: "Failed to upload bank statements" });
     }
   });
@@ -3616,17 +4034,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/bank-reconciliations", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
       const { bankAccountId } = req.query;
-      res.json([]);
+      const reconciliations = await storage.getBankReconciliations(bankAccountId as string);
+      res.json(reconciliations);
     } catch (error) {
+      console.error('Get bank reconciliations error:', error);
       res.status(500).json({ error: "Failed to fetch reconciliations" });
     }
   });
 
   app.post("/api/bank-reconciliations", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      res.status(201).json({ id: "recon-1", status: "draft" });
+      const reconciliation = await storage.createBankReconciliation(req.body);
+      res.status(201).json(reconciliation);
     } catch (error) {
+      console.error('Create bank reconciliation error:', error);
       res.status(500).json({ error: "Failed to create reconciliation" });
+    }
+  });
+
+  app.post("/api/bank-reconciliations/match", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { statementId, glEntryId } = req.body;
+      const result = await storage.matchBankStatement(statementId, glEntryId);
+      res.json(result);
+    } catch (error) {
+      console.error('Match bank statement error:', error);
+      res.status(500).json({ error: "Failed to match statement" });
+    }
+  });
+
+  app.post("/api/bank-reconciliations/unmatch", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const { statementId } = req.body;
+      const result = await storage.unmatchBankStatement(statementId);
+      res.json(result);
+    } catch (error) {
+      console.error('Unmatch bank statement error:', error);
+      res.status(500).json({ error: "Failed to unmatch statement" });
+    }
+  });
+
+  app.post("/api/bank-reconciliations/complete", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { reconciliationId } = req.body;
+      const result = await storage.completeBankReconciliation(reconciliationId);
+      res.json(result);
+    } catch (error) {
+      console.error('Complete bank reconciliation error:', error);
+      res.status(500).json({ error: "Failed to complete reconciliation" });
     }
   });
 

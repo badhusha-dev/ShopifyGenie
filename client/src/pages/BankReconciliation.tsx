@@ -40,6 +40,8 @@ const BankReconciliation = () => {
   const [reconciliationMode, setReconciliationMode] = useState(false);
   const [selectedStatement, setSelectedStatement] = useState<BankStatement | null>(null);
   const [matchingEntries, setMatchingEntries] = useState<GLEntry[]>([]);
+  const [showUnmatchedOnly, setShowUnmatchedOnly] = useState(false);
+  const [reconciliationSummary, setReconciliationSummary] = useState<any>(null);
   
   const queryClient = useQueryClient();
 
@@ -55,13 +57,13 @@ const BankReconciliation = () => {
 
   // Fetch bank statements
   const { data: statements = [], isLoading: loadingStatements } = useQuery<BankStatement[]>({
-    queryKey: ['/api/bank-statements', selectedAccount],
+    queryKey: ['/bank-statements', selectedAccount],
     enabled: !!selectedAccount,
   });
 
   // Fetch GL entries for matching
   const { data: glEntries = [], isLoading: loadingGL } = useQuery<GLEntry[]>({
-    queryKey: ['/api/general-ledger', selectedAccount],
+    queryKey: ['/general-ledger', selectedAccount],
     enabled: !!selectedAccount,
   });
 
@@ -80,7 +82,7 @@ const BankReconciliation = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/bank-statements'] });
+      queryClient.invalidateQueries({ queryKey: ['/bank-statements', selectedAccount] });
       setUploadFile(null);
     },
   });
@@ -97,9 +99,41 @@ const BankReconciliation = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/bank-statements'] });
+      queryClient.invalidateQueries({ queryKey: ['/bank-statements', selectedAccount] });
       setSelectedStatement(null);
       setMatchingEntries([]);
+    },
+  });
+
+  // Unmatch statement
+  const unmatchMutation = useMutation({
+    mutationFn: async (statementId: string) => {
+      const response = await fetch(`/api/bank-reconciliations/unmatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statementId }),
+      });
+      if (!response.ok) throw new Error('Unmatch failed');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/bank-statements', selectedAccount] });
+    },
+  });
+
+  // Complete reconciliation
+  const completeReconciliationMutation = useMutation({
+    mutationFn: async (reconciliationId: string) => {
+      const response = await fetch(`/api/bank-reconciliations/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reconciliationId }),
+      });
+      if (!response.ok) throw new Error('Complete reconciliation failed');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/bank-statements', selectedAccount] });
     },
   });
 
@@ -127,6 +161,46 @@ const BankReconciliation = () => {
       });
     }
   };
+
+  const handleUnmatch = (statementId: string) => {
+    unmatchMutation.mutate(statementId);
+  };
+
+  const handleCompleteReconciliation = () => {
+    // In a real implementation, you would get the reconciliation ID
+    const reconciliationId = 'recon-1';
+    completeReconciliationMutation.mutate(reconciliationId);
+  };
+
+  // Filter statements based on showUnmatchedOnly
+  const filteredStatements = useMemo(() => {
+    if (showUnmatchedOnly) {
+      return statements.filter(s => !s.isReconciled);
+    }
+    return statements;
+  }, [statements, showUnmatchedOnly]);
+
+  // Calculate reconciliation summary
+  const summary = useMemo(() => {
+    const total = statements.length;
+    const reconciled = statements.filter(s => s.isReconciled).length;
+    const unmatched = total - reconciled;
+    const totalAmount = statements.reduce((sum, s) => sum + parseFloat(s.amount), 0);
+    const reconciledAmount = statements
+      .filter(s => s.isReconciled)
+      .reduce((sum, s) => sum + parseFloat(s.amount), 0);
+    const unmatchedAmount = totalAmount - reconciledAmount;
+
+    return {
+      total,
+      reconciled,
+      unmatched,
+      totalAmount,
+      reconciledAmount,
+      unmatchedAmount,
+      reconciliationRate: total > 0 ? (reconciled / total) * 100 : 0
+    };
+  }, [statements]);
 
   // AG-Grid Column Definitions for Bank Statements
   const statementColumnDefs: ColDef[] = useMemo(() => [
@@ -182,7 +256,7 @@ const BankReconciliation = () => {
       field: 'actions',
       sortable: false,
       filter: false,
-      width: 120,
+      width: 150,
       cellRenderer: (params: any) => `
         <div class="d-flex gap-1">
           ${!params.data.isReconciled ? 
@@ -194,10 +268,20 @@ const BankReconciliation = () => {
               <i class="fas fa-search me-1"></i>
               Match
             </button>` :
-            `<span class="text-success">
-              <i class="fas fa-check me-1"></i>
-              Matched
-            </span>`
+            `<div class="d-flex gap-1">
+              <span class="text-success">
+                <i class="fas fa-check me-1"></i>
+                Matched
+              </span>
+              <button
+                class="btn btn-outline-warning btn-sm"
+                onclick="window.handleUnmatch('${params.data.id}')"
+                data-testid="button-unmatch-${params.data.id}"
+              >
+                <i class="fas fa-undo me-1"></i>
+                Unmatch
+              </button>
+            </div>`
           }
         </div>
       `
@@ -270,12 +354,17 @@ const BankReconciliation = () => {
     (window as any).handleConfirmMatch = (id: string) => {
       handleMatch(id);
     };
+
+    (window as any).handleUnmatch = (id: string) => {
+      handleUnmatch(id);
+    };
     
     return () => {
       delete (window as any).handleFindMatching;
       delete (window as any).handleConfirmMatch;
+      delete (window as any).handleUnmatch;
     };
-  }, [statements, matchMutation]);
+  }, [statements, matchMutation, unmatchMutation]);
 
   return (
     <div className="container-fluid p-4">
@@ -351,17 +440,40 @@ const BankReconciliation = () => {
                   <div className="row text-center">
                     <div className="col-6">
                       <div className="text-success fw-bold fs-4">
-                        {statements.filter(s => s.isReconciled).length}
+                        {summary.reconciled}
                       </div>
                       <small className="text-muted">Reconciled</small>
                     </div>
                     <div className="col-6">
                       <div className="text-warning fw-bold fs-4">
-                        {statements.filter(s => !s.isReconciled).length}
+                        {summary.unmatched}
                       </div>
                       <small className="text-muted">Unmatched</small>
                     </div>
                   </div>
+                  <div className="mt-3">
+                    <div className="progress" style={{ height: '8px' }}>
+                      <div 
+                        className="progress-bar bg-success" 
+                        style={{ width: `${summary.reconciliationRate}%` }}
+                      ></div>
+                    </div>
+                    <small className="text-muted">
+                      {summary.reconciliationRate.toFixed(1)}% Complete
+                    </small>
+                  </div>
+                  {summary.unmatched === 0 && summary.total > 0 && (
+                    <div className="mt-3">
+                      <button
+                        className="btn btn-success btn-sm w-100"
+                        onClick={handleCompleteReconciliation}
+                        disabled={completeReconciliationMutation.isPending}
+                      >
+                        <FaCheck className="me-1" />
+                        Complete Reconciliation
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -395,11 +507,25 @@ const BankReconciliation = () => {
             <>
               {/* Bank Statements */}
               <AnimatedCard>
-                <div className="card-header bg-info text-white">
+                <div className="card-header bg-info text-white d-flex justify-content-between align-items-center">
                   <h5 className="mb-0">
                     <FaFileImport className="me-2" />
                     Bank Statements
                   </h5>
+                  <div className="d-flex gap-2">
+                    <div className="form-check form-switch">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="showUnmatchedOnly"
+                        checked={showUnmatchedOnly}
+                        onChange={(e) => setShowUnmatchedOnly(e.target.checked)}
+                      />
+                      <label className="form-check-label text-white" htmlFor="showUnmatchedOnly">
+                        Show Unmatched Only
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 <div className="card-body">
                   {loadingStatements ? (
@@ -410,7 +536,7 @@ const BankReconciliation = () => {
                     </div>
                   ) : (
                     <AGDataGrid
-                      rowData={statements}
+                      rowData={filteredStatements}
                       columnDefs={statementColumnDefs}
                       loading={loadingStatements}
                       pagination={true}

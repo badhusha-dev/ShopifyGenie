@@ -212,6 +212,42 @@ export interface IStorage {
   getGeneralLedger(shopDomain?: string, filters?: any): Promise<GeneralLedger[]>;
   getAccountLedger(accountId: string, startDate?: Date, endDate?: Date): Promise<GeneralLedger[]>;
   createLedgerEntry(entry: InsertGeneralLedger): Promise<GeneralLedger>;
+  exportGeneralLedger(ledger: GeneralLedger[], format: string): Promise<string | Buffer>;
+  getGeneralLedgerSummary(shopDomain?: string, filters?: any): Promise<any>;
+  getJournalEntryTransactions(entryId: string): Promise<any[]>;
+
+  // Advanced Features
+  getRecentActivity(shopDomain?: string): Promise<any[]>;
+  getWeatherData(): Promise<any>;
+  getMarketTrends(): Promise<any[]>;
+  getAIChatResponse(message: string, context?: string): Promise<any>;
+  getNotifications(userId?: string): Promise<any[]>;
+  markNotificationsAsRead(notificationIds: string[]): Promise<boolean>;
+  exportSalesData(startDate?: string, endDate?: string): Promise<any>;
+  exportInventoryData(): Promise<any>;
+  exportCustomerData(): Promise<any>;
+  exportReportData(reportType: string, startDate?: string, endDate?: string): Promise<any>;
+  getBackupStatus(): Promise<any>;
+  createBackup(): Promise<any>;
+  getPerformanceMetrics(): Promise<any>;
+  getWorkflows(shopDomain?: string): Promise<any[]>;
+  createWorkflow(workflow: any): Promise<any>;
+  updateWorkflow(id: string, updates: any): Promise<any>;
+  deleteWorkflow(id: string): Promise<boolean>;
+  toggleWorkflow(id: string, status: string): Promise<any>;
+  getWorkflowExecutions(shopDomain?: string): Promise<any[]>;
+  searchData(query: string, type?: string, sortBy?: string): Promise<any[]>;
+  getSystemHealth(): Promise<any>;
+  getSystemMetrics(timeRange: string): Promise<any[]>;
+  getSystemAlerts(): Promise<any[]>;
+
+  // System Settings
+  getSystemSettings(): Promise<any[]>;
+  updateSystemSettings(settings: Record<string, string>): Promise<any[]>;
+  getAuditLogs(): Promise<any[]>;
+  createSystemBackup(): Promise<any>;
+  getSystemHealth(): Promise<any>;
+  performMaintenance(action: string): Promise<any>;
 
   // Accounts Receivable
   getAccountsReceivable(shopDomain?: string, filters?: any): Promise<AccountsReceivable[]>;
@@ -279,6 +315,10 @@ export class MemStorage implements IStorage {
   private orders: Map<string, Order> = new Map();
   private subscriptions: Map<string, Subscription> = new Map();
   private loyaltyTransactions: Map<string, LoyaltyTransaction> = new Map();
+
+  // Bank Reconciliation Storage
+  private bankStatements: Map<string, BankStatement[]> = new Map();
+  private bankReconciliations: Map<string, any> = new Map();
 
   // Enhanced Inventory & Vendor Storage
   private warehouses: any[] = [
@@ -1432,15 +1472,18 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(user => user.email === username);
   }
 
-  // Product methods - now with Shopify integration
+  // Product methods - with optional Shopify integration
   async getProducts(shopDomain?: string): Promise<Product[]> {
+    // Always return local products first
+    const localProducts = Array.from(this.products.values());
+    
     if (shopDomain) {
       try {
         const shopifyService = new ShopifyService(shopDomain);
         const shopifyProducts = await shopifyService.getProducts();
 
         // Convert and sync Shopify products with local storage
-        const products: Product[] = [];
+        const products: Product[] = [...localProducts];
         for (const shopifyProduct of shopifyProducts) {
           for (const variant of shopifyProduct.variants) {
             const existingProduct = await this.getProductByShopifyId(variant.id.toString());
@@ -1452,7 +1495,15 @@ export class MemStorage implements IStorage {
                 price: variant.price,
                 lastUpdated: new Date()
               });
-              if (updatedProduct) products.push(updatedProduct);
+              if (updatedProduct) {
+                // Replace in array if exists
+                const index = products.findIndex(p => p.id === existingProduct.id);
+                if (index !== -1) {
+                  products[index] = updatedProduct;
+                } else {
+                  products.push(updatedProduct);
+                }
+              }
             } else {
               // Create new product
               const newProduct = await this.createProduct({
@@ -1471,10 +1522,13 @@ export class MemStorage implements IStorage {
         return products;
       } catch (error) {
         console.error('Error syncing products from Shopify:', error);
-        return Array.from(this.products.values());
+        // Return local products if Shopify sync fails
+        return localProducts;
       }
     }
-    return Array.from(this.products.values());
+    
+    // Return local products if no shopDomain provided
+    return localProducts;
   }
 
   async syncProductsFromShopify(shopDomain: string): Promise<Product[]> {
@@ -1885,15 +1939,18 @@ export class MemStorage implements IStorage {
     return [];
   }
 
-  // Customer methods - now with Shopify integration
+  // Customer methods - with optional Shopify integration
   async getCustomers(shopDomain?: string): Promise<Customer[]> {
+    // Always return local customers first
+    const localCustomers = Array.from(this.customers.values());
+    
     if (shopDomain) {
       try {
         const shopifyService = new ShopifyService(shopDomain);
         const shopifyCustomers = await shopifyService.getCustomers();
 
         // Convert and sync Shopify customers with local storage
-        const customers: Customer[] = [];
+        const customers: Customer[] = [...localCustomers];
         for (const shopifyCustomer of shopifyCustomers) {
           const existingCustomer = await this.getCustomerByShopifyId(shopifyCustomer.id.toString());
           if (existingCustomer) {
@@ -1903,7 +1960,15 @@ export class MemStorage implements IStorage {
               email: shopifyCustomer.email,
               totalSpent: shopifyCustomer.total_spent
             });
-            if (updatedCustomer) customers.push(updatedCustomer);
+            if (updatedCustomer) {
+              // Replace in array if exists
+              const index = customers.findIndex(c => c.id === existingCustomer.id);
+              if (index !== -1) {
+                customers[index] = updatedCustomer;
+              } else {
+                customers.push(updatedCustomer);
+              }
+            }
           } else {
             // Create new customer
             const newCustomer = await this.createCustomer({
@@ -1919,10 +1984,13 @@ export class MemStorage implements IStorage {
         return customers;
       } catch (error) {
         console.error('Error syncing customers from Shopify:', error);
-        return Array.from(this.customers.values());
+        // Return local customers if Shopify sync fails
+        return localCustomers;
       }
     }
-    return Array.from(this.customers.values());
+    
+    // Return local customers if no shopDomain provided
+    return localCustomers;
   }
 
   async syncCustomersFromShopify(shopDomain: string): Promise<Customer[]> {
@@ -2844,20 +2912,21 @@ export class MemStorage implements IStorage {
 
   // General Ledger
   async getGeneralLedger(shopDomain?: string, filters?: any): Promise<GeneralLedger[]> {
-    // Mock general ledger entries
-    const mockLedger: GeneralLedger[] = [
-      {
-        id: randomUUID(),
-        journalEntryId: 'JRN001',
-        accountId: '1000', // Cash
-        date: new Date('2023-10-26'),
-        description: 'Initial Setup - Cash Deposit',
-        debit: 50000,
-        credit: 0,
-        shopDomain: shopDomain || 'demo-store.myshopify.com',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
+    try {
+      // Mock general ledger entries
+      const mockLedger: GeneralLedger[] = [
+        {
+          id: randomUUID(),
+          journalEntryId: 'JRN001',
+          accountId: '1000', // Cash
+          date: new Date('2023-10-26'),
+          description: 'Initial Setup - Cash Deposit',
+          debit: 50000,
+          credit: 0,
+          shopDomain: shopDomain || 'demo-store.myshopify.com',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
       {
         id: randomUUID(),
         journalEntryId: 'JRN001',
@@ -2895,7 +2964,45 @@ export class MemStorage implements IStorage {
         updatedAt: new Date()
       }
     ];
-    return mockLedger.filter(entry => !shopDomain || entry.shopDomain === shopDomain);
+
+    // Apply filters if provided
+    let filteredLedger = mockLedger.filter(entry => !shopDomain || entry.shopDomain === shopDomain);
+
+    if (filters) {
+      // Filter by account ID if provided
+      if (filters.accountId) {
+        filteredLedger = filteredLedger.filter(entry => entry.accountId === filters.accountId);
+      }
+
+      // Filter by date range if provided
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        filteredLedger = filteredLedger.filter(entry => entry.date >= startDate);
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        filteredLedger = filteredLedger.filter(entry => entry.date <= endDate);
+      }
+
+      // Filter by journal entry ID if provided
+      if (filters.journalEntryId) {
+        filteredLedger = filteredLedger.filter(entry => entry.journalEntryId === filters.journalEntryId);
+      }
+
+      // Filter by description if provided
+      if (filters.description) {
+        filteredLedger = filteredLedger.filter(entry => 
+          entry.description.toLowerCase().includes(filters.description.toLowerCase())
+        );
+      }
+    }
+
+    return filteredLedger;
+    } catch (error) {
+      console.error('Error in getGeneralLedger:', error);
+      throw new Error('Failed to fetch general ledger entries');
+    }
   }
 
   async getAccountLedger(accountId: string, startDate?: Date, endDate?: Date): Promise<GeneralLedger[]> {
@@ -3696,6 +3803,1161 @@ export class MemStorage implements IStorage {
         equityGrowth: 12.3 * periodMultiplier
       }
     };
+  }
+
+  // Bank Reconciliation Methods
+  async getBankStatements(bankAccountId: string): Promise<BankStatement[]> {
+    if (!this.bankStatements.has(bankAccountId)) {
+      return [];
+    }
+    return this.bankStatements.get(bankAccountId) || [];
+  }
+
+  async createMockBankStatements(bankAccountId: string): Promise<BankStatement[]> {
+    const mockStatements: BankStatement[] = [
+      {
+        id: randomUUID(),
+        statementDate: new Date('2024-01-15').toISOString(),
+        description: 'Deposit - Customer Payment',
+        amount: '1250.00',
+        balance: '1250.00',
+        reference: 'DEP001',
+        isReconciled: false
+      },
+      {
+        id: randomUUID(),
+        statementDate: new Date('2024-01-16').toISOString(),
+        description: 'Withdrawal - Office Supplies',
+        amount: '-85.50',
+        balance: '1164.50',
+        reference: 'WD001',
+        isReconciled: false
+      },
+      {
+        id: randomUUID(),
+        statementDate: new Date('2024-01-17').toISOString(),
+        description: 'Deposit - Sales Revenue',
+        amount: '2100.00',
+        balance: '3264.50',
+        reference: 'DEP002',
+        isReconciled: false
+      },
+      {
+        id: randomUUID(),
+        statementDate: new Date('2024-01-18').toISOString(),
+        description: 'Bank Fee - Monthly Service',
+        amount: '-15.00',
+        balance: '3249.50',
+        reference: 'FEE001',
+        isReconciled: false
+      },
+      {
+        id: randomUUID(),
+        statementDate: new Date('2024-01-19').toISOString(),
+        description: 'Deposit - Refund Received',
+        amount: '45.00',
+        balance: '3294.50',
+        reference: 'REF001',
+        isReconciled: false
+      }
+    ];
+
+    this.bankStatements.set(bankAccountId, mockStatements);
+    return mockStatements;
+  }
+
+  async createBankReconciliation(data: any): Promise<any> {
+    const reconciliation = {
+      id: randomUUID(),
+      bankAccountId: data.bankAccountId,
+      statementDate: data.statementDate,
+      openingBalance: data.openingBalance,
+      closingBalance: data.closingBalance,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.bankReconciliations.set(reconciliation.id, reconciliation);
+    return reconciliation;
+  }
+
+  async getBankReconciliations(bankAccountId: string): Promise<any[]> {
+    return Array.from(this.bankReconciliations.values())
+      .filter(recon => recon.bankAccountId === bankAccountId);
+  }
+
+  async matchBankStatement(statementId: string, glEntryId: string): Promise<any> {
+    // Find the statement in all bank accounts
+    for (const [accountId, statements] of this.bankStatements.entries()) {
+      const statement = statements.find(s => s.id === statementId);
+      if (statement) {
+        statement.isReconciled = true;
+        statement.reconciledWith = glEntryId;
+        return { success: true, message: 'Statement matched successfully' };
+      }
+    }
+    throw new Error('Statement not found');
+  }
+
+  async unmatchBankStatement(statementId: string): Promise<any> {
+    // Find the statement in all bank accounts
+    for (const [accountId, statements] of this.bankStatements.entries()) {
+      const statement = statements.find(s => s.id === statementId);
+      if (statement) {
+        statement.isReconciled = false;
+        statement.reconciledWith = undefined;
+        return { success: true, message: 'Statement unmatched successfully' };
+      }
+    }
+    throw new Error('Statement not found');
+  }
+
+  async completeBankReconciliation(reconciliationId: string): Promise<any> {
+    const reconciliation = this.bankReconciliations.get(reconciliationId);
+    if (!reconciliation) {
+      throw new Error('Reconciliation not found');
+    }
+
+    reconciliation.status = 'completed';
+    reconciliation.updatedAt = new Date().toISOString();
+    
+    return { success: true, message: 'Reconciliation completed successfully' };
+  }
+
+  // General Ledger Export and Summary Methods
+  async exportGeneralLedger(ledger: GeneralLedger[], format: string): Promise<string | Buffer> {
+    if (format === 'csv') {
+      const headers = ['Date', 'Entry #', 'Account Code', 'Account Name', 'Description', 'Debit', 'Credit', 'Balance'];
+      const csvContent = [
+        headers.join(','),
+        ...ledger.map(entry => [
+          new Date(entry.date).toLocaleDateString(),
+          entry.journalEntryId,
+          entry.accountId,
+          this.getAccountName(entry.accountId),
+          entry.description,
+          entry.debit,
+          entry.credit,
+          entry.debit - entry.credit
+        ].join(','))
+      ].join('\n');
+      return csvContent;
+    }
+    
+    // For other formats, return JSON as fallback
+    return JSON.stringify(ledger, null, 2);
+  }
+
+  async getGeneralLedgerSummary(shopDomain?: string, filters?: any): Promise<any> {
+    const ledger = await this.getGeneralLedger(shopDomain, filters);
+    
+    const totalDebits = ledger.reduce((sum, entry) => sum + entry.debit, 0);
+    const totalCredits = ledger.reduce((sum, entry) => sum + entry.credit, 0);
+    const netBalance = totalDebits - totalCredits;
+    
+    const accountSummary = ledger.reduce((acc, entry) => {
+      const accountId = entry.accountId;
+      if (!acc[accountId]) {
+        acc[accountId] = {
+          accountCode: accountId,
+          accountName: this.getAccountName(accountId),
+          totalDebits: 0,
+          totalCredits: 0,
+          balance: 0,
+          transactionCount: 0
+        };
+      }
+      acc[accountId].totalDebits += entry.debit;
+      acc[accountId].totalCredits += entry.credit;
+      acc[accountId].balance += entry.debit - entry.credit;
+      acc[accountId].transactionCount += 1;
+      return acc;
+    }, {} as any);
+
+    return {
+      totals: {
+        totalDebits,
+        totalCredits,
+        netBalance,
+        transactionCount: ledger.length
+      },
+      accountSummary: Object.values(accountSummary),
+      period: {
+        startDate: filters?.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        endDate: filters?.endDate || new Date().toISOString()
+      }
+    };
+  }
+
+  async getJournalEntryTransactions(entryId: string): Promise<any[]> {
+    // Mock transaction data for a journal entry
+    return [
+      {
+        id: randomUUID(),
+        accountId: '1000',
+        accountCode: '1000',
+        accountName: 'Cash',
+        description: 'Initial cash deposit',
+        debit: 10000,
+        credit: 0
+      },
+      {
+        id: randomUUID(),
+        accountId: '3000',
+        accountCode: '3000',
+        accountName: 'Owner\'s Equity',
+        description: 'Initial investment',
+        debit: 0,
+        credit: 10000
+      }
+    ];
+  }
+
+  private getAccountName(accountId: string): string {
+    const account = this.accounts.get(accountId);
+    return account ? account.name : `Account ${accountId}`;
+  }
+
+  // New Advanced Features Methods
+  async getRecentActivity(shopDomain?: string): Promise<any[]> {
+    return [
+      {
+        id: randomUUID(),
+        type: 'order',
+        title: 'New order received',
+        description: 'Order #12345 for $299.99',
+        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        icon: 'fas fa-shopping-cart',
+        color: 'success'
+      },
+      {
+        id: randomUUID(),
+        type: 'customer',
+        title: 'New customer registered',
+        description: 'John Doe joined the loyalty program',
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        icon: 'fas fa-user-plus',
+        color: 'info'
+      },
+      {
+        id: randomUUID(),
+        type: 'inventory',
+        title: 'Low stock alert',
+        description: 'Organic Green Tea is running low',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        icon: 'fas fa-exclamation-triangle',
+        color: 'warning'
+      },
+      {
+        id: randomUUID(),
+        type: 'payment',
+        title: 'Payment received',
+        description: '$1,250.00 from Customer ABC',
+        timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        icon: 'fas fa-credit-card',
+        color: 'success'
+      },
+      {
+        id: randomUUID(),
+        type: 'system',
+        title: 'Backup completed',
+        description: 'Daily backup completed successfully',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        icon: 'fas fa-database',
+        color: 'primary'
+      }
+    ];
+  }
+
+  async getWeatherData(): Promise<any> {
+    // Enhanced weather data with more realistic information
+    const currentHour = new Date().getHours();
+    const isDaytime = currentHour >= 6 && currentHour <= 18;
+    
+    return {
+      location: 'New York, NY',
+      temperature: Math.floor(Math.random() * 20) + 65, // 65-85°F
+      condition: isDaytime ? 'Partly Cloudy' : 'Clear',
+      humidity: Math.floor(Math.random() * 30) + 50, // 50-80%
+      windSpeed: Math.floor(Math.random() * 15) + 5, // 5-20 mph
+      feelsLike: Math.floor(Math.random() * 20) + 65,
+      uvIndex: isDaytime ? Math.floor(Math.random() * 8) + 2 : 0,
+      visibility: Math.floor(Math.random() * 5) + 8, // 8-12 miles
+      pressure: Math.floor(Math.random() * 0.5 * 100) + 29.5, // 29.5-30.0 inHg
+      forecast: [
+        { 
+          day: 'Today', 
+          high: Math.floor(Math.random() * 15) + 70, 
+          low: Math.floor(Math.random() * 10) + 60, 
+          condition: 'Partly Cloudy',
+          precipitation: Math.floor(Math.random() * 30) + 10
+        },
+        { 
+          day: 'Tomorrow', 
+          high: Math.floor(Math.random() * 15) + 75, 
+          low: Math.floor(Math.random() * 10) + 65, 
+          condition: 'Sunny',
+          precipitation: Math.floor(Math.random() * 20) + 5
+        },
+        { 
+          day: 'Wednesday', 
+          high: Math.floor(Math.random() * 15) + 70, 
+          low: Math.floor(Math.random() * 10) + 60, 
+          condition: 'Rainy',
+          precipitation: Math.floor(Math.random() * 40) + 60
+        },
+        { 
+          day: 'Thursday', 
+          high: Math.floor(Math.random() * 15) + 72, 
+          low: Math.floor(Math.random() * 10) + 62, 
+          condition: 'Cloudy',
+          precipitation: Math.floor(Math.random() * 25) + 15
+        },
+        { 
+          day: 'Friday', 
+          high: Math.floor(Math.random() * 15) + 78, 
+          low: Math.floor(Math.random() * 10) + 68, 
+          condition: 'Sunny',
+          precipitation: Math.floor(Math.random() * 15) + 5
+        }
+      ],
+      alerts: [
+        {
+          type: 'warning',
+          title: 'Heat Advisory',
+          description: 'High temperatures expected. Stay hydrated and avoid prolonged outdoor activities.',
+          severity: 'moderate'
+        }
+      ],
+      lastUpdated: new Date().toISOString()
+    };
+  }
+
+  async getMarketTrends(): Promise<any[]> {
+    const trends = [
+      {
+        id: randomUUID(),
+        category: 'E-commerce',
+        trend: 'Mobile Commerce Growth',
+        change: '+15.2%',
+        description: 'Mobile transactions increased significantly this quarter, driven by improved mobile payment systems and better user experience',
+        impact: 'positive',
+        source: 'Industry Report 2024',
+        confidence: 'high',
+        timeframe: 'Q1 2024'
+      },
+      {
+        id: randomUUID(),
+        category: 'Retail',
+        trend: 'Sustainable Products',
+        change: '+23.8%',
+        description: 'Growing demand for eco-friendly products, with 67% of consumers willing to pay premium for sustainable options',
+        impact: 'positive',
+        source: 'Market Research',
+        confidence: 'high',
+        timeframe: 'Last 6 months'
+      },
+      {
+        id: randomUUID(),
+        category: 'Technology',
+        trend: 'AI Integration',
+        change: '+45.1%',
+        description: 'Businesses adopting AI for customer service, with chatbots and automated support systems showing 40% efficiency gains',
+        impact: 'positive',
+        source: 'Tech Trends 2024',
+        confidence: 'medium',
+        timeframe: 'Q1 2024'
+      },
+      {
+        id: randomUUID(),
+        category: 'Consumer Behavior',
+        trend: 'Subscription Services',
+        change: '+12.3%',
+        description: 'Shift towards subscription-based models, with average customer lifetime value increasing by 35%',
+        impact: 'positive',
+        source: 'Consumer Survey',
+        confidence: 'high',
+        timeframe: 'Last 12 months'
+      },
+      {
+        id: randomUUID(),
+        category: 'Supply Chain',
+        trend: 'Local Sourcing',
+        change: '+18.7%',
+        description: 'Companies prioritizing local suppliers to reduce shipping costs and improve delivery times',
+        impact: 'positive',
+        source: 'Supply Chain Report',
+        confidence: 'medium',
+        timeframe: 'Q1 2024'
+      },
+      {
+        id: randomUUID(),
+        category: 'Marketing',
+        trend: 'Personalization',
+        change: '+31.2%',
+        description: 'Advanced personalization techniques showing 25% higher conversion rates and improved customer satisfaction',
+        impact: 'positive',
+        source: 'Marketing Analytics',
+        confidence: 'high',
+        timeframe: 'Last 3 months'
+      },
+      {
+        id: randomUUID(),
+        category: 'Payment',
+        trend: 'Digital Wallets',
+        change: '+28.9%',
+        description: 'Digital wallet adoption surging, with Apple Pay and Google Pay leading the market',
+        impact: 'positive',
+        source: 'Payment Industry Report',
+        confidence: 'high',
+        timeframe: 'Q1 2024'
+      },
+      {
+        id: randomUUID(),
+        category: 'Logistics',
+        trend: 'Same-Day Delivery',
+        change: '+22.4%',
+        description: 'Consumer demand for same-day delivery increasing, with 45% of online shoppers expecting this option',
+        impact: 'positive',
+        source: 'Logistics Study',
+        confidence: 'medium',
+        timeframe: 'Last 6 months'
+      }
+    ];
+
+    // Return random selection of 4-6 trends
+    const shuffled = trends.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.floor(Math.random() * 3) + 4);
+  }
+
+  async getAIChatResponse(message: string, context?: string): Promise<any> {
+    const lowerMessage = message.toLowerCase();
+    
+    // Enhanced AI responses with more context and actionable insights
+    const responses = {
+      'sales': {
+        response: 'Based on your current data, sales are trending upward by 12.5% this month. Your top-performing products are Organic Green Tea, Premium Coffee, and Artisan Chocolate. I recommend increasing inventory for these items and running targeted promotions.',
+        suggestions: ['Show detailed sales breakdown', 'Analyze top customers', 'Create sales forecast', 'Optimize pricing strategy']
+      },
+      'inventory': {
+        response: 'Your inventory levels need attention. 3 items are running low: Organic Green Tea (5 units), Premium Coffee (8 units), and Artisan Chocolate (12 units). Consider placing reorders within 48 hours to avoid stockouts.',
+        suggestions: ['Generate purchase orders', 'Set up low stock alerts', 'Analyze inventory turnover', 'Optimize reorder points']
+      },
+      'customers': {
+        response: 'You have 156 active customers with an average order value of $89.50. Your customer retention rate is 78%, which is above industry average. Your top customer segments are health-conscious consumers (45%) and coffee enthusiasts (32%).',
+        suggestions: ['Segment customer analysis', 'Loyalty program insights', 'Customer lifetime value', 'Churn prediction analysis']
+      },
+      'revenue': {
+        response: 'Your revenue has grown 15% compared to last month, reaching $24,580. The main drivers are increased order volume (+8.3%) and higher average order values (+12.5%). Your profit margin is 42%, which is excellent for your industry.',
+        suggestions: ['Revenue breakdown by product', 'Profit margin analysis', 'Cost optimization opportunities', 'Revenue forecasting']
+      },
+      'marketing': {
+        response: 'Your marketing performance shows strong engagement. Email campaigns have a 24% open rate and 8.5% click-through rate. Social media engagement is up 18% this month. Consider increasing budget for your top-performing channels.',
+        suggestions: ['Campaign performance analysis', 'ROI optimization', 'Customer acquisition cost', 'Marketing attribution']
+      },
+      'operations': {
+        response: 'Your operational efficiency is good with 99.2% order fulfillment accuracy. Average processing time is 2.3 hours, and shipping costs are 8.5% of revenue. Consider automating routine tasks to improve efficiency.',
+        suggestions: ['Process optimization', 'Cost reduction strategies', 'Automation opportunities', 'Performance benchmarking']
+      },
+      'default': {
+        response: 'I can help you analyze your business data across multiple areas. I have insights on sales trends, inventory management, customer behavior, marketing performance, and operational efficiency. What specific area would you like to explore?',
+        suggestions: ['Business overview', 'Performance dashboard', 'Growth opportunities', 'Risk assessment']
+      }
+    };
+
+    let selectedResponse = responses.default;
+
+    // Enhanced keyword matching with context awareness
+    if (lowerMessage.includes('sales') || lowerMessage.includes('revenue') || lowerMessage.includes('profit')) {
+      selectedResponse = responses.sales;
+    } else if (lowerMessage.includes('inventory') || lowerMessage.includes('stock') || lowerMessage.includes('product')) {
+      selectedResponse = responses.inventory;
+    } else if (lowerMessage.includes('customer') || lowerMessage.includes('client') || lowerMessage.includes('user')) {
+      selectedResponse = responses.customers;
+    } else if (lowerMessage.includes('marketing') || lowerMessage.includes('campaign') || lowerMessage.includes('promotion')) {
+      selectedResponse = responses.marketing;
+    } else if (lowerMessage.includes('operation') || lowerMessage.includes('process') || lowerMessage.includes('efficiency')) {
+      selectedResponse = responses.operations;
+    }
+
+    // Add contextual suggestions based on the conversation
+    const contextualSuggestions = [
+      'What are my top-selling products this week?',
+      'Show me customer satisfaction metrics',
+      'Analyze my cash flow trends',
+      'What are the biggest growth opportunities?',
+      'How can I reduce operational costs?',
+      'Generate a business health report'
+    ];
+
+    return {
+      response: selectedResponse.response,
+      suggestions: selectedResponse.suggestions,
+      contextualSuggestions,
+      confidence: Math.floor(Math.random() * 20) + 80, // 80-100% confidence
+      timestamp: new Date().toISOString(),
+      context: {
+        businessType: 'E-commerce',
+        industry: 'Food & Beverage',
+        scale: 'Small-Medium Business'
+      }
+    };
+  }
+
+  async getNotifications(userId?: string): Promise<any[]> {
+    return [
+      {
+        id: randomUUID(),
+        title: 'Low Stock Alert',
+        message: 'Organic Green Tea is running low (5 units remaining)',
+        type: 'warning',
+        read: false,
+        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        actionUrl: '/inventory'
+      },
+      {
+        id: randomUUID(),
+        title: 'New Order',
+        message: 'Order #12345 worth $299.99 has been placed',
+        type: 'info',
+        read: false,
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        actionUrl: '/orders'
+      },
+      {
+        id: randomUUID(),
+        title: 'Payment Received',
+        message: 'Payment of $1,250.00 received from Customer ABC',
+        type: 'success',
+        read: true,
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        actionUrl: '/accounts-receivable'
+      },
+      {
+        id: randomUUID(),
+        title: 'System Update',
+        message: 'New features have been added to your dashboard',
+        type: 'info',
+        read: true,
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        actionUrl: '/system-settings'
+      }
+    ];
+  }
+
+  async markNotificationsAsRead(notificationIds: string[]): Promise<boolean> {
+    // Mock implementation - in real app, update database
+    return true;
+  }
+
+  async exportSalesData(startDate?: string, endDate?: string): Promise<any> {
+    // Mock sales data for export
+    const salesData = [
+      { date: '2024-01-01', product: 'Organic Green Tea', quantity: 25, revenue: 375.00, customer: 'John Doe' },
+      { date: '2024-01-02', product: 'Premium Coffee', quantity: 15, revenue: 225.00, customer: 'Jane Smith' },
+      { date: '2024-01-03', product: 'Artisan Chocolate', quantity: 30, revenue: 450.00, customer: 'Bob Johnson' },
+      { date: '2024-01-04', product: 'Herbal Tea Blend', quantity: 20, revenue: 300.00, customer: 'Alice Brown' },
+      { date: '2024-01-05', product: 'Organic Green Tea', quantity: 35, revenue: 525.00, customer: 'Charlie Wilson' }
+    ];
+
+    const csv = [
+      'Date,Product,Quantity,Revenue,Customer',
+      ...salesData.map(row => `${row.date},${row.product},${row.quantity},${row.revenue},${row.customer}`)
+    ].join('\n');
+
+    return {
+      csv,
+      json: salesData
+    };
+  }
+
+  async exportInventoryData(): Promise<any> {
+    // Mock inventory data for export
+    const inventoryData = [
+      { sku: 'TEA001', name: 'Organic Green Tea', category: 'Tea', stock: 45, price: 15.00, cost: 8.50 },
+      { sku: 'COF001', name: 'Premium Coffee', category: 'Coffee', stock: 32, price: 18.00, cost: 10.00 },
+      { sku: 'CHO001', name: 'Artisan Chocolate', category: 'Chocolate', stock: 28, price: 22.00, cost: 12.00 },
+      { sku: 'HER001', name: 'Herbal Tea Blend', category: 'Tea', stock: 38, price: 16.00, cost: 9.00 },
+      { sku: 'COF002', name: 'Decaf Coffee', category: 'Coffee', stock: 15, price: 17.00, cost: 9.50 }
+    ];
+
+    const csv = [
+      'SKU,Name,Category,Stock,Price,Cost',
+      ...inventoryData.map(row => `${row.sku},${row.name},${row.category},${row.stock},${row.price},${row.cost}`)
+    ].join('\n');
+
+    return {
+      csv,
+      json: inventoryData
+    };
+  }
+
+  async exportCustomerData(): Promise<any> {
+    // Mock customer data for export
+    const customerData = [
+      { id: 'CUST001', name: 'John Doe', email: 'john@example.com', phone: '555-0123', totalOrders: 12, totalSpent: 1250.00, lastOrder: '2024-01-15' },
+      { id: 'CUST002', name: 'Jane Smith', email: 'jane@example.com', phone: '555-0124', totalOrders: 8, totalSpent: 890.00, lastOrder: '2024-01-12' },
+      { id: 'CUST003', name: 'Bob Johnson', email: 'bob@example.com', phone: '555-0125', totalOrders: 15, totalSpent: 2100.00, lastOrder: '2024-01-18' },
+      { id: 'CUST004', name: 'Alice Brown', email: 'alice@example.com', phone: '555-0126', totalOrders: 6, totalSpent: 650.00, lastOrder: '2024-01-10' },
+      { id: 'CUST005', name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-0127', totalOrders: 20, totalSpent: 3200.00, lastOrder: '2024-01-20' }
+    ];
+
+    const csv = [
+      'ID,Name,Email,Phone,Total Orders,Total Spent,Last Order',
+      ...customerData.map(row => `${row.id},${row.name},${row.email},${row.phone},${row.totalOrders},${row.totalSpent},${row.lastOrder}`)
+    ].join('\n');
+
+    return {
+      csv,
+      json: customerData
+    };
+  }
+
+  async exportReportData(reportType: string, startDate?: string, endDate?: string): Promise<any> {
+    // Mock report data for export
+    const reportData = {
+      sales: {
+        title: 'Sales Report',
+        period: `${startDate || '2024-01-01'} to ${endDate || '2024-01-31'}`,
+        summary: {
+          totalRevenue: 24580.00,
+          totalOrders: 156,
+          averageOrderValue: 157.56,
+          topProduct: 'Organic Green Tea'
+        },
+        details: [
+          { product: 'Organic Green Tea', revenue: 8750.00, orders: 58, avgOrder: 150.86 },
+          { product: 'Premium Coffee', revenue: 6750.00, orders: 45, avgOrder: 150.00 },
+          { product: 'Artisan Chocolate', revenue: 5280.00, orders: 32, avgOrder: 165.00 },
+          { product: 'Herbal Tea Blend', revenue: 3800.00, orders: 21, avgOrder: 180.95 }
+        ]
+      },
+      inventory: {
+        title: 'Inventory Report',
+        period: 'Current Status',
+        summary: {
+          totalProducts: 25,
+          totalValue: 12500.00,
+          lowStockItems: 3,
+          outOfStockItems: 0
+        },
+        details: [
+          { product: 'Organic Green Tea', stock: 45, value: 675.00, status: 'In Stock' },
+          { product: 'Premium Coffee', stock: 32, value: 576.00, status: 'In Stock' },
+          { product: 'Artisan Chocolate', stock: 5, value: 110.00, status: 'Low Stock' },
+          { product: 'Herbal Tea Blend', stock: 38, value: 608.00, status: 'In Stock' }
+        ]
+      }
+    };
+
+    const data = reportData[reportType as keyof typeof reportData] || reportData.sales;
+
+    // Mock PDF and Excel generation
+    const pdf = Buffer.from(`PDF content for ${data.title} - ${data.period}`);
+    const excel = Buffer.from(`Excel content for ${data.title} - ${data.period}`);
+
+    return {
+      pdf,
+      excel,
+      data
+    };
+  }
+
+  async getBackupStatus(): Promise<any> {
+    return {
+      lastBackup: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      nextBackup: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
+      status: 'healthy',
+      size: '2.4 GB',
+      location: 'Cloud Storage',
+      retention: '30 days'
+    };
+  }
+
+  async createBackup(): Promise<any> {
+    return {
+      id: randomUUID(),
+      status: 'completed',
+      timestamp: new Date().toISOString(),
+      size: '2.4 GB',
+      location: 'Cloud Storage',
+      message: 'Backup created successfully'
+    };
+  }
+
+  async getPerformanceMetrics(): Promise<any> {
+    return {
+      system: {
+        cpuUsage: 45,
+        memoryUsage: 62,
+        diskUsage: 38,
+        networkLatency: 12
+      },
+      application: {
+        responseTime: 150,
+        uptime: 99.9,
+        errorRate: 0.1,
+        activeUsers: 24
+      },
+      database: {
+        queryTime: 25,
+        connections: 8,
+        cacheHitRate: 94.5,
+        storageUsed: '1.2 GB'
+      },
+      business: {
+        ordersPerHour: 12,
+        revenuePerHour: 89.50,
+        customerSatisfaction: 4.7,
+        conversionRate: 3.2
+      }
+    };
+  }
+
+  // Workflow Automation Methods
+  async getWorkflows(shopDomain?: string): Promise<any[]> {
+    return [
+      {
+        id: randomUUID(),
+        name: 'Low Stock Alert',
+        description: 'Automatically send notifications when inventory falls below threshold',
+        trigger: 'inventory_low',
+        conditions: [{ field: 'stock', operator: 'less_than', value: 10 }],
+        actions: [{ type: 'notification', message: 'Low stock alert for {product_name}' }],
+        status: 'active',
+        lastRun: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        nextRun: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        runCount: 15,
+        successRate: 95
+      },
+      {
+        id: randomUUID(),
+        name: 'Welcome New Customer',
+        description: 'Send welcome email and add to loyalty program for new customers',
+        trigger: 'customer_created',
+        conditions: [],
+        actions: [
+          { type: 'email', template: 'welcome' },
+          { type: 'loyalty_points', points: 100 }
+        ],
+        status: 'active',
+        lastRun: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        nextRun: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        runCount: 8,
+        successRate: 100
+      },
+      {
+        id: randomUUID(),
+        name: 'Order Fulfillment',
+        description: 'Automatically process orders and update inventory',
+        trigger: 'order_created',
+        conditions: [{ field: 'payment_status', operator: 'equals', value: 'paid' }],
+        actions: [
+          { type: 'update_inventory', operation: 'decrease' },
+          { type: 'send_confirmation', template: 'order_confirmation' }
+        ],
+        status: 'inactive',
+        lastRun: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        nextRun: null,
+        runCount: 45,
+        successRate: 98
+      }
+    ];
+  }
+
+  async createWorkflow(workflow: any): Promise<any> {
+    return {
+      id: randomUUID(),
+      ...workflow,
+      status: 'draft',
+      runCount: 0,
+      successRate: 0,
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  async updateWorkflow(id: string, updates: any): Promise<any> {
+    // Mock implementation
+    return { id, ...updates, updatedAt: new Date().toISOString() };
+  }
+
+  async deleteWorkflow(id: string): Promise<boolean> {
+    // Mock implementation
+    return true;
+  }
+
+  async toggleWorkflow(id: string, status: string): Promise<any> {
+    // Mock implementation
+    return { id, status, updatedAt: new Date().toISOString() };
+  }
+
+  async getWorkflowExecutions(shopDomain?: string): Promise<any[]> {
+    return [
+      {
+        id: randomUUID(),
+        workflowId: 'workflow-1',
+        status: 'completed',
+        startTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        endTime: new Date(Date.now() - 2 * 60 * 60 * 1000 + 5000).toISOString(),
+        logs: ['Workflow started', 'Condition checked', 'Action executed', 'Workflow completed']
+      },
+      {
+        id: randomUUID(),
+        workflowId: 'workflow-2',
+        status: 'running',
+        startTime: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        logs: ['Workflow started', 'Processing...']
+      },
+      {
+        id: randomUUID(),
+        workflowId: 'workflow-3',
+        status: 'failed',
+        startTime: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        endTime: new Date(Date.now() - 1 * 60 * 60 * 1000 + 2000).toISOString(),
+        logs: ['Workflow started', 'Error: Invalid condition', 'Workflow failed']
+      }
+    ];
+  }
+
+  // Global Search Methods
+  async searchData(query: string, type?: string, sortBy?: string): Promise<any[]> {
+    const results: any[] = [];
+    const lowerQuery = query.toLowerCase();
+
+    // Search products
+    if (!type || type === 'product') {
+      const products = Array.from(this.products.values());
+      products.forEach(product => {
+        if (product.name.toLowerCase().includes(lowerQuery) || 
+            product.sku?.toLowerCase().includes(lowerQuery) ||
+            product.category?.toLowerCase().includes(lowerQuery)) {
+          results.push({
+            id: product.id,
+            type: 'product',
+            title: product.name,
+            description: `${product.category} - SKU: ${product.sku}`,
+            url: `/inventory`,
+            metadata: { sku: product.sku, stock: product.stock },
+            relevance: 0.9
+          });
+        }
+      });
+    }
+
+    // Search customers
+    if (!type || type === 'customer') {
+      const customers = Array.from(this.customers.values());
+      customers.forEach(customer => {
+        if (customer.name.toLowerCase().includes(lowerQuery) || 
+            customer.email.toLowerCase().includes(lowerQuery)) {
+          results.push({
+            id: customer.id,
+            type: 'customer',
+            title: customer.name,
+            description: customer.email,
+            url: `/customers`,
+            metadata: { email: customer.email, phone: customer.phone },
+            relevance: 0.8
+          });
+        }
+      });
+    }
+
+    // Search orders
+    if (!type || type === 'order') {
+      const orders = Array.from(this.orders.values());
+      orders.forEach(order => {
+        if (order.id.toLowerCase().includes(lowerQuery) || 
+            order.customerName?.toLowerCase().includes(lowerQuery)) {
+          results.push({
+            id: order.id,
+            type: 'order',
+            title: `Order ${order.id}`,
+            description: `Customer: ${order.customerName} - Total: $${order.total}`,
+            url: `/orders`,
+            metadata: { amount: order.total, status: order.status },
+            relevance: 0.7
+          });
+        }
+      });
+    }
+
+    // Sort results
+    if (sortBy === 'relevance') {
+      results.sort((a, b) => b.relevance - a.relevance);
+    } else if (sortBy === 'type') {
+      results.sort((a, b) => a.type.localeCompare(b.type));
+    }
+
+    return results.slice(0, 20); // Limit to 20 results
+  }
+
+  // System Monitoring Methods
+  async getSystemHealth(): Promise<any> {
+    return {
+      status: 'healthy',
+      uptime: '15 days, 8 hours',
+      lastBackup: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      nextBackup: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
+      databaseSize: '2.4 GB',
+      logSize: '156 MB',
+      alerts: []
+    };
+  }
+
+  async getSystemMetrics(timeRange: string): Promise<any[]> {
+    const now = Date.now();
+    const rangeMs = timeRange === '1h' ? 60 * 60 * 1000 : 
+                   timeRange === '6h' ? 6 * 60 * 60 * 1000 :
+                   timeRange === '24h' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    
+    const metrics = [];
+    const points = timeRange === '1h' ? 12 : timeRange === '6h' ? 36 : timeRange === '24h' ? 24 : 7;
+    
+    for (let i = 0; i < points; i++) {
+      const timestamp = new Date(now - (rangeMs / points) * i).toISOString();
+      metrics.push({
+        timestamp,
+        cpu: Math.floor(Math.random() * 30) + 20,
+        memory: Math.floor(Math.random() * 20) + 60,
+        disk: Math.floor(Math.random() * 10) + 35,
+        network: Math.floor(Math.random() * 50) + 10,
+        responseTime: Math.floor(Math.random() * 100) + 100,
+        activeConnections: Math.floor(Math.random() * 20) + 5,
+        errorRate: Math.random() * 2
+      });
+    }
+    
+    return metrics.reverse();
+  }
+
+  async getSystemAlerts(): Promise<any[]> {
+    return [
+      {
+        id: randomUUID(),
+        type: 'warning',
+        message: 'High memory usage detected',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        resolved: false
+      },
+      {
+        id: randomUUID(),
+        type: 'info',
+        message: 'Scheduled backup completed successfully',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        resolved: true
+      },
+      {
+        id: randomUUID(),
+        type: 'error',
+        message: 'Database connection timeout',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        resolved: true
+      }
+    ];
+  }
+
+  // System Settings Methods
+  async getSystemSettings(): Promise<any[]> {
+    return [
+      {
+        id: randomUUID(),
+        key: 'companyName',
+        value: 'ShopifyGenie',
+        description: 'Company name displayed throughout the application'
+      },
+      {
+        id: randomUUID(),
+        key: 'companyEmail',
+        value: 'admin@shopifygenie.com',
+        description: 'Primary company email address'
+      },
+      {
+        id: randomUUID(),
+        key: 'companyPhone',
+        value: '+1 (555) 123-4567',
+        description: 'Primary company phone number'
+      },
+      {
+        id: randomUUID(),
+        key: 'companyAddress',
+        value: '123 Business St, City, State 12345',
+        description: 'Company physical address'
+      },
+      {
+        id: randomUUID(),
+        key: 'timezone',
+        value: 'America/New_York',
+        description: 'Default timezone for the application'
+      },
+      {
+        id: randomUUID(),
+        key: 'currency',
+        value: 'USD',
+        description: 'Default currency for transactions'
+      },
+      {
+        id: randomUUID(),
+        key: 'dateFormat',
+        value: 'MM/DD/YYYY',
+        description: 'Default date format'
+      },
+      {
+        id: randomUUID(),
+        key: 'sessionTimeout',
+        value: '30',
+        description: 'Session timeout in minutes'
+      },
+      {
+        id: randomUUID(),
+        key: 'maxLoginAttempts',
+        value: '5',
+        description: 'Maximum login attempts before lockout'
+      },
+      {
+        id: randomUUID(),
+        key: 'enableAuditLog',
+        value: 'true',
+        description: 'Enable audit logging for system activities'
+      },
+      {
+        id: randomUUID(),
+        key: 'backupFrequency',
+        value: 'daily',
+        description: 'How often to create system backups'
+      },
+      {
+        id: randomUUID(),
+        key: 'maintenanceMode',
+        value: 'false',
+        description: 'Enable maintenance mode'
+      }
+    ];
+  }
+
+  async updateSystemSettings(settings: Record<string, string>): Promise<any[]> {
+    // Mock implementation - in real app, update database
+    const updatedSettings = Object.entries(settings).map(([key, value]) => ({
+      id: randomUUID(),
+      key,
+      value,
+      description: `Updated ${key} setting`
+    }));
+    
+    // Log the settings update
+    this.addAuditLog('update', 'System Settings', 'Settings updated', JSON.stringify(settings));
+    
+    return updatedSettings;
+  }
+
+  async getAuditLogs(): Promise<any[]> {
+    return [
+      {
+        id: randomUUID(),
+        action: 'login',
+        user: 'admin@shopifygenie.com',
+        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        details: 'User logged in successfully',
+        ipAddress: '192.168.1.100',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      {
+        id: randomUUID(),
+        action: 'update',
+        user: 'admin@shopifygenie.com',
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        details: 'Updated system settings',
+        ipAddress: '192.168.1.100',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      {
+        id: randomUUID(),
+        action: 'create',
+        user: 'admin@shopifygenie.com',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        details: 'Created new customer',
+        ipAddress: '192.168.1.100',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      {
+        id: randomUUID(),
+        action: 'delete',
+        user: 'admin@shopifygenie.com',
+        timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        details: 'Deleted expired product',
+        ipAddress: '192.168.1.100',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      {
+        id: randomUUID(),
+        action: 'view',
+        user: 'staff@shopifygenie.com',
+        timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        details: 'Viewed inventory report',
+        ipAddress: '192.168.1.101',
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      }
+    ];
+  }
+
+  async createSystemBackup(): Promise<any> {
+    const backupId = randomUUID();
+    this.addAuditLog('create', 'System Backup', `Backup created: ${backupId}`, '');
+    
+    return {
+      id: backupId,
+      status: 'completed',
+      timestamp: new Date().toISOString(),
+      size: '2.4 GB',
+      location: 'Cloud Storage',
+      message: 'System backup created successfully'
+    };
+  }
+
+  async getSystemHealth(): Promise<any> {
+    return {
+      status: 'healthy',
+      uptime: '99.9%',
+      lastCheck: new Date().toISOString(),
+      components: {
+        database: { status: 'healthy', responseTime: 25 },
+        api: { status: 'healthy', responseTime: 150 },
+        storage: { status: 'healthy', usage: '38%' },
+        cache: { status: 'healthy', hitRate: '94.5%' }
+      },
+      alerts: [],
+      recommendations: [
+        'Consider increasing cache size for better performance',
+        'Database optimization scheduled for next maintenance window'
+      ]
+    };
+  }
+
+  async performMaintenance(action: string): Promise<any> {
+    this.addAuditLog('maintenance', 'System Maintenance', `Maintenance action: ${action}`, '');
+    
+    const actions = {
+      'clear_cache': { message: 'Cache cleared successfully', duration: '2 minutes' },
+      'optimize_database': { message: 'Database optimized successfully', duration: '15 minutes' },
+      'cleanup_logs': { message: 'Log files cleaned up successfully', duration: '5 minutes' },
+      'update_indexes': { message: 'Database indexes updated successfully', duration: '10 minutes' }
+    };
+
+    const result = actions[action as keyof typeof actions] || { message: 'Unknown maintenance action', duration: '0 minutes' };
+    
+    return {
+      action,
+      status: 'completed',
+      message: result.message,
+      duration: result.duration,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private addAuditLog(action: string, resource: string, details: string, metadata: string): void {
+    // Mock implementation - in real app, store in database
+    console.log(`Audit Log: ${action} on ${resource} - ${details}`);
   }
 }
 

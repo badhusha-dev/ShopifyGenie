@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useLocation } from 'wouter';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
 import logoImage from '../assets/logo.png';
@@ -168,6 +168,43 @@ const menuSections = [
         icon: 'fas fa-cog',
         href: '/settings',
         roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'System Monitoring',
+        icon: 'fas fa-server',
+        href: '/system-monitoring',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Help & Support',
+        icon: 'fas fa-question-circle',
+        href: '/help-support',
+        roles: ['superadmin', 'admin', 'staff']
+      },
+      {
+        title: 'Data Management',
+        icon: 'fas fa-database',
+        href: '/data-management',
+        roles: ['superadmin', 'admin'],
+        description: 'Export, import, backup & restore data'
+      },
+      {
+        title: 'Workflow Automation',
+        icon: 'fas fa-cogs',
+        href: '/workflow-automation',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'Advanced Reports',
+        icon: 'fas fa-chart-line',
+        href: '/advanced-reports',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        title: 'PWA Management',
+        icon: 'fas fa-mobile-alt',
+        href: '/pwa-management',
+        roles: ['superadmin', 'admin']
       }
     ]
   }
@@ -176,11 +213,12 @@ const menuSections = [
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+  const location = useLocation();
   
   const handleLogout = () => {
     dispatch(logout());
   };
-  const [location] = useLocation();
+
 
   const filteredMenuSections = menuSections.map(section => ({
     ...section,
@@ -188,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   })).filter(section => section.items.length > 0);
 
   return (
-    <div className={`modern-sidebar animate-slide-in-left ${collapsed ? 'collapsed' : 'show'}`}>
+    <div className={`modern-sidebar ${collapsed ? 'collapsed' : 'expanded'}`}>
       {/* Brand Section */}
       <div className="sidebar-brand">
         <div className="d-flex align-items-center">
@@ -196,11 +234,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
             <img 
               src={logoImage} 
               alt="Shopify Gennie" 
-              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+              className="brand-logo"
             />
           </div>
           {!collapsed && (
-            <div className="ms-3">
+            <div className="brand-text">
               <h5 className="text-white mb-0 fw-bold">Shopify Gennie</h5>
               <small className="text-white-50">Business Suite</small>
             </div>
@@ -209,83 +247,82 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       </div>
 
       {/* User Profile Section */}
-      <div className="p-3 border-bottom border-white border-opacity-10">
+      <div className="user-profile">
         <div className="d-flex align-items-center">
-          <div className="position-relative">
-            <div 
-              className="rounded-circle d-flex align-items-center justify-content-center bg-gradient-shopify" 
-              style={{width: '40px', height: '40px'}}
-            >
-              <span className="text-white fw-bold">
-                {user?.name?.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div 
-              className="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white"
-              style={{width: '12px', height: '12px'}}
-            ></div>
+          <div className="user-avatar">
+            <span className="avatar-text">
+              {user?.name?.charAt(0).toUpperCase()}
+            </span>
           </div>
           {!collapsed && (
-            <div className="ms-3 flex-fill">
-              <div className="text-white fw-semibold small">{user?.name}</div>
-              <div className="text-white-50 text-capitalize" style={{fontSize: '0.75rem'}}>
-                {user?.role}
-              </div>
+            <div className="user-info">
+              <div className="user-name">{user?.name}</div>
+              <div className="user-role">{user?.role}</div>
             </div>
           )}
         </div>
       </div>
 
       {/* Navigation Menu */}
-      <div className="flex-fill py-3" style={{overflowY: 'auto'}}>
-        <nav>
+      <div className="nav-container">
+        <nav className="nav">
           {filteredMenuSections.map((section, sectionIndex) => (
-            <div key={section.title} className="mb-3">
+            <div key={section.title} className="nav-section">
               {!collapsed && (
-                <div className="px-3 mb-2">
-                  <small className="text-white-50 fw-semibold text-uppercase tracking-wider" 
-                         style={{fontSize: '0.7rem', letterSpacing: '0.05em'}}>
-                    {section.title}
-                  </small>
+                <div className="section-title">
+                  <span className="title-text">{section.title}</span>
                 </div>
               )}
-              {section.items.map((item) => {
-                const isActive = location === item.href;
-                return (
-                  <div key={item.href} className="sidebar-nav-item">
-                    <Link 
-                      to={item.href} 
-                      className={`sidebar-nav-link ${isActive ? 'active' : ''}`}
-                      data-bs-toggle="tooltip" 
-                      data-bs-placement="right" 
-                      title={collapsed ? item.title : ''}
-                    >
-                      <i className={`${item.icon} sidebar-nav-icon`}></i>
-                      {!collapsed && (
-                        <>
-                          <span className="flex-fill">{item.title}</span>
-                          {isActive && <i className="fas fa-chevron-right ms-auto"></i>}
-                        </>
-                      )}
-                    </Link>
-                  </div>
-                );
-              })}
+              <div className="nav-items">
+                {section.items.map((item, itemIndex) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <div key={item.href} className="nav-item">
+                      <Link 
+                        to={item.href} 
+                        className={`nav-link ${isActive ? 'active' : ''}`}
+                        data-bs-toggle="tooltip" 
+                        data-bs-placement="right" 
+                        title={collapsed ? item.title : ''}
+                      >
+                        <div className="nav-icon">
+                          <i className={`${item.icon}`}></i>
+                        </div>
+                        {!collapsed && (
+                          <div className="nav-content">
+                            <span className="nav-text">{item.title}</span>
+                            {isActive && (
+                              <div className="active-indicator">
+                                <i className="fas fa-chevron-right"></i>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </nav>
       </div>
 
       {/* Footer Actions */}
-      <div className="p-3 border-top border-white border-opacity-10">
-        <div className="sidebar-nav-item">
+      <div className="footer">
+        <div className="logout-btn">
           <button 
             onClick={handleLogout}
-            className="sidebar-nav-link w-100 border-0 bg-transparent text-start"
-            style={{color: 'rgba(255, 107, 107, 0.9)'}}
+            className="logout-button"
           >
-            <i className="fas fa-sign-out-alt sidebar-nav-icon"></i>
-            {!collapsed && "Sign Out"}
+            <div className="logout-icon">
+              <i className="fas fa-sign-out-alt"></i>
+            </div>
+            {!collapsed && (
+              <div className="logout-text">
+                <span>Sign Out</span>
+              </div>
+            )}
           </button>
         </div>
       </div>

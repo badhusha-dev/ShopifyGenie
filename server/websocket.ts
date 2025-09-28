@@ -194,6 +194,61 @@ export class WebSocketManager {
     this.sendToRole('admin', message);
     this.sendToRole('superadmin', message);
   }
+
+  public broadcastNotification(notification: any) {
+    const message = {
+      type: 'notification',
+      data: {
+        id: notification.id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        timestamp: notification.timestamp,
+        actionUrl: notification.actionUrl
+      }
+    };
+
+    // Send to specific user if userId is provided
+    if (notification.userId) {
+      this.sendToUser(notification.userId, message);
+    } else {
+      // Send to all users
+      this.sendToAll(message);
+    }
+  }
+
+  public broadcastSystemAlert(alert: any) {
+    const message = {
+      type: 'system_alert',
+      data: {
+        id: alert.id,
+        title: alert.title,
+        message: alert.message,
+        severity: alert.severity,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    // Send to admin and superadmin only
+    this.sendToRole('admin', message);
+    this.sendToRole('superadmin', message);
+  }
+
+  public broadcastDataUpdate(entity: string, action: string, data: any) {
+    const message = {
+      type: 'data_update',
+      data: {
+        entity,
+        action,
+        id: data.id,
+        timestamp: new Date().toISOString(),
+        changes: data.changes
+      }
+    };
+
+    // Send to all users
+    this.sendToAll(message);
+  }
 }
 
 // Singleton instance

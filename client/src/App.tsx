@@ -7,6 +7,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { Sidebar } from './components/Sidebar';
 import TopNav from './components/TopNav';
 import { LoginForm } from './components/LoginForm';
+import ThemeToggle from './components/ThemeToggle';
+import AIChatAssistant from './components/AIChatAssistant';
+import GlobalSearch from './components/GlobalSearch';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { Provider } from 'react-redux';
@@ -28,6 +31,7 @@ import SystemSettings from './pages/SystemSettings';
 import UserManagement from './pages/UserManagement';
 import RolePermissionManagement from './pages/RolePermissionManagement';
 import Integrations from './pages/Integrations';
+import HelpSupport from './pages/HelpSupport';
 import ChartOfAccounts from './pages/ChartOfAccounts';
 import GeneralLedger from './pages/GeneralLedger';
 import JournalEntries from './pages/JournalEntries';
@@ -39,6 +43,11 @@ import ManualJournalEntry from './pages/ManualJournalEntry';
 import BankReconciliation from './pages/BankReconciliation';
 import InvoiceManagement from './pages/InvoiceManagement';
 import TaxManagement from './pages/TaxManagement';
+import SystemMonitoring from './pages/SystemMonitoring';
+import DataManagement from './pages/DataManagement';
+import WorkflowManagement from './pages/WorkflowManagement';
+import AdvancedReports from './pages/AdvancedReports';
+import PWAManagement from './pages/PWAManagement';
 import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import SafeComponent from './components/ui/SafeComponent';
@@ -110,6 +119,14 @@ const AppContent = () => {
 
       {/* Main Content */}
       <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        {/* Theme Toggle */}
+        <ThemeToggle />
+        
+        {/* Global Search */}
+        <div className="global-search-container">
+          <GlobalSearch />
+        </div>
+        
         <Route path="/" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
         <Route path="/dashboard" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
         <Route path="/inventory" component={() => renderPage("Inventory Management", "Manage your products and stock levels", Inventory)} />
@@ -127,6 +144,7 @@ const AppContent = () => {
         <Route path="/user-management" component={() => renderPage("User Management", "Manage system users and access", UserManagement)} />
         <Route path="/role-permissions" component={() => renderPage("Role & Permissions", "Configure user roles and access permissions", RolePermissionManagement)} />
         <Route path="/integrations" component={() => renderPage("Integrations", "Connect third-party services and tools", Integrations)} />
+        <Route path="/help-support" component={() => renderPage("Help & Support", "Get help and learn how to use ShopifyGenie", HelpSupport)} />
         <Route path="/accounting/chart-of-accounts" component={() => renderPage("Chart of Accounts", "Manage your accounting structure and classifications", ChartOfAccounts)} />
         <Route path="/accounting/general-ledger" component={() => renderPage("General Ledger", "Complete record of all accounting transactions", GeneralLedger)} />
         <Route path="/accounting/journal-entries" component={() => renderPage("Journal Entries", "View and manage all journal entries", JournalEntries)} />
@@ -138,6 +156,11 @@ const AppContent = () => {
         <Route path="/accounting/bank-reconciliation" component={() => renderPage("Bank Reconciliation", "Upload and match bank statements with general ledger", BankReconciliation)} />
         <Route path="/accounting/invoices" component={() => renderPage("Invoice Management", "Enhanced invoice management with aging reports", InvoiceManagement)} />
         <Route path="/tax-management" component={() => renderPage("Tax Management", "Manage tax rates and generate tax reports", TaxManagement)} />
+        <Route path="/system-monitoring" component={() => renderPage("System Monitoring", "Real-time system performance and health monitoring", SystemMonitoring)} />
+        <Route path="/data-management" component={() => renderPage("Data Management", "Export and import data with advanced templates", DataManagement)} />
+        <Route path="/workflow-automation" component={() => renderPage("Workflow Automation", "Automate business processes and reduce manual work", WorkflowManagement)} />
+        <Route path="/advanced-reports" component={() => renderPage("Advanced Reports", "Create, customize, and schedule comprehensive business reports", AdvancedReports)} />
+        <Route path="/pwa-management" component={() => renderPage("PWA Management", "Mobile-optimized experience with offline capabilities", PWAManagement)} />
 
         {/* Catch-all route for 404 - MUST BE LAST */}
         <Route>
@@ -147,11 +170,12 @@ const AppContent = () => {
             const validPaths = [
               '/', '/dashboard', '/inventory', '/inventory-reports', '/advanced-inventory', '/customers', '/customer-portal',
               '/loyalty', '/subscriptions', '/vendors', '/ai-recommendations', '/ai-insights', '/reports',
-              '/settings', '/user-management', '/role-permissions', '/integrations',
+              '/settings', '/user-management', '/role-permissions', '/integrations', '/help-support',
               '/accounting/chart-of-accounts', '/accounting/general-ledger', '/accounting/journal-entries',
               '/accounting/manual-journal-entry', '/accounting/accounts-receivable', '/accounting/accounts-payable',
               '/accounting/wallets', '/accounting/financial-reports', '/accounting/bank-reconciliation',
-              '/accounting/invoices', '/tax-management'
+              '/accounting/invoices', '/tax-management', '/system-monitoring',
+              '/data-management', '/workflow-automation', '/advanced-reports', '/pwa-management'
             ];
 
             if (!validPaths.includes(currentPath)) {
@@ -171,6 +195,9 @@ const AppContent = () => {
           onClick={() => setSidebarCollapsed(true)}
         />
       )}
+      
+      {/* AI Chat Assistant */}
+      <AIChatAssistant />
     </div>
   );
 };

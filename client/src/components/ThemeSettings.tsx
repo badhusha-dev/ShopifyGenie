@@ -1,306 +1,381 @@
+import React, { useState, useEffect } from 'react';
+import { FaSun, FaMoon, FaPalette, FaCog, FaEye, FaFont, FaAdjust, FaSave, FaUndo } from 'react-icons/fa';
+import AnimatedCard from './ui/AnimatedCard';
 
-import React, { useState } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
-import { Theme, themeColors } from '../design/tokens';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '../lib/queryClient';
+interface ThemeSettings {
+  mode: 'light' | 'dark' | 'auto';
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  fontSize: 'small' | 'medium' | 'large';
+  borderRadius: 'none' | 'small' | 'medium' | 'large';
+  animations: boolean;
+  compactMode: boolean;
+  sidebarCollapsed: boolean;
+}
 
 const ThemeSettings: React.FC = () => {
-  const { currentTheme, setTheme, isDark } = useTheme();
-  const [previewTheme, setPreviewTheme] = useState<Theme>(currentTheme);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const queryClient = useQueryClient();
-
-  const saveThemeMutation = useMutation({
-    mutationFn: async (theme: Theme) => {
-      return apiRequest('PUT', '/api/system/theme', { theme });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/system/settings'] });
-      setIsPreviewMode(false);
-    },
+  const [settings, setSettings] = useState<ThemeSettings>(() => {
+    const saved = localStorage.getItem('theme-settings');
+    return saved ? JSON.parse(saved) : {
+      mode: 'light',
+      primaryColor: '#2ECC71',
+      secondaryColor: '#3498db',
+      accentColor: '#e74c3c',
+      fontSize: 'medium',
+      borderRadius: 'medium',
+      animations: true,
+      compactMode: false,
+      sidebarCollapsed: false
+    };
   });
 
-  const themes: { key: Theme; name: string; description: string; gradient: string }[] = [
-    {
-      key: 'emerald',
-      name: 'Shopify Green',
-      description: 'Classic Shopify green with natural feel',
-      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-    },
-    {
-      key: 'blue',
-      name: 'Ocean Blue',
-      description: 'Professional blue for corporate feel',
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-    },
-    {
-      key: 'purple',
-      name: 'Royal Purple',
-      description: 'Creative purple for modern brands',
-      gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)'
-    },
-    {
-      key: 'coral',
-      name: 'Vibrant Coral',
-      description: 'Energetic coral for bold brands',
-      gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-    }
+  const [previewMode, setPreviewMode] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const colorPresets = [
+    { name: 'Shopify Green', primary: '#2ECC71', secondary: '#3498db', accent: '#e74c3c' },
+    { name: 'Ocean Blue', primary: '#3498db', secondary: '#2980b9', accent: '#e67e22' },
+    { name: 'Purple Dream', primary: '#9b59b6', secondary: '#8e44ad', accent: '#f39c12' },
+    { name: 'Sunset Orange', primary: '#e67e22', secondary: '#d35400', accent: '#e74c3c' },
+    { name: 'Forest Green', primary: '#27ae60', secondary: '#2ecc71', accent: '#f39c12' },
+    { name: 'Midnight Blue', primary: '#2c3e50', secondary: '#34495e', accent: '#e74c3c' }
   ];
 
-  const handlePreview = (theme: Theme) => {
-    setPreviewTheme(theme);
-    setIsPreviewMode(true);
-    // Temporarily apply theme for preview
-    document.body.classList.remove('theme-emerald', 'theme-blue', 'theme-purple', 'theme-coral');
-    document.body.classList.add(`theme-${theme}`);
+  useEffect(() => {
+    applyTheme(settings);
+  }, [settings]);
+
+  const applyTheme = (themeSettings: ThemeSettings) => {
+    const root = document.documentElement;
+    
+    // Apply theme mode
+    if (themeSettings.mode === 'auto') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-bs-theme', prefersDark ? 'dark' : 'light');
+    } else {
+      root.setAttribute('data-bs-theme', themeSettings.mode);
+    }
+
+    // Apply custom colors
+    root.style.setProperty('--shopify-green', themeSettings.primaryColor);
+    root.style.setProperty('--shopify-blue', themeSettings.secondaryColor);
+    root.style.setProperty('--coral-accent', themeSettings.accentColor);
+
+    // Apply font size
+    const fontSizeMap = { small: '14px', medium: '16px', large: '18px' };
+    root.style.setProperty('--base-font-size', fontSizeMap[themeSettings.fontSize]);
+
+    // Apply border radius
+    const borderRadiusMap = { none: '0px', small: '4px', medium: '8px', large: '12px' };
+    root.style.setProperty('--border-radius', borderRadiusMap[themeSettings.borderRadius]);
+
+    // Apply animations
+    if (!themeSettings.animations) {
+      root.style.setProperty('--transition-fast', '0ms');
+      root.style.setProperty('--transition-normal', '0ms');
+      root.style.setProperty('--transition-slow', '0ms');
+    } else {
+      root.style.setProperty('--transition-fast', '150ms ease');
+      root.style.setProperty('--transition-normal', '250ms ease');
+      root.style.setProperty('--transition-slow', '350ms ease');
+    }
+
+    // Apply compact mode
+    if (themeSettings.compactMode) {
+      root.style.setProperty('--sidebar-width', '200px');
+      root.style.setProperty('--header-height', '48px');
+    } else {
+      root.style.setProperty('--sidebar-width', '280px');
+      root.style.setProperty('--header-height', '64px');
+    }
   };
 
-  const handleSave = () => {
-    setTheme(previewTheme);
-    saveThemeMutation.mutate(previewTheme);
+  const handleSettingChange = (key: keyof ThemeSettings, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setHasChanges(true);
   };
 
-  const handleCancel = () => {
-    setIsPreviewMode(false);
-    setPreviewTheme(currentTheme);
-    // Restore original theme
-    document.body.classList.remove('theme-emerald', 'theme-blue', 'theme-purple', 'theme-coral');
-    document.body.classList.add(`theme-${currentTheme}`);
+  const saveSettings = () => {
+    localStorage.setItem('theme-settings', JSON.stringify(settings));
+    setHasChanges(false);
+  };
+
+  const resetSettings = () => {
+    const defaultSettings: ThemeSettings = {
+      mode: 'light',
+      primaryColor: '#2ECC71',
+      secondaryColor: '#3498db',
+      accentColor: '#e74c3c',
+      fontSize: 'medium',
+      borderRadius: 'medium',
+      animations: true,
+      compactMode: false,
+      sidebarCollapsed: false
+    };
+    setSettings(defaultSettings);
+    setHasChanges(true);
+  };
+
+  const applyPreset = (preset: typeof colorPresets[0]) => {
+    setSettings(prev => ({
+      ...prev,
+      primaryColor: preset.primary,
+      secondaryColor: preset.secondary,
+      accentColor: preset.accent
+    }));
+    setHasChanges(true);
   };
 
   return (
-    <div className="theme-settings">
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h5 className="fw-bold text-dark mb-1">
-                <i className="fas fa-palette me-2 text-primary"></i>
-                Theme Customization
-              </h5>
-              <p className="text-muted mb-0">Customize the visual appearance of your application</p>
-            </div>
-            {isPreviewMode && (
-              <div className="d-flex gap-2">
-                <button 
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={handleCancel}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="btn btn-primary btn-sm btn-ripple"
-                  onClick={handleSave}
-                  disabled={saveThemeMutation.isPending}
-                >
-                  {saveThemeMutation.isPending ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2"></span>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-save me-2"></i>
-                      Save Theme
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
+    <AnimatedCard>
+      <div className="card-header d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">Theme & Preferences</h5>
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => setPreviewMode(!previewMode)}
+          >
+            <FaEye className="me-1" />
+            {previewMode ? 'Exit Preview' : 'Preview'}
+          </button>
+          <FaPalette className="text-primary" />
         </div>
       </div>
-
-      {isPreviewMode && (
-        <div className="alert alert-info animate-slide-down mb-4" role="alert">
-          <i className="fas fa-eye me-2"></i>
-          <strong>Preview Mode:</strong> You're currently previewing the {themes.find(t => t.key === previewTheme)?.name} theme. 
-          Save to apply permanently or cancel to revert.
+      <div className="card-body">
+        {/* Theme Mode */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3">Theme Mode</h6>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <div 
+                className={`theme-option p-3 border rounded cursor-pointer ${settings.mode === 'light' ? 'border-primary bg-primary-subtle' : ''}`}
+                onClick={() => handleSettingChange('mode', 'light')}
+              >
+                <FaSun className="text-warning mb-2" size={24} />
+                <div className="fw-semibold">Light</div>
+                <div className="small text-muted">Clean and bright interface</div>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div 
+                className={`theme-option p-3 border rounded cursor-pointer ${settings.mode === 'dark' ? 'border-primary bg-primary-subtle' : ''}`}
+                onClick={() => handleSettingChange('mode', 'dark')}
+              >
+                <FaMoon className="text-info mb-2" size={24} />
+                <div className="fw-semibold">Dark</div>
+                <div className="small text-muted">Easy on the eyes</div>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div 
+                className={`theme-option p-3 border rounded cursor-pointer ${settings.mode === 'auto' ? 'border-primary bg-primary-subtle' : ''}`}
+                onClick={() => handleSettingChange('mode', 'auto')}
+              >
+                <FaAdjust className="text-secondary mb-2" size={24} />
+                <div className="fw-semibold">Auto</div>
+                <div className="small text-muted">Follows system preference</div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
 
-      <div className="row g-4">
-        {themes.map((theme) => (
-          <div key={theme.key} className="col-md-6">
-            <div className={`theme-card modern-card p-4 ${previewTheme === theme.key ? 'active' : ''} ${currentTheme === theme.key && !isPreviewMode ? 'current' : ''}`}>
-              <div className="d-flex align-items-start gap-3">
+        {/* Color Presets */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3">Color Presets</h6>
+          <div className="row g-2">
+            {colorPresets.map((preset, index) => (
+              <div key={index} className="col-md-4 col-lg-2">
                 <div 
-                  className="theme-preview rounded-3"
-                  style={{ 
-                    background: theme.gradient,
-                    width: '80px',
-                    height: '60px',
-                    position: 'relative'
-                  }}
+                  className="color-preset p-2 border rounded cursor-pointer"
+                  onClick={() => applyPreset(preset)}
                 >
-                  <div className="theme-preview-overlay"></div>
-                  {currentTheme === theme.key && !isPreviewMode && (
-                    <div className="current-badge">
-                      <i className="fas fa-check text-white"></i>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-grow-1">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <h6 className="fw-bold text-dark mb-1">{theme.name}</h6>
-                    {currentTheme === theme.key && !isPreviewMode && (
-                      <span className="badge bg-success-subtle text-success">Current</span>
-                    )}
-                    {previewTheme === theme.key && isPreviewMode && (
-                      <span className="badge bg-warning-subtle text-warning">Previewing</span>
-                    )}
+                  <div className="d-flex gap-1 mb-2">
+                    <div 
+                      className="color-swatch" 
+                      style={{ backgroundColor: preset.primary, width: '20px', height: '20px', borderRadius: '4px' }}
+                    ></div>
+                    <div 
+                      className="color-swatch" 
+                      style={{ backgroundColor: preset.secondary, width: '20px', height: '20px', borderRadius: '4px' }}
+                    ></div>
+                    <div 
+                      className="color-swatch" 
+                      style={{ backgroundColor: preset.accent, width: '20px', height: '20px', borderRadius: '4px' }}
+                    ></div>
                   </div>
-                  <p className="text-muted small mb-3">{theme.description}</p>
-                  
-                  <div className="d-flex gap-2">
-                    <button
-                      className="btn btn-outline-primary btn-sm btn-ripple"
-                      onClick={() => handlePreview(theme.key)}
-                      disabled={previewTheme === theme.key && isPreviewMode}
-                    >
-                      <i className="fas fa-eye me-1"></i>
-                      Preview
-                    </button>
-                    
-                    {currentTheme !== theme.key && (
-                      <button
-                        className="btn btn-primary btn-sm btn-ripple"
-                        onClick={() => {
-                          setPreviewTheme(theme.key);
-                          setTheme(theme.key);
-                          saveThemeMutation.mutate(theme.key);
-                        }}
-                        disabled={saveThemeMutation.isPending}
-                      >
-                        <i className="fas fa-check me-1"></i>
-                        Apply
-                      </button>
-                    )}
-                  </div>
+                  <div className="small fw-semibold">{preset.name}</div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Colors */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3">Custom Colors</h6>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <label className="form-label">Primary Color</label>
+              <div className="input-group">
+                <input
+                  type="color"
+                  className="form-control form-control-color"
+                  value={settings.primaryColor}
+                  onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="form-control"
+                  value={settings.primaryColor}
+                  onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
+                />
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="row mt-5">
-        <div className="col-12">
-          <div className="modern-card p-4">
-            <h6 className="fw-bold text-dark mb-3">
-              <i className="fas fa-info-circle me-2 text-info"></i>
-              Theme Information
-            </h6>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="text-muted">Current Theme:</span>
-                  <span className="fw-semibold">{themes.find(t => t.key === currentTheme)?.name}</span>
-                </div>
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="text-muted">Dark Mode:</span>
-                  <span className="fw-semibold">{isDark ? 'Enabled' : 'Disabled'}</span>
-                </div>
+            <div className="col-md-4">
+              <label className="form-label">Secondary Color</label>
+              <div className="input-group">
+                <input
+                  type="color"
+                  className="form-control form-control-color"
+                  value={settings.secondaryColor}
+                  onChange={(e) => handleSettingChange('secondaryColor', e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="form-control"
+                  value={settings.secondaryColor}
+                  onChange={(e) => handleSettingChange('secondaryColor', e.target.value)}
+                />
               </div>
-              <div className="col-md-6">
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="text-muted">Primary Color:</span>
-                  <div className="d-flex align-items-center gap-2">
-                    <div 
-                      className="color-swatch rounded-circle"
-                      style={{ 
-                        backgroundColor: themeColors[currentTheme],
-                        width: '20px',
-                        height: '20px'
-                      }}
-                    ></div>
-                    <code className="small">{themeColors[currentTheme]}</code>
-                  </div>
-                </div>
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="text-muted">Last Modified:</span>
-                  <span className="fw-semibold small">{new Date().toLocaleDateString()}</span>
-                </div>
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Accent Color</label>
+              <div className="input-group">
+                <input
+                  type="color"
+                  className="form-control form-control-color"
+                  value={settings.accentColor}
+                  onChange={(e) => handleSettingChange('accentColor', e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="form-control"
+                  value={settings.accentColor}
+                  onChange={(e) => handleSettingChange('accentColor', e.target.value)}
+                />
               </div>
             </div>
           </div>
         </div>
+
+        {/* Typography & Layout */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3">Typography & Layout</h6>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <label className="form-label">Font Size</label>
+              <select
+                className="form-select"
+                value={settings.fontSize}
+                onChange={(e) => handleSettingChange('fontSize', e.target.value)}
+              >
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Border Radius</label>
+              <select
+                className="form-select"
+                value={settings.borderRadius}
+                onChange={(e) => handleSettingChange('borderRadius', e.target.value)}
+              >
+                <option value="none">None</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Layout Mode</label>
+              <select
+                className="form-select"
+                value={settings.compactMode ? 'compact' : 'normal'}
+                onChange={(e) => handleSettingChange('compactMode', e.target.value === 'compact')}
+              >
+                <option value="normal">Normal</option>
+                <option value="compact">Compact</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Accessibility & Performance */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3">Accessibility & Performance</h6>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="animations"
+                  checked={settings.animations}
+                  onChange={(e) => handleSettingChange('animations', e.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="animations">
+                  Enable Animations
+                </label>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="sidebarCollapsed"
+                  checked={settings.sidebarCollapsed}
+                  onChange={(e) => handleSettingChange('sidebarCollapsed', e.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="sidebarCollapsed">
+                  Collapsed Sidebar by Default
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-primary"
+            onClick={saveSettings}
+            disabled={!hasChanges}
+          >
+            <FaSave className="me-1" />
+            Save Changes
+          </button>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={resetSettings}
+          >
+            <FaUndo className="me-1" />
+            Reset to Default
+          </button>
+        </div>
+
+        {hasChanges && (
+          <div className="mt-3">
+            <div className="alert alert-info">
+              <FaCog className="me-2" />
+              You have unsaved changes. Click "Save Changes" to apply them.
+            </div>
+          </div>
+        )}
       </div>
-
-      <style jsx>{`
-        .theme-card {
-          transition: all var(--duration-normal) ease;
-          border: 2px solid transparent;
-          cursor: pointer;
-        }
-
-        .theme-card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--shadow-lg);
-          border-color: var(--bs-primary);
-        }
-
-        .theme-card.active {
-          border-color: var(--bs-warning);
-          background-color: var(--bs-warning-bg-subtle);
-        }
-
-        .theme-card.current {
-          border-color: var(--bs-success);
-          background-color: var(--bs-success-bg-subtle);
-        }
-
-        .theme-preview {
-          position: relative;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          box-shadow: var(--shadow-md);
-        }
-
-        .theme-preview-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%),
-                      linear-gradient(-45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%),
-                      linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.1) 75%),
-                      linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.1) 75%);
-          background-size: 10px 10px;
-          background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
-        }
-
-        .current-badge {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          width: 24px;
-          height: 24px;
-          background: var(--bs-success);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 12px;
-          border: 2px solid white;
-        }
-
-        .color-swatch {
-          border: 2px solid var(--bs-border-color);
-        }
-
-        /* Dark mode adjustments */
-        [data-bs-theme="dark"] .current-badge {
-          border-color: var(--bs-dark);
-        }
-
-        [data-bs-theme="dark"] .color-swatch {
-          border-color: var(--bs-border-color);
-        }
-      `}</style>
-    </div>
+    </AnimatedCard>
   );
 };
 

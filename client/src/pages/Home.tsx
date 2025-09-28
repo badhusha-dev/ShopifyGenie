@@ -4,11 +4,25 @@ import { useQuery } from '@tanstack/react-query';
 import AnimatedKPICard from '@/components/ui/AnimatedKPICard';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
-// 3D Components
-import SalesVisualization from '../components/3d/SalesVisualization';
-import ProductDistribution from '../components/3d/ProductDistribution';
-import RevenueFlow from '../components/3d/RevenueFlow';
-import CustomerLoyalty3D from '../components/3d/CustomerLoyalty3D';
+// Advanced Components
+
+// New Advanced Components
+import RecentActivity from '../components/RecentActivity';
+import WeatherWidget from '../components/WeatherWidget';
+import MarketTrends from '../components/MarketTrends';
+import AIChat from '../components/AIChat';
+import NotificationCenter from '../components/NotificationCenter';
+import AdvancedDashboard from '../components/AdvancedDashboard';
+import DataExportImport from '../components/DataExportImport';
+import WorkflowAutomation from '../components/WorkflowAutomation';
+import GlobalSearch from '../components/GlobalSearch';
+import SystemMonitoring from '../components/SystemMonitoring';
+import BackupRestore from '../components/BackupRestore';
+import ThemeSettings from '../components/ThemeSettings';
+import MobileOptimization from '../components/MobileOptimization';
+import RealTimeNotifications from '../components/RealTimeNotifications';
+import QuickActions from '../components/QuickActions';
+import LiveDashboardWidgets from '../components/LiveDashboardWidgets';
 
 const Dashboard = () => {
   const { user, token } = useAppSelector((state) => state.auth);
@@ -36,6 +50,27 @@ const Dashboard = () => {
 
   const { data: businessInsights, isLoading: insightsLoading } = useQuery({
     queryKey: ['/ai/business-insights'],
+    enabled: !!token,
+  });
+
+  // New features data
+  const { data: recentActivity, isLoading: activityLoading } = useQuery({
+    queryKey: ['/recent-activity'],
+    enabled: !!token,
+  });
+
+  const { data: alerts, isLoading: alertsLoading } = useQuery({
+    queryKey: ['/alerts', user?.role],
+    enabled: !!token,
+  });
+
+  const { data: weatherData, isLoading: weatherLoading } = useQuery({
+    queryKey: ['/weather'],
+    enabled: !!token,
+  });
+
+  const { data: marketTrends, isLoading: marketLoading } = useQuery({
+    queryKey: ['/market-trends'],
     enabled: !!token,
   });
 
@@ -91,17 +126,17 @@ const Dashboard = () => {
     { name: 'Platinum', value: 100, color: '#E5E4E2' },
   ];
 
-  // 3D Data
-  const sales3DData = [
-    { month: 'Jan', sales: 2400, maxSales: 10000 },
-    { month: 'Feb', sales: 1398, maxSales: 10000 },
-    { month: 'Mar', sales: 9800, maxSales: 10000 },
-    { month: 'Apr', sales: 3908, maxSales: 10000 },
-    { month: 'May', sales: 4800, maxSales: 10000 },
-    { month: 'Jun', sales: 3800, maxSales: 10000 },
+  // Chart Data
+  const salesChartData = [
+    { month: 'Jan', sales: 2400, profit: 1800 },
+    { month: 'Feb', sales: 1398, profit: 1050 },
+    { month: 'Mar', sales: 9800, profit: 7350 },
+    { month: 'Apr', sales: 3908, profit: 2931 },
+    { month: 'May', sales: 4800, profit: 3600 },
+    { month: 'Jun', sales: 3800, profit: 2850 },
   ];
 
-  const product3DData = [
+  const productChartData = [
     { name: 'Electronics', value: 35, color: '#3B82F6' },
     { name: 'Clothing', value: 25, color: '#10B981' },
     { name: 'Home & Garden', value: 20, color: '#F59E0B' },
@@ -109,18 +144,18 @@ const Dashboard = () => {
     { name: 'Books', value: 5, color: '#8B5CF6' },
   ];
 
-  const revenue3DData = [
+  const revenueChartData = [
     { source: 'Online Sales', amount: 18500, color: '#10B981' },
     { source: 'Retail Stores', amount: 12000, color: '#3B82F6' },
     { source: 'Wholesale', amount: 8500, color: '#F59E0B' },
     { source: 'Subscriptions', amount: 3200, color: '#8B5CF6' },
   ];
 
-  const loyalty3DData = [
-    { tier: 'Bronze', count: 400, color: '#CD7F32', height: 1.5 },
-    { tier: 'Silver', count: 300, color: '#C0C0C0', height: 2.0 },
-    { tier: 'Gold', count: 200, color: '#FFD700', height: 2.5 },
-    { tier: 'Platinum', count: 100, color: '#E5E4E2', height: 3.0 },
+  const loyaltyChartData = [
+    { tier: 'Bronze', customers: 400, color: '#CD7F32' },
+    { tier: 'Silver', customers: 300, color: '#C0C0C0' },
+    { tier: 'Gold', customers: 200, color: '#FFD700' },
+    { tier: 'Platinum', customers: 100, color: '#E5E4E2' },
   ];
 
   if (statsLoading) {
@@ -163,25 +198,64 @@ const Dashboard = () => {
 
   return (
     <div className="container-fluid">
-      {/* Welcome Section */}
+      {/* Enhanced Welcome Section */}
       <div className="row mb-4">
         <div className="col-12">
-          <div className="modern-card bg-gradient-shopify text-white p-4 animate-fade-in-up">
-            <div className="d-flex align-items-center">
+          <div className="modern-card p-4 position-relative overflow-hidden animate-fade-in-up" style={{
+            background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+            color: 'white'
+          }}>
+            <div className="welcome-background"></div>
+            <div className="d-flex align-items-center position-relative">
               <div className="me-3">
                 <div 
-                  className="rounded-circle d-flex align-items-center justify-content-center bg-white bg-opacity-20"
+                  className="rounded-circle d-flex align-items-center justify-content-center bg-white bg-opacity-20 floating"
                   style={{width: '60px', height: '60px'}}
                 >
                   <i className="fas fa-chart-line fa-lg text-white"></i>
                 </div>
               </div>
-              <div>
-                <h2 className="h3 fw-bold mb-1">Welcome back, {user?.name}! 👋</h2>
-                <p className="mb-0 text-white-50">Here's what's happening with your business today.</p>
+              <div className="flex-grow-1">
+                <h2 className="h3 fw-bold mb-1 fade-in">Welcome back, {user?.name}! 👋</h2>
+                <p className="mb-0 text-white-50 slide-in-left">Here's what's happening with your business today.</p>
+                <div className="mt-3">
+                  <div className="d-flex gap-4">
+                    <div className="quick-stat">
+                      <div className="quick-stat-value">{(stats as any)?.totalProducts || 0}</div>
+                      <div className="quick-stat-label">Products</div>
+                    </div>
+                    <div className="quick-stat">
+                      <div className="quick-stat-value">{(stats as any)?.totalLoyaltyPoints || 0}</div>
+                      <div className="quick-stat-label">Loyalty Points</div>
+                    </div>
+                    <div className="quick-stat">
+                      <div className="quick-stat-value">{(stats as any)?.lowStockItems || 0}</div>
+                      <div className="quick-stat-label">Low Stock</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-end">
+                <div className="last-updated">
+                  <div className="text-white-50 small">Last updated</div>
+                  <div className="fw-semibold pulse">{new Date().toLocaleTimeString()}</div>
+                </div>
+                {weatherData && typeof weatherData === 'object' && (weatherData as any).temperature && (
+                  <div className="d-flex align-items-center gap-2 mt-2 justify-content-end">
+                    <i className="fas fa-cloud-sun text-warning"></i>
+                    <span className="small text-white">{String((weatherData as any).temperature)}°C</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Advanced Dashboard Section */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <AdvancedDashboard />
         </div>
       </div>
 
@@ -196,39 +270,53 @@ const Dashboard = () => {
 
       {/* Charts Row */}
       <div className="row g-4 mb-4">
-        {/* Sales Trends Chart */}
+        {/* Enhanced Sales Trends Chart */}
         <div className="col-lg-8">
-          <div className="modern-card p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-bold text-dark mb-0">
-                <i className="fas fa-chart-line me-2 text-success"></i>
-                Sales Trends
-              </h5>
-              <span className="badge bg-success-subtle text-success px-3 py-2">
-                Last 7 days
-              </span>
+          <div className="chart-card">
+            <div className="chart-header">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="chart-title">
+                  <div className="chart-icon">
+                    <i className="fas fa-chart-line"></i>
+                  </div>
+                  Sales Trends
+                </h5>
+                <span className="chart-badge">
+                  Last 7 days
+                </span>
+              </div>
             </div>
-            <div style={{height: '300px'}}>
+            <div className="chart-content">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={mockSalesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" stroke="#666" fontSize={12} />
-                  <YAxis stroke="#666" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="var(--gray-600)" 
+                    fontSize={12}
+                    tick={{ fill: 'var(--gray-600)' }}
+                  />
+                  <YAxis 
+                    stroke="var(--gray-600)" 
+                    fontSize={12}
+                    tick={{ fill: 'var(--gray-600)' }}
+                  />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'white', 
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
+                      border: '1px solid var(--gray-200)',
+                      borderRadius: 'var(--border-radius)',
+                      boxShadow: 'var(--shadow-lg)',
+                      fontSize: 'var(--text-sm)'
                     }} 
                   />
                   <Line 
                     type="monotone" 
                     dataKey="sales" 
-                    stroke="var(--shopify-green)" 
+                    stroke="var(--accent-primary)" 
                     strokeWidth={3}
-                    dot={{ fill: 'var(--shopify-green)', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: 'var(--shopify-dark-green)' }}
+                    dot={{ fill: 'var(--accent-primary)', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'var(--accent-primary-dark)', stroke: 'white', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -236,16 +324,18 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Loyalty Distribution Chart */}
+        {/* Enhanced Loyalty Distribution Chart */}
         <div className="col-lg-4">
-          <div className="modern-card p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-bold text-dark mb-0">
-                <i className="fas fa-heart me-2 text-danger"></i>
+          <div className="chart-card">
+            <div className="chart-header">
+              <h5 className="chart-title">
+                <div className="chart-icon">
+                  <i className="fas fa-heart"></i>
+                </div>
                 Customer Loyalty Tiers
               </h5>
             </div>
-            <div style={{height: '300px'}}>
+            <div className="chart-content">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -253,14 +343,24 @@ const Dashboard = () => {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
+                    innerRadius={40}
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
                   >
                     {mockLoyaltyTiers.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid var(--gray-200)',
+                      borderRadius: 'var(--border-radius)',
+                      boxShadow: 'var(--shadow-lg)',
+                      fontSize: 'var(--text-sm)'
+                    }} 
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -268,72 +368,167 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 3D Visualizations Row */}
+      {/* Enhanced Charts Row */}
       <div className="row g-4 mb-4">
-        {/* 3D Sales Visualization */}
+        {/* Sales Trends Chart */}
         <div className="col-lg-6">
-          <div className="modern-card p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-bold text-dark mb-0">
-                <i className="fas fa-cube me-2 text-primary"></i>
-                3D Sales Trends
-              </h5>
-              <span className="badge bg-primary-subtle text-primary px-3 py-2">
-                Interactive
-              </span>
+          <div className="chart-card">
+            <div className="chart-header">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="chart-title">
+                  <div className="chart-icon">
+                    <i className="fas fa-chart-line"></i>
+                  </div>
+                  Sales & Profit Trends
+                </h5>
+                <span className="chart-badge">
+                  Interactive
+                </span>
+              </div>
             </div>
-            <SalesVisualization data={sales3DData} width="100%" height={300} />
+            <div className="chart-content">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
+                  <XAxis dataKey="month" stroke="var(--gray-600)" />
+                  <YAxis stroke="var(--gray-600)" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid var(--gray-200)',
+                      borderRadius: 'var(--border-radius)',
+                      boxShadow: 'var(--shadow-lg)'
+                    }} 
+                  />
+                  <Line type="monotone" dataKey="sales" stroke="#3B82F6" strokeWidth={3} dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }} />
+                  <Line type="monotone" dataKey="profit" stroke="#10B981" strokeWidth={3} dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* 3D Product Distribution */}
+        {/* Product Distribution Chart */}
         <div className="col-lg-6">
-          <div className="modern-card p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-bold text-dark mb-0">
-                <i className="fas fa-globe me-2 text-info"></i>
-                3D Product Distribution
-              </h5>
-              <span className="badge bg-info-subtle text-info px-3 py-2">
-                Real-time
-              </span>
+          <div className="chart-card">
+            <div className="chart-header">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="chart-title">
+                  <div className="chart-icon">
+                    <i className="fas fa-chart-pie"></i>
+                  </div>
+                  Product Categories
+                </h5>
+                <span className="chart-badge">
+                  Real-time
+                </span>
+              </div>
             </div>
-            <ProductDistribution data={product3DData} width="100%" height={300} />
+            <div className="chart-content">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={productChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {productChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid var(--gray-200)',
+                      borderRadius: 'var(--border-radius)',
+                      boxShadow: 'var(--shadow-lg)'
+                    }} 
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 3D Revenue & Loyalty Row */}
+      {/* Revenue & Loyalty Charts Row */}
       <div className="row g-4 mb-4">
-        {/* 3D Revenue Flow */}
+        {/* Revenue Sources Chart */}
         <div className="col-lg-6">
-          <div className="modern-card p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-bold text-dark mb-0">
-                <i className="fas fa-coins me-2 text-warning"></i>
-                3D Revenue Sources
-              </h5>
-              <span className="badge bg-warning-subtle text-warning px-3 py-2">
-                Animated
-              </span>
+          <div className="chart-card">
+            <div className="chart-header">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="chart-title">
+                  <div className="chart-icon">
+                    <i className="fas fa-coins"></i>
+                  </div>
+                  Revenue Sources
+                </h5>
+                <span className="chart-badge">
+                  Detailed
+                </span>
+              </div>
             </div>
-            <RevenueFlow data={revenue3DData} width="100%" height={300} />
+            <div className="chart-content">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={revenueChartData} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
+                  <XAxis type="number" stroke="var(--gray-600)" />
+                  <YAxis dataKey="source" type="category" stroke="var(--gray-600)" width={100} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid var(--gray-200)',
+                      borderRadius: 'var(--border-radius)',
+                      boxShadow: 'var(--shadow-lg)'
+                    }} 
+                  />
+                  <Bar dataKey="amount" fill="#10B981" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* 3D Customer Loyalty */}
+        {/* Customer Loyalty Chart */}
         <div className="col-lg-6">
-          <div className="modern-card p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-bold text-dark mb-0">
-                <i className="fas fa-crown me-2 text-danger"></i>
-                3D Loyalty Pyramid
-              </h5>
-              <span className="badge bg-danger-subtle text-danger px-3 py-2">
-                Dynamic
-              </span>
+          <div className="chart-card">
+            <div className="chart-header">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="chart-title">
+                  <div className="chart-icon">
+                    <i className="fas fa-crown"></i>
+                  </div>
+                  Customer Loyalty Tiers
+                </h5>
+                <span className="chart-badge">
+                  Active
+                </span>
+              </div>
             </div>
-            <CustomerLoyalty3D data={loyalty3DData} width="100%" height={300} />
+            <div className="chart-content">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={loyaltyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
+                  <XAxis dataKey="tier" stroke="var(--gray-600)" />
+                  <YAxis stroke="var(--gray-600)" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid var(--gray-200)',
+                      borderRadius: 'var(--border-radius)',
+                      boxShadow: 'var(--shadow-lg)'
+                    }} 
+                  />
+                  <Bar dataKey="customers" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
@@ -429,6 +624,87 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* New Advanced Features Section */}
+      <div className="row g-4 mb-4">
+        <div className="col-lg-4">
+          <RecentActivity />
+        </div>
+        <div className="col-lg-4">
+          <WeatherWidget />
+        </div>
+        <div className="col-lg-4">
+          <MarketTrends />
+        </div>
+      </div>
+
+        {/* Data Export/Import Section */}
+        <div className="row g-4 mb-4">
+          <div className="col-12">
+            <DataExportImport />
+          </div>
+        </div>
+
+        {/* Workflow Automation Section */}
+        <div className="row g-4 mb-4">
+          <div className="col-12">
+            <WorkflowAutomation />
+          </div>
+        </div>
+
+        {/* Global Search Section */}
+        <div className="row g-4 mb-4">
+          <div className="col-12">
+            <GlobalSearch />
+          </div>
+        </div>
+
+        {/* System Monitoring Section */}
+        <div className="row g-4 mb-4">
+          <div className="col-12">
+            <SystemMonitoring />
+          </div>
+        </div>
+
+        {/* Backup & Restore Section */}
+        <div className="row g-4 mb-4">
+          <div className="col-12">
+            <BackupRestore />
+          </div>
+        </div>
+
+        {/* Theme Settings Section */}
+        <div className="row g-4 mb-4">
+          <div className="col-12">
+            <ThemeSettings />
+          </div>
+        </div>
+
+        {/* Mobile Optimization Section */}
+        <div className="row g-4 mb-4">
+          <div className="col-12">
+            <MobileOptimization />
+          </div>
+        </div>
+
+      {/* Live Dashboard Widgets */}
+      <LiveDashboardWidgets />
+
+      {/* Quick Actions */}
+      <QuickActions />
+
+      {/* Real-time Notifications */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-end">
+            <RealTimeNotifications />
+          </div>
+        </div>
+      </div>
+
+      {/* AI Chat and Notifications */}
+      <AIChat />
+      <NotificationCenter />
     </div>
   );
 };

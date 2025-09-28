@@ -62,6 +62,7 @@ const GeneralLedger = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const [showAccountSummary, setShowAccountSummary] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -82,13 +83,41 @@ const GeneralLedger = () => {
 
   // Fetch ledger entries with filters
   const { data: ledgerEntries = [], isLoading, error } = useQuery<LedgerEntry[]>({
-    queryKey: ['/general-ledger', watchedFilters],
+    queryKey: ['/general-ledger', JSON.stringify(watchedFilters)],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      Object.entries(watchedFilters).forEach(([key, value]) => {
+        if (value && value !== 'all') {
+          params.append(key, value.toString());
+        }
+      });
+      const response = await fetch(`/api/general-ledger?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch general ledger');
+      return response.json();
+    },
     enabled: true
   });
 
   // Fetch journal entries for modal
   const { data: journalEntries = [] } = useQuery<JournalEntry[]>({
     queryKey: ['/journal-entries'],
+  });
+
+  // Fetch ledger summary
+  const { data: ledgerSummary } = useQuery({
+    queryKey: ['/general-ledger/summary', JSON.stringify(watchedFilters)],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      Object.entries(watchedFilters).forEach(([key, value]) => {
+        if (value && value !== 'all') {
+          params.append(key, value.toString());
+        }
+      });
+      const response = await fetch(`/api/general-ledger/summary?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch ledger summary');
+      return response.json();
+    },
+    enabled: true
   });
 
   // Export ledger mutation
@@ -136,6 +165,12 @@ const GeneralLedger = () => {
       setShowJournalModal(true);
     }
   };
+
+  // Fetch journal entry transactions
+  const { data: journalTransactions = [] } = useQuery({
+    queryKey: ['/general-ledger/transactions', selectedEntry?.id],
+    enabled: !!selectedEntry?.id,
+  });
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -267,17 +302,36 @@ const GeneralLedger = () => {
 
   // Calculate totals
   const totals = React.useMemo(() => {
+    if (ledgerSummary?.totals) {
+      return ledgerSummary.totals;
+    }
+    
     const totalDebits = ledgerEntries.reduce((sum, entry) => sum + entry.debitAmount, 0);
     const totalCredits = ledgerEntries.reduce((sum, entry) => sum + entry.creditAmount, 0);
     const netBalance = totalDebits - totalCredits;
-    return { totalDebits, totalCredits, netBalance };
-  }, [ledgerEntries]);
+    return { totalDebits, totalCredits, netBalance, transactionCount: ledgerEntries.length };
+  }, [ledgerEntries, ledgerSummary]);
 
   if (error) {
     return (
       <div className="container-fluid py-4">
-        <div className="alert alert-danger" role="alert">
-          Failed to load general ledger. Please try again.
+        <div className="alert alert-danger d-flex align-items-center justify-content-between" role="alert">
+          <div>
+            <i className="fas fa-exclamation-triangle me-2"></i>
+            Failed to load general ledger. Please try again.
+            {error instanceof Error && (
+              <div className="small mt-1 text-muted">
+                Error: {error.message}
+              </div>
+            )}
+          </div>
+          <button 
+            className="btn btn-outline-danger btn-sm"
+            onClick={() => window.location.reload()}
+          >
+            <i className="fas fa-refresh me-1"></i>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -303,6 +357,15 @@ const GeneralLedger = () => {
           >
             <FaFilter size={14} />
             Filters
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAccountSummary(!showAccountSummary)}
+            className={`btn ${showAccountSummary ? 'btn-info' : 'btn-outline-info'} d-flex align-items-center gap-2 px-3`}
+            data-testid="button-toggle-summary"
+          >
+            <FaEye size={14} />
+            Account Summary
           </button>
           <div className="dropdown">
             <button
@@ -388,7 +451,7 @@ const GeneralLedger = () => {
         <div className="col-md-3">
           <AnimatedCard>
             <div className="text-center">
-              <div className="h4 mb-1 text-primary fw-bold">{ledgerEntries.length}</div>
+              <div className="h4 mb-1 text-primary fw-bold">{totals.transactionCount || ledgerEntries.length}</div>
               <div className="small text-muted">Total Entries</div>
             </div>
           </AnimatedCard>
@@ -478,23 +541,83 @@ const GeneralLedger = () => {
         </AnimatedCard>
       )}
 
+      {/* Account Summary Panel */}
+      {showAccountSummary && ledgerSummary?.accountSummary && (
+        <AnimatedCard className="mb-4">
+          <div className="card-header bg-info text-white">
+            <h5 className="mb-0">Account Summary</h5>
+          </div>
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Account Code</th>
+                    <th>Account Name</th>
+                    <th className="text-end">Total Debits</th>
+                    <th className="text-end">Total Credits</th>
+                    <th className="text-end">Balance</th>
+                    <th className="text-center">Transactions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledgerSummary.accountSummary.map((account: any) => (
+                    <tr key={account.accountCode}>
+                      <td className="font-monospace fw-bold">{account.accountCode}</td>
+                      <td>{account.accountName}</td>
+                      <td className="text-end">
+                        {account.totalDebits > 0 ? formatCurrency(account.totalDebits) : '-'}
+                      </td>
+                      <td className="text-end">
+                        {account.totalCredits > 0 ? formatCurrency(account.totalCredits) : '-'}
+                      </td>
+                      <td className={`text-end fw-bold ${account.balance >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {formatCurrency(account.balance)}
+                      </td>
+                      <td className="text-center">
+                        <span className="badge bg-primary">{account.transactionCount}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </AnimatedCard>
+      )}
+
       {/* Ledger Table */}
       <AnimatedCard>
-        <AGDataGrid
-          rowData={ledgerEntries}
-          columnDefs={columnDefs}
-          loading={isLoading}
-          pagination={true}
-          paginationPageSize={25}
-          height="600px"
-          enableExport={true}
-          exportFileName="general-ledger"
-          showExportButtons={true}
-          enableFiltering={true}
-          enableSorting={true}
-          enableResizing={true}
-          sideBar={false}
-        />
+        {ledgerEntries.length === 0 && !isLoading ? (
+          <div className="text-center py-5">
+            <i className="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h5 className="text-muted">No ledger entries found</h5>
+            <p className="text-muted">Try adjusting your filters or check back later.</p>
+            <button 
+              className="btn btn-outline-primary"
+              onClick={() => clearFilters()}
+            >
+              <i className="fas fa-filter me-1"></i>
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          <AGDataGrid
+            rowData={ledgerEntries}
+            columnDefs={columnDefs}
+            loading={isLoading}
+            pagination={true}
+            paginationPageSize={25}
+            height="600px"
+            enableExport={true}
+            exportFileName="general-ledger"
+            showExportButtons={true}
+            enableFiltering={true}
+            enableSorting={true}
+            enableResizing={true}
+            sideBar={false}
+          />
+        )}
       </AnimatedCard>
 
       {/* Journal Entry Modal */}
@@ -546,12 +669,27 @@ const GeneralLedger = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {/* This would be populated with actual transaction data */}
-                      <tr>
-                        <td colSpan={5} className="text-center text-muted">
-                          Transaction details would be loaded here
-                        </td>
-                      </tr>
+                      {journalTransactions.length > 0 ? (
+                        journalTransactions.map((transaction: any) => (
+                          <tr key={transaction.id}>
+                            <td>{transaction.accountCode}</td>
+                            <td>{transaction.accountName}</td>
+                            <td>{transaction.description}</td>
+                            <td className="text-end">
+                              {transaction.debit > 0 ? formatCurrency(transaction.debit) : '-'}
+                            </td>
+                            <td className="text-end">
+                              {transaction.credit > 0 ? formatCurrency(transaction.credit) : '-'}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="text-center text-muted">
+                            Loading transaction details...
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
