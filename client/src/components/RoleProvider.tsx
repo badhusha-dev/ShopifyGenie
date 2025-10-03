@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppSelector } from '../store/hooks';
 
 interface RoleContextType {
   userRole: 'superadmin' | 'admin' | 'staff' | 'customer' | null;
@@ -23,7 +23,7 @@ interface RoleProviderProps {
 }
 
 export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading } = useAppSelector((state) => state.auth);
 
   const hasAccess = (requiredRole: 'superadmin' | 'admin' | 'staff' | 'customer') => {
     const userRole = user?.role;

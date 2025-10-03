@@ -48,9 +48,13 @@ const LiveDashboardWidgets: React.FC = () => {
     }
   }, [isLive]);
 
-  // WebSocket connection for real-time updates
+  // WebSocket connection for real-time updates (temporarily disabled)
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:5000/ws');
+    // Disabled to prevent auth spam
+    return;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.hostname}:5000/ws`;
+    const ws = new WebSocket(wsUrl);
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -58,6 +62,10 @@ const LiveDashboardWidgets: React.FC = () => {
         // Trigger refetch when real-time data arrives
         refetch();
       }
+    };
+
+    ws.onerror = () => {
+      console.log('WebSocket connection failed, using polling only');
     };
 
     return () => {

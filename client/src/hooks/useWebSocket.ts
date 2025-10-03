@@ -20,7 +20,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
+  const maxReconnectAttempts = 0; // Disable reconnection loops
 
   const connect = () => {
     if (!token) return;
@@ -150,7 +150,8 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
 
   useEffect(() => {
     if (token) {
-      connect();
+      // Temporarily disabled to prevent WebSocket auth spam
+      // connect();
     }
 
     return () => {

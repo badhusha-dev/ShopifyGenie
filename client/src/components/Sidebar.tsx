@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'wouter';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
 import logoImage from '../assets/logo.png';
@@ -213,7 +213,7 @@ const menuSections = [
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
-  const location = useLocation();
+  const [location] = useLocation();
   
   const handleLogout = () => {
     dispatch(logout());
@@ -275,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
               )}
               <div className="nav-items">
                 {section.items.map((item, itemIndex) => {
-                  const isActive = location.pathname === item.href;
+                  const isActive = location === item.href;
                   return (
                     <div key={item.href} className="nav-item">
                       <Link 

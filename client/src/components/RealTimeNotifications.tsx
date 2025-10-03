@@ -127,9 +127,13 @@ const RealTimeNotifications: React.FC = () => {
     }
   }, [fetchedStats]);
 
-  // WebSocket connection for real-time notifications
+  // WebSocket connection for real-time notifications (temporarily disabled)
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:5000/ws');
+    // Disabled to prevent auth spam
+    return;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.hostname}:5000/ws`;
+    const ws = new WebSocket(wsUrl);
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -144,6 +148,10 @@ const RealTimeNotifications: React.FC = () => {
           today: prev.today + 1
         }));
       }
+    };
+
+    ws.onerror = () => {
+      console.log('WebSocket connection failed for notifications');
     };
 
     return () => {

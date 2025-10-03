@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Route, useLocation } from 'wouter';
+import React, { useState } from 'react';
+import { Router, Route, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { PermissionProvider } from './contexts/PermissionContext';
@@ -58,8 +58,7 @@ import './design/tokens.scss'; // Import design tokens
 
 // Redux Auth Provider
 import { ReduxAuthProvider } from './components/ReduxAuthProvider';
-import { useAppSelector, useAppDispatch } from './store/hooks';
-import { fetchCurrentUser } from './store/slices/authSlice';
+import { useAppSelector } from './store/hooks';
 
 
 const AppContent = () => {
@@ -203,26 +202,18 @@ const AppContent = () => {
 };
 
 function App() {
-  const dispatch = useAppDispatch();
-  const { token, user } = useAppSelector((state) => state.auth);
-
-  useEffect(() => {
-    // Initialize app by fetching current user if token exists
-    if (token && !user) { // Check if user is not already loaded
-      dispatch(fetchCurrentUser());
-    }
-  }, [dispatch, token, user]);
-
   return (
     <ReduxAuthProvider>
       <PermissionProvider>
         <ThemeProvider>
-          <div className="app">
-            <SafeComponent>
-              <AppContent />
-            </SafeComponent>
-            <Toaster />
-          </div>
+          <Router>
+            <div className="app">
+              <SafeComponent>
+                <AppContent />
+              </SafeComponent>
+              <Toaster />
+            </div>
+          </Router>
         </ThemeProvider>
       </PermissionProvider>
     </ReduxAuthProvider>

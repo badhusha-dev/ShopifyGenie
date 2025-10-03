@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppSelector } from '../store/hooks';
 import { useTranslation } from '../hooks/useTranslation';
 import { apiRequest } from '../lib/queryClient';
 import ThemeSettings from '../components/ThemeSettings';

@@ -691,8 +691,8 @@ export class MemStorage implements IStorage {
       // Create Super Admin (highest privilege)
       const superAdminUser: InsertUser = {
         name: 'Super Administrator',
-        email: 'superadmin@shopifyapp.com',
-        password: await AuthService.hashPassword('superadmin123'),
+        email: 'admin@shopifygenie.com',
+        password: await AuthService.hashPassword('admin123'),
         role: 'superadmin',
         permissions: null,
         shopDomain: 'demo-store.myshopify.com',

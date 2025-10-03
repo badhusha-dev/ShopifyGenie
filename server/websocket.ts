@@ -26,7 +26,7 @@ export class WebSocketManager {
   }
 
   private async handleConnection(ws: AuthenticatedWebSocket, request: any) {
-    console.log('WebSocket connection attempt');
+    // Remove verbose logging for cleaner console
 
     // Extract token from query params or headers
     const url = new URL(request.url, `http://${request.headers.host}`);
@@ -38,7 +38,9 @@ export class WebSocketManager {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+      // Use the same JWT secret as auth.ts
+      const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
       ws.userId = decoded.id;
       ws.role = decoded.role;
       ws.shopDomain = decoded.shopDomain;
@@ -52,7 +54,7 @@ export class WebSocketManager {
       userClients.push(ws);
       this.clients.set(ws.userId, userClients);
 
-      console.log(`WebSocket authenticated for user ${ws.userId} with role ${ws.role}`);
+      // WebSocket authenticated - reduce logging
 
       // Send welcome message
       ws.send(JSON.stringify({
@@ -73,11 +75,11 @@ export class WebSocketManager {
       // Handle disconnection
       ws.on('close', () => {
         this.removeClient(ws.userId!, ws);
-        console.log(`WebSocket disconnected for user ${ws.userId}`);
+        // WebSocket disconnected - reduce logging noise
       });
 
     } catch (error) {
-      console.error('WebSocket authentication failed:', error);
+      // Silent failure for cleaner console output
       ws.close(1008, 'Authentication failed');
     }
   }

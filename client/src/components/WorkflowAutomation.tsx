@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FaPlay, FaPause, FaEdit, FaTrash, FaPlus, FaCog, FaClock, FaCheckCircle, FaExclamationTriangle, FaCalendar, FaTag, FaCode, FaChartLine, FaHistory, FaCopy, FaShare, FaDownload, FaUpload, FaFilter, FaSort } from 'react-icons/fa';
+import { FaPlay, FaPause, FaEdit, FaTrash, FaPlus, FaCog, FaClock, FaCheckCircle, FaExclamationTriangle, FaCalendar, FaTag, FaCode, FaChartLine, FaHistory, FaCopy, FaShare, FaDownload, FaUpload, FaFilter, FaSort, FaEye } from 'react-icons/fa';
 import AnimatedCard from './ui/AnimatedCard';
 
 interface Workflow {

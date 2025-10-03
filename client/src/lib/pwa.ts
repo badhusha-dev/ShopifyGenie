@@ -126,13 +126,15 @@ class PWAManager {
               });
             }
           
-          // Send subscription to server
-          await this.sendSubscriptionToServer(subscription);
-          
-        } catch (error) {
-          console.error('Push notification setup failed:', error);
+            // Send subscription to server
+            await this.sendSubscriptionToServer(subscription);
+          } catch (error) {
+            console.error('Push notification setup failed:', error);
+          }
         }
       }
+    } catch (error) {
+      console.error('Push notification initialization failed:', error);
     }
   }
 
