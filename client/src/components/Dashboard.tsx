@@ -1,8 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 
+interface DashboardStats {
+  totalProducts: number;
+  lowStockItems: number;
+  totalLoyaltyPoints: number;
+  activeSubscriptions: number;
+  totalSales: number;
+  totalOrders: number;
+  avgOrderValue: number;
+}
+
 const Dashboard = () => {
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["/stats"],
+  const { data: stats, isLoading } = useQuery<DashboardStats>({
+    queryKey: ["/api/stats"],
   });
 
   if (isLoading) {
