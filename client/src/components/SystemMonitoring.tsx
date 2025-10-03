@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FaServer, FaCpu, FaMemory, FaHdd, FaNetworkWired, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaUsers, FaDatabase, FaClock, FaInfoCircle, FaBrain, FaCog, FaBell, FaShieldAlt, FaRocket, FaThermometerHalf, FaTachometerAlt, FaBolt, FaEye, FaFilter, FaDownload } from 'react-icons/fa';
+import { FaServer, FaMicrochip, FaMemory, FaHdd, FaNetworkWired, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaUsers, FaDatabase, FaClock, FaInfoCircle, FaBrain, FaCog, FaBell, FaShieldAlt, FaRocket, FaThermometerHalf, FaTachometerAlt, FaBolt, FaEye, FaFilter, FaDownload } from 'react-icons/fa';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import AnimatedCard from './ui/AnimatedCard';
 
@@ -150,7 +150,7 @@ const SystemMonitoring: React.FC = () => {
     {
       title: 'CPU Usage',
       value: metrics.length > 0 ? `${metrics[metrics.length - 1]?.cpu || 0}%` : '0%',
-      icon: FaCpu,
+      icon: FaMicrochip,
       color: 'primary',
       trend: metrics.length > 1 ? (metrics[metrics.length - 1]?.cpu || 0) - (metrics[metrics.length - 2]?.cpu || 0) : 0
     },

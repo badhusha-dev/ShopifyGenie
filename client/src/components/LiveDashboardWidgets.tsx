@@ -6,8 +6,8 @@ import {
   FaBox, 
   FaShoppingCart, 
   FaDollarSign,
-  FaTrendingUp,
-  FaTrendingDown,
+  FaArrowUp,
+  FaArrowDown,
   FaSync
 } from 'react-icons/fa';
 import AnimatedCard from './ui/AnimatedCard';
@@ -82,9 +82,9 @@ const LiveDashboardWidgets: React.FC = () => {
 
   const getChangeIcon = (changeType: string) => {
     return changeType === 'increase' ? (
-      <FaTrendingUp className="text-success" />
+      <FaArrowUp className="text-success" />
     ) : (
-      <FaTrendingDown className="text-danger" />
+      <FaArrowDown className="text-danger" />
     );
   };
 
@@ -149,7 +149,7 @@ const LiveDashboardWidgets: React.FC = () => {
       value: dashboardData?.growth || 18.7,
       change: dashboardData?.growthChange || 2.4,
       changeType: 'increase',
-      icon: <FaTrendingUp />,
+      icon: <FaArrowUp />,
       color: 'success',
       format: 'percentage',
     },

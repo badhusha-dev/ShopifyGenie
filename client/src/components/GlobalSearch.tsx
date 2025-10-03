@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FaSearch, FaTimes, FaFilter, FaSortAlphaDown, FaSortNumericDown, FaBox, FaUser, FaShoppingCart, FaFileAlt, FaBrain, FaChartLine, FaHistory, FaStar, FaClock, FaLightbulb, FaTrendingUp, FaEye, FaBookmark, FaShare } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaFilter, FaSortAlphaDown, FaSortNumericDown, FaBox, FaUser, FaShoppingCart, FaFileAlt, FaBrain, FaChartLine, FaHistory, FaStar, FaClock, FaLightbulb, FaArrowUp, FaEye, FaBookmark, FaShare } from 'react-icons/fa';
 import AnimatedCard from './ui/AnimatedCard';
 
 interface SearchResult {
@@ -221,7 +221,7 @@ const GlobalSearch: React.FC = () => {
                     <div>
                       {suggestion.type === 'autocomplete' && <FaSearch className="text-muted" />}
                       {suggestion.type === 'related' && <FaLightbulb className="text-warning" />}
-                      {suggestion.type === 'trending' && <FaTrendingUp className="text-success" />}
+                      {suggestion.type === 'trending' && <FaArrowUp className="text-success" />}
                       {suggestion.type === 'insight' && <FaBrain className="text-primary" />}
                     </div>
                   </div>
@@ -500,7 +500,7 @@ const GlobalSearch: React.FC = () => {
             <div className="mb-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h6 className="mb-0">Popular Searches</h6>
-                <FaTrendingUp className="text-success" />
+                <FaArrowUp className="text-success" />
               </div>
               <div className="d-flex flex-wrap gap-2">
                 {popularSearches.map((search, index) => (

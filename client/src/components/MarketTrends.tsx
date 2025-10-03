@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FaTrendingUp, FaTrendingDown, FaChartLine, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaChartLine, FaExternalLinkAlt, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import AnimatedCard from './ui/AnimatedCard';
 
 interface MarketTrend {
@@ -22,7 +22,7 @@ const MarketTrends: React.FC = () => {
 
   const getTrendIcon = (change: string) => {
     const isPositive = change.startsWith('+');
-    return isPositive ? <FaTrendingUp className="text-success" /> : <FaTrendingDown className="text-danger" />;
+    return isPositive ? <FaArrowUp className="text-success" /> : <FaArrowDown className="text-danger" />;
   };
 
   const getImpactBadge = (impact: string) => {
