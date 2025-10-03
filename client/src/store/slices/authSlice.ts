@@ -17,12 +17,14 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+const savedToken = localStorage.getItem('auth_token');
+
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('auth_token'),
+  token: savedToken,
   isLoading: false,
   error: null,
-  isAuthenticated: false,
+  isAuthenticated: !!savedToken,
 };
 
 export const loginUser = createAsyncThunk(

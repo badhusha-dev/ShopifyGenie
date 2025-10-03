@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loginUser, registerUser, clearError } from '../store/slices/authSlice';
 import { useAppSelector as useThemeSelector } from '../store/hooks';
+import { queryClient } from '../lib/queryClient';
 
 interface LoginFormProps {
   onToggleMode: () => void;
@@ -37,6 +38,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, showRegister }) => 
           password: formData.password
         })).unwrap();
       }
+      
+      // Invalidate all queries to ensure they refetch with the new token
+      queryClient.invalidateQueries();
     } catch (err) {
       // Error handled by Redux slice
     }
