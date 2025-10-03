@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { FaServer, FaDatabase, FaChartLine, FaDownload, FaPlay, FaStop, FaRefresh, FaCog } from 'react-icons/fa';
+import { FaServer, FaDatabase, FaChartLine, FaDownload, FaPlay, FaStop, FaSyncAlt, FaCog } from 'react-icons/fa';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area } from 'recharts';
 
@@ -82,7 +82,7 @@ const SystemMonitoring: React.FC = () => {
             className="btn btn-outline-primary d-flex align-items-center"
             onClick={() => window.location.reload()}
           >
-            <FaRefresh className="me-2" />
+            <FaSyncAlt className="me-2" />
             Refresh
           </button>
         </div>
