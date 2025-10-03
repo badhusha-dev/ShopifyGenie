@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { FaDownload, FaUpload, FaFileCsv, FaFileExcel, FaFilePdf, FaSpinner } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaFileCsv, FaFileExcel, FaFilePdf, FaSpinner, FaDatabase } from 'react-icons/fa';
 import AnimatedCard from './ui/AnimatedCard';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 interface ExportOptions {
   format: 'csv' | 'json' | 'pdf' | 'excel';
@@ -14,10 +16,28 @@ const DataExportImport: React.FC = () => {
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'csv'
   });
-  const [selectedDataType, setSelectedDataType] = useState<string>('sales');
+  const [selectedDataType, setSelectedDataType] = useState<string>('full_app');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const exportMutation = useMutation({
     mutationFn: async ({ dataType, options }: { dataType: string; options: ExportOptions }) => {
+      if (dataType === 'full_app') {
+        const res = await apiRequest('POST', '/api/data/export');
+        const response = await res.json();
+        
+        const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `app-data-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return response;
+      }
+
       const params = new URLSearchParams();
       params.append('format', options.format);
       if (options.startDate) params.append('startDate', options.startDate);
@@ -42,10 +62,41 @@ const DataExportImport: React.FC = () => {
       }
     },
     onSuccess: () => {
-      alert('Export completed successfully!');
+      toast({
+        title: 'Export successful',
+        description: 'Your data has been exported successfully.',
+      });
     },
     onError: (error) => {
-      alert(`Export failed: ${error.message}`);
+      toast({
+        title: 'Export failed',
+        description: error instanceof Error ? error.message : 'Failed to export data',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      const res = await apiRequest('POST', '/api/data/import', data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Import successful',
+        description: 'Your data has been imported successfully. The page will refresh.',
+      });
+      setTimeout(() => window.location.reload(), 2000);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Import failed',
+        description: error instanceof Error ? error.message : 'Failed to import data',
+        variant: 'destructive',
+      });
     }
   });
 
@@ -53,7 +104,23 @@ const DataExportImport: React.FC = () => {
     exportMutation.mutate({ dataType: selectedDataType, options: exportOptions });
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/json') {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please select a JSON file exported from this application.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      importMutation.mutate(file);
+    }
+  };
+
   const dataTypes = [
+    { value: 'full_app', label: 'Full App Data (Migration)', description: 'Export all data for app migration to new instance', icon: FaDatabase },
     { value: 'sales', label: 'Sales Data', description: 'Export sales transactions and revenue data' },
     { value: 'inventory', label: 'Inventory Data', description: 'Export product inventory and stock levels' },
     { value: 'customers', label: 'Customer Data', description: 'Export customer information and order history' },
@@ -194,25 +261,49 @@ const DataExportImport: React.FC = () => {
 
         {/* Import Section */}
         <div className="mt-4 pt-4 border-top">
-          <h6 className="fw-bold mb-3">Data Import</h6>
+          <h6 className="fw-bold mb-3">
+            <FaDatabase className="me-2" />
+            Full App Data Import (Migration)
+          </h6>
+          <p className="text-muted small mb-3">
+            Import a complete app data export JSON file to migrate data from another instance. 
+            <strong className="text-warning"> Warning: This will replace ALL existing data!</strong>
+          </p>
           <div className="row g-3">
             <div className="col-md-8">
-                      <input
-                        type="file"
+              <input
+                ref={fileInputRef}
+                type="file"
                 className="form-control"
-                        accept=".csv,.xlsx,.json"
-                placeholder="Select file to import"
+                accept=".json"
+                onChange={handleFileChange}
+                disabled={importMutation.isPending}
+                data-testid="input-import-file"
               />
             </div>
             <div className="col-md-4">
-              <button className="btn btn-outline-primary w-100">
-                <FaUpload className="me-2" />
-                Import Data
-                          </button>
+              <button 
+                className="btn btn-outline-primary w-100"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importMutation.isPending}
+                data-testid="button-import"
+              >
+                {importMutation.isPending ? (
+                  <>
+                    <FaSpinner className="me-2 fa-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <FaUpload className="me-2" />
+                    Select File to Import
+                  </>
+                )}
+              </button>
             </div>
           </div>
           <small className="text-muted">
-            Supported formats: CSV, Excel (.xlsx), JSON. Maximum file size: 10MB.
+            Only JSON files exported from this application are supported. Import will replace all existing data.
           </small>
         </div>
                 </div>
