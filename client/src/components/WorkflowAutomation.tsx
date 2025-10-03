@@ -596,7 +596,7 @@ const WorkflowAutomation: React.FC = () => {
                     name: formData.get('name') as string,
                     description: formData.get('description') as string,
                     trigger: formData.get('trigger') as string,
-                    priority: formData.get('priority') as string,
+                    priority: formData.get('priority') as 'low' | 'medium' | 'high' | 'critical',
                     tags: (formData.get('tags') as string).split(',').map(tag => tag.trim()).filter(tag => tag),
                     status: 'draft'
                   });

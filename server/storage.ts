@@ -1236,98 +1236,11 @@ export class MemStorage implements IStorage {
     });
   }
 
-  // Missing storage methods implementation
-  async updateUser(id: string, updates: any): Promise<any> {
-    const user = this.users.get(id);
-    if (!user) return null;
+  // Methods moved to prevent duplicates - see newer implementations below
 
-    const updatedUser = { ...user, ...updates, updatedAt: new Date() };
-    this.users.set(id, updatedUser);
+  // Duplicate methods removed - see newer implementations below
 
-    const { password, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
-  }
-
-  async deleteUser(id: string): Promise<boolean> {
-    return this.users.delete(id);
-  }
-
-  async getStats(shopDomain?: string): Promise<any> {
-    const products = Array.from(this.products.values());
-    const customers = Array.from(this.customers.values());
-    const orders = Array.from(this.orders.values());
-
-    return {
-      totalProducts: products.length,
-      totalCustomers: customers.length,
-      totalOrders: orders.length,
-      totalRevenue: orders.reduce((sum, order) => sum + parseFloat(order.total), 0)
-    };
-  }
-
-  async getSalesTrends(): Promise<any> {
-    // Mock data for now
-    const trends = [];
-    const today = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      trends.push({
-        date: date.toISOString().split('T')[0],
-        sales: Math.floor(Math.random() * 1000) + 100
-      });
-    }
-    return trends;
-  }
-
-  async getTopProducts(): Promise<any> {
-    const products = Array.from(this.products.values());
-    return products.slice(0, 5).map(p => ({
-      ...p,
-      sales: Math.floor(Math.random() * 100) + 10
-    }));
-  }
-
-  async getLoyaltyPointsAnalytics(): Promise<any> {
-    const transactions = Array.from(this.loyaltyTransactions.values());
-    const earned = transactions.filter(t => t.type === 'earned').reduce((sum, t) => sum + t.points, 0);
-    const redeemed = transactions.filter(t => t.type === 'redeemed').reduce((sum, t) => sum + t.points, 0);
-
-    return {
-      earned,
-      redeemed,
-      available: earned - redeemed
-    };
-  }
-
-  async getStockForecast(): Promise<any> {
-    const products = Array.from(this.products.values());
-    return products.map(p => ({
-      ...p,
-      forecastDays: Math.floor(Math.random() * 30) + 5
-    }));
-  }
-
-  async getUserRole(userId: string): Promise<string> {
-    const user = this.users.get(userId);
-    return user?.role || 'customer';
-  }
-
-  async getAlertsForUser(role: string): Promise<any[]> {
-    // Return role-specific alerts
-    const baseAlerts: any[] = [];
-
-    if (role === 'admin' || role === 'superadmin') {
-      baseAlerts.push({
-        id: '1',
-        type: 'warning',
-        message: 'Low stock alert for 3 products',
-        timestamp: new Date()
-      });
-    }
-
-    return baseAlerts;
-  }
+  // Additional duplicate methods removed - see newer implementations below
 
   // User Management Methods
   async createUser(userData: InsertUser): Promise<User> {
@@ -1361,70 +1274,7 @@ export class MemStorage implements IStorage {
     return users;
   }
 
-  async checkUserPermission(role: string, permission: string): Promise<boolean> {
-    // Super admin has all permissions
-    if (role === 'superadmin') {
-      return true;
-    }
-
-    // Check stored role permissions
-    const rolePermission = this.rolePermissions.find(rp => 
-      rp.role === role && rp.permissionName === permission && rp.granted
-    );
-
-    return !!rolePermission;
-  }
-
-  async getAllPermissions(): Promise<any[]> {
-    return this.permissions;
-  }
-
-  async getRolePermissions(role: string): Promise<Record<string, boolean>> {
-    if (role === 'superadmin') {
-      // Super admin gets all permissions
-      const permissions: Record<string, boolean> = {};
-      this.permissions.forEach(p => {
-        permissions[p.name] = true;
-      });
-      return permissions;
-    }
-
-    const permissions: Record<string, boolean> = {};
-    this.permissions.forEach(p => {
-      permissions[p.name] = false;
-    });
-
-    this.rolePermissions.forEach(rp => {
-      if (rp.role === role) {
-        permissions[rp.permissionName] = rp.granted;
-      }
-    });
-
-    return permissions;
-  }
-
-  async updateRolePermissions(role: string, permissions: Record<string, boolean>): Promise<void> {
-    if (role === 'superadmin') {
-      throw new Error('Cannot modify super admin permissions');
-    }
-
-    // Remove existing permissions for this role
-    this.rolePermissions = this.rolePermissions.filter(rp => rp.role !== role);
-
-    // Add new permissions
-    Object.entries(permissions).forEach(([permissionName, granted]) => {
-      if (granted) {
-        this.rolePermissions.push({
-          id: randomUUID(),
-          role,
-          permissionName,
-          granted: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      }
-    });
-  }
+  // Duplicate role permission methods removed - see newer implementations below
 
   async getUsersWithoutPassword(shopDomain?: string): Promise<Omit<User, 'password'>[]> {
     let filteredUsers = Array.from(this.users.values());
@@ -1790,83 +1640,7 @@ export class MemStorage implements IStorage {
     return this.purchaseOrders.find(o => o.id === id);
   }
 
-  async createPurchaseOrder(orderData: any): Promise<any> {
-    const order = {
-      id: randomUUID(),
-      vendorId: orderData.vendorId,
-      items: orderData.items || [],
-      status: 'draft',
-      totalAmount: orderData.items?.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0) || 0,
-      expectedDeliveryDate: orderData.expectedDeliveryDate,
-      notes: orderData.notes || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      approvedAt: null,
-      receivedAt: null
-    };
-    this.purchaseOrders.push(order);
-    return order;
-  }
-
-  async updatePurchaseOrder(id: string, updates: any): Promise<any> {
-    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
-    if (orderIndex === -1) return null;
-
-    const updatedOrder = {
-      ...this.purchaseOrders[orderIndex],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    this.purchaseOrders[orderIndex] = updatedOrder;
-    return updatedOrder;
-  }
-
-  async deletePurchaseOrder(id: string): Promise<boolean> {
-    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
-    if (orderIndex === -1) return false;
-
-    this.purchaseOrders.splice(orderIndex, 1);
-    return true;
-  }
-
-  async approvePurchaseOrder(id: string): Promise<any> {
-    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
-    if (orderIndex === -1) return null;
-
-    const updatedOrder = {
-      ...this.purchaseOrders[orderIndex],
-      status: 'approved',
-      approvedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    this.purchaseOrders[orderIndex] = updatedOrder;
-    return updatedOrder;
-  }
-
-  async receivePurchaseOrder(id: string, receivedItems: any[]): Promise<any> {
-    const orderIndex = this.purchaseOrders.findIndex(o => o.id === id);
-    if (orderIndex === -1) return null;
-
-    // Update inventory for received items
-    for (const item of receivedItems) {
-      const product = this.products.get(item.productId);
-      if (product) {
-        await this.updateProduct(item.productId, {
-          stock: product.stock + item.quantity
-        });
-      }
-    }
-
-    const updatedOrder = {
-      ...this.purchaseOrders[orderIndex],
-      status: 'received',
-      receivedAt: new Date().toISOString(),
-      receivedItems,
-      updatedAt: new Date().toISOString()
-    };
-    this.purchaseOrders[orderIndex] = updatedOrder;
-    return updatedOrder;
-  }
+  // Purchase order methods removed to prevent duplicates - see newer implementations below
 
   // Vendors methods
   async getVendors(status?: string): Promise<any[]> {
@@ -2498,39 +2272,7 @@ export class MemStorage implements IStorage {
     });
   }
 
-  async getSystemSettings() {
-    // Mock system settings
-    return {
-      general: {
-        companyName: 'Demo Store Inc.',
-        companyEmail: 'info@demo-store.com',
-        companyAddress: '123 Business St, Commerce City, BC 12345',
-        timezone: 'America/New_York',
-        currency: 'USD',
-        dateFormat: 'MM/DD/YYYY',
-        fiscalYearStart: 'January'
-      },
-      notifications: {
-        emailNotifications: true,
-        pushNotifications: false,
-        smsNotifications: false,
-        lowStockThreshold: 10,
-        orderNotifications: true
-      },
-      integrations: {
-        shopifyConnected: true,
-        stripeConnected: false,
-        mailchimpConnected: false,
-        googleAnalyticsConnected: true
-      },
-      security: {
-        twoFactorEnabled: false,
-        sessionTimeout: 30,
-        passwordExpiry: 90,
-        loginAttempts: 5
-      }
-    };
-  }
+  // Duplicate getSystemSettings method removed - see newer implementation below
 
   async getVendorAnalytics() {
     const vendors = await this.getVendors();
@@ -4698,17 +4440,7 @@ export class MemStorage implements IStorage {
   }
 
   // System Monitoring Methods
-  async getSystemHealth(): Promise<any> {
-    return {
-      status: 'healthy',
-      uptime: '15 days, 8 hours',
-      lastBackup: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-      nextBackup: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
-      databaseSize: '2.4 GB',
-      logSize: '156 MB',
-      alerts: []
-    };
-  }
+  // Duplicate getSystemHealth method removed - see newer implementation below
 
   async getSystemMetrics(timeRange: string): Promise<any[]> {
     const now = Date.now();

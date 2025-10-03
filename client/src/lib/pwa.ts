@@ -29,6 +29,10 @@ class PWAManager {
   }
 
   private async init() {
+    // PWA functionality completely disabled to prevent fetch errors
+    console.log('PWA functionality disabled');
+    return;
+    
     // Register service worker
     await this.registerServiceWorker();
     
@@ -43,6 +47,10 @@ class PWAManager {
   }
 
   private async registerServiceWorker(): Promise<void> {
+    // Temporarily disabled to prevent fetch errors
+    console.log('Service Worker registration disabled temporarily');
+    return;
+    
     if ('serviceWorker' in navigator) {
       try {
         this.registration = await navigator.serviceWorker.register('/sw.js', {
@@ -352,8 +360,9 @@ class PWAManager {
   }
 }
 
-// Singleton instance
-export const pwaManager = new PWAManager();
+// Singleton instance - DISABLED to prevent service worker issues
+// export const pwaManager = new PWAManager();
+export const pwaManager = null;
 
 // React hook for PWA functionality
 export function usePWA() {
