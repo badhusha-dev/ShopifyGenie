@@ -79,7 +79,17 @@ const DataExportImport: React.FC = () => {
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
       const text = await file.text();
-      const data = JSON.parse(text);
+      let data;
+      
+      try {
+        data = JSON.parse(text);
+      } catch (error) {
+        throw new Error('Invalid JSON file. Please select a valid export file.');
+      }
+      
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid export file format. The file must contain a valid data object.');
+      }
       
       const res = await apiRequest('POST', '/api/data/import', data);
       return await res.json();
