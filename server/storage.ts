@@ -302,6 +302,10 @@ export interface IStorage {
   getTrialBalance(shopDomain?: string, asOfDate?: Date): Promise<any>;
   getAccountingSummary(shopDomain?: string): Promise<any>;
   getFinancialMetrics(shopDomain?: string, period?: 'month' | 'quarter' | 'year'): Promise<any>;
+
+  // Data Export & Import for App Migration
+  exportAllData(): Promise<any>;
+  importAllData(data: any): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -4958,6 +4962,211 @@ export class MemStorage implements IStorage {
   private addAuditLog(action: string, resource: string, details: string, metadata: string): void {
     // Mock implementation - in real app, store in database
     console.log(`Audit Log: ${action} on ${resource} - ${details}`);
+  }
+
+  async exportAllData(): Promise<any> {
+    const exportData = {
+      version: '1.0.0',
+      exportDate: new Date().toISOString(),
+      data: {
+        users: Array.from(this.users.values()).map(user => {
+          const { password, ...userWithoutPassword } = user;
+          return userWithoutPassword;
+        }),
+        products: Array.from(this.products.values()),
+        productCategories: this.productCategories,
+        productVariants: this.productVariants,
+        customers: Array.from(this.customers.values()),
+        orders: Array.from(this.orders.values()),
+        subscriptions: Array.from(this.subscriptions.values()),
+        loyaltyTransactions: Array.from(this.loyaltyTransactions.values()),
+        vendors: this.vendors,
+        purchaseOrders: this.purchaseOrders,
+        vendorPayments: this.vendorPayments,
+        warehouses: this.warehouses,
+        inventoryBatches: this.inventoryBatches,
+        stockAdjustments: this.stockAdjustments,
+        stockMovements: this.stockMovements,
+        inventoryAlerts: this.inventoryAlerts,
+        accounts: Array.from(this.accounts.values()),
+        journalEntries: Array.from(this.journalEntries.values()),
+        journalEntryLines: Array.from(this.journalEntryLines.values()),
+        generalLedger: Array.from(this.generalLedger.values()),
+        wallets: Array.from(this.wallets.values()),
+        walletTransactions: Array.from(this.walletTransactions.values()),
+        fiscalPeriods: Array.from(this.fiscalPeriods.values()),
+        bankStatements: Array.from(this.bankStatements.entries()).map(([accountId, statements]) => ({
+          accountId,
+          statements
+        })),
+        rolePermissions: Array.from(this.rolePermissions.entries()).map(([role, permissions]) => ({
+          role,
+          permissions
+        })),
+        systemSettings: this.systemSettings
+      }
+    };
+
+    return exportData;
+  }
+
+  async importAllData(data: any): Promise<void> {
+    if (!data || !data.data) {
+      throw new Error('Invalid import data format');
+    }
+
+    const importData = data.data;
+
+    this.users.clear();
+    if (importData.users && Array.isArray(importData.users)) {
+      importData.users.forEach((user: any) => {
+        this.users.set(user.id, user);
+      });
+    }
+
+    this.products.clear();
+    if (importData.products && Array.isArray(importData.products)) {
+      importData.products.forEach((product: any) => {
+        this.products.set(product.id, product);
+      });
+    }
+
+    if (importData.productCategories) {
+      this.productCategories = importData.productCategories;
+    }
+
+    if (importData.productVariants) {
+      this.productVariants = importData.productVariants;
+    }
+
+    this.customers.clear();
+    if (importData.customers && Array.isArray(importData.customers)) {
+      importData.customers.forEach((customer: any) => {
+        this.customers.set(customer.id, customer);
+      });
+    }
+
+    this.orders.clear();
+    if (importData.orders && Array.isArray(importData.orders)) {
+      importData.orders.forEach((order: any) => {
+        this.orders.set(order.id, order);
+      });
+    }
+
+    this.subscriptions.clear();
+    if (importData.subscriptions && Array.isArray(importData.subscriptions)) {
+      importData.subscriptions.forEach((subscription: any) => {
+        this.subscriptions.set(subscription.id, subscription);
+      });
+    }
+
+    this.loyaltyTransactions.clear();
+    if (importData.loyaltyTransactions && Array.isArray(importData.loyaltyTransactions)) {
+      importData.loyaltyTransactions.forEach((transaction: any) => {
+        this.loyaltyTransactions.set(transaction.id, transaction);
+      });
+    }
+
+    if (importData.vendors) {
+      this.vendors = importData.vendors;
+    }
+
+    if (importData.purchaseOrders) {
+      this.purchaseOrders = importData.purchaseOrders;
+    }
+
+    if (importData.vendorPayments) {
+      this.vendorPayments = importData.vendorPayments;
+    }
+
+    if (importData.warehouses) {
+      this.warehouses = importData.warehouses;
+    }
+
+    if (importData.inventoryBatches) {
+      this.inventoryBatches = importData.inventoryBatches;
+    }
+
+    if (importData.stockAdjustments) {
+      this.stockAdjustments = importData.stockAdjustments;
+    }
+
+    if (importData.stockMovements) {
+      this.stockMovements = importData.stockMovements;
+    }
+
+    if (importData.inventoryAlerts) {
+      this.inventoryAlerts = importData.inventoryAlerts;
+    }
+
+    this.accounts.clear();
+    if (importData.accounts && Array.isArray(importData.accounts)) {
+      importData.accounts.forEach((account: any) => {
+        this.accounts.set(account.id, account);
+      });
+    }
+
+    this.journalEntries.clear();
+    if (importData.journalEntries && Array.isArray(importData.journalEntries)) {
+      importData.journalEntries.forEach((entry: any) => {
+        this.journalEntries.set(entry.id, entry);
+      });
+    }
+
+    this.journalEntryLines.clear();
+    if (importData.journalEntryLines && Array.isArray(importData.journalEntryLines)) {
+      importData.journalEntryLines.forEach((line: any) => {
+        this.journalEntryLines.set(line.id, line);
+      });
+    }
+
+    this.generalLedger.clear();
+    if (importData.generalLedger && Array.isArray(importData.generalLedger)) {
+      importData.generalLedger.forEach((entry: any) => {
+        this.generalLedger.set(entry.id, entry);
+      });
+    }
+
+    this.wallets.clear();
+    if (importData.wallets && Array.isArray(importData.wallets)) {
+      importData.wallets.forEach((wallet: any) => {
+        this.wallets.set(wallet.id, wallet);
+      });
+    }
+
+    this.walletTransactions.clear();
+    if (importData.walletTransactions && Array.isArray(importData.walletTransactions)) {
+      importData.walletTransactions.forEach((transaction: any) => {
+        this.walletTransactions.set(transaction.id, transaction);
+      });
+    }
+
+    this.fiscalPeriods.clear();
+    if (importData.fiscalPeriods && Array.isArray(importData.fiscalPeriods)) {
+      importData.fiscalPeriods.forEach((period: any) => {
+        this.fiscalPeriods.set(period.id, period);
+      });
+    }
+
+    this.bankStatements.clear();
+    if (importData.bankStatements && Array.isArray(importData.bankStatements)) {
+      importData.bankStatements.forEach((item: any) => {
+        this.bankStatements.set(item.accountId, item.statements);
+      });
+    }
+
+    this.rolePermissions.clear();
+    if (importData.rolePermissions && Array.isArray(importData.rolePermissions)) {
+      importData.rolePermissions.forEach((item: any) => {
+        this.rolePermissions.set(item.role, item.permissions);
+      });
+    }
+
+    if (importData.systemSettings) {
+      this.systemSettings = importData.systemSettings;
+    }
+
+    console.log('Data import completed successfully');
   }
 }
 

@@ -4518,6 +4518,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/data/export:
+   *   post:
+   *     tags: [Data Management]
+   *     summary: Export all application data for migration
+   *     responses:
+   *       200:
+   *         description: All application data exported successfully
+   */
+  app.post("/api/data/export", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      const exportData = await storage.exportAllData();
+      res.json(exportData);
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ error: "Failed to export data" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/data/import:
+   *   post:
+   *     tags: [Data Management]
+   *     summary: Import application data from export file
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               data:
+   *                 type: object
+   *     responses:
+   *       200:
+   *         description: Data imported successfully
+   */
+  app.post("/api/data/import", authenticateToken, requireStaffOrAdmin, async (req, res) => {
+    try {
+      await storage.importAllData(req.body);
+      res.json({ message: "Data imported successfully" });
+    } catch (error) {
+      console.error('Import error:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to import data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
