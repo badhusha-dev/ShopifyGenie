@@ -121,10 +121,10 @@ const AppContent = () => {
         {/* Theme Toggle */}
         <ThemeToggle />
         
-        {/* Global Search */}
-        <div className="global-search-container">
+        {/* Global Search - Hidden */}
+        {/* <div className="global-search-container">
           <GlobalSearch />
-        </div>
+        </div> */}
         
         <Route path="/" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />
         <Route path="/dashboard" component={() => renderPage("Dashboard", "Overview of your business metrics", Home)} />

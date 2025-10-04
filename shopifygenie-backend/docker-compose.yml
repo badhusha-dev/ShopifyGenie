@@ -1,0 +1,366 @@
+version: '3.8'
+
+services:
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: shopifygenie-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - shopifygenie-network
+
+  # Kafka for event-driven messaging
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: shopifygenie-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - shopifygenie-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: shopifygenie-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shopifygenie
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - shopifygenie-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - API_GATEWAY_PORT=5000
+      - AUTH_SERVICE_URL=http://auth-service:5001
+      - PRODUCT_SERVICE_URL=http://product-service:5002
+      - CUSTOMER_SERVICE_URL=http://customer-service:5003
+      - ORDER_SERVICE_URL=http://order-service:5004
+      - ACCOUNTING_SERVICE_URL=http://accounting-service:5005
+      - ANALYTICS_SERVICE_URL=http://analytics-service:5006
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      accounting-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+    networks:
+      - shopifygenie-network
+
+  # Flyway for Auth Service migrations
+  auth-flyway:
+    image: flyway/flyway:10-alpine
+    container_name: shopifygenie-auth-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/auth_db
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+    volumes:
+      - ./services/auth-service/db/migration:/flyway/sql
+    networks:
+      - shopifygenie-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - AUTH_SERVICE_PORT=5001
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - AUTH_DB_NAME=auth_db
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-flyway:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    networks:
+      - shopifygenie-network
+
+  # Flyway for Product Service migrations
+  product-flyway:
+    image: flyway/flyway:10-alpine
+    container_name: shopifygenie-product-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/product_db
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+    volumes:
+      - ./services/product-service/db/migration:/flyway/sql
+    networks:
+      - shopifygenie-network
+
+  # Product Service
+  product-service:
+    build:
+      context: .
+      dockerfile: ./services/product-service/Dockerfile
+    ports:
+      - "5002:5002"
+    environment:
+      - NODE_ENV=production
+      - PRODUCT_SERVICE_PORT=5002
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - PRODUCT_DB_NAME=product_db
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      product-flyway:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    networks:
+      - shopifygenie-network
+
+  # Flyway for Customer Service migrations
+  customer-flyway:
+    image: flyway/flyway:10-alpine
+    container_name: shopifygenie-customer-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/customer_db
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+    volumes:
+      - ./services/customer-service/db/migration:/flyway/sql
+    networks:
+      - shopifygenie-network
+
+  # Customer Service
+  customer-service:
+    build:
+      context: .
+      dockerfile: ./services/customer-service/Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - NODE_ENV=production
+      - CUSTOMER_SERVICE_PORT=5003
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - CUSTOMER_DB_NAME=customer_db
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      customer-flyway:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    networks:
+      - shopifygenie-network
+
+  # Flyway for Order Service migrations
+  order-flyway:
+    image: flyway/flyway:10-alpine
+    container_name: shopifygenie-order-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/order_db
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+    volumes:
+      - ./services/order-service/db/migration:/flyway/sql
+    networks:
+      - shopifygenie-network
+
+  # Order Service
+  order-service:
+    build:
+      context: .
+      dockerfile: ./services/order-service/Dockerfile
+    ports:
+      - "5004:5004"
+    environment:
+      - NODE_ENV=production
+      - ORDER_SERVICE_PORT=5004
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - ORDER_DB_NAME=order_db
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      order-flyway:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    networks:
+      - shopifygenie-network
+
+  # Flyway for Accounting Service migrations
+  accounting-flyway:
+    image: flyway/flyway:10-alpine
+    container_name: shopifygenie-accounting-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/accounting_db
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+    volumes:
+      - ./services/accounting-service/db/migration:/flyway/sql
+    networks:
+      - shopifygenie-network
+
+  # Accounting Service
+  accounting-service:
+    build:
+      context: .
+      dockerfile: ./services/accounting-service/Dockerfile
+    ports:
+      - "5005:5005"
+    environment:
+      - NODE_ENV=production
+      - ACCOUNTING_SERVICE_PORT=5005
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - ACCOUNTING_DB_NAME=accounting_db
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      accounting-flyway:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    networks:
+      - shopifygenie-network
+
+  # Flyway for Analytics Service migrations
+  analytics-flyway:
+    image: flyway/flyway:10-alpine
+    container_name: shopifygenie-analytics-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/analytics_db
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+    volumes:
+      - ./services/analytics-service/db/migration:/flyway/sql
+    networks:
+      - shopifygenie-network
+
+  # Analytics Service
+  analytics-service:
+    build:
+      context: .
+      dockerfile: ./services/analytics-service/Dockerfile
+    ports:
+      - "5006:5006"
+    environment:
+      - NODE_ENV=production
+      - ANALYTICS_SERVICE_PORT=5006
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - ANALYTICS_DB_NAME=analytics_db
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      analytics-flyway:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    networks:
+      - shopifygenie-network
+
+networks:
+  shopifygenie-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

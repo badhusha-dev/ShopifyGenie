@@ -1,0 +1,287 @@
+// Accounting Service - journal entries, reports, reconciliation
+// Port: 5005
+
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { eq, and, like, gte, lte } from 'drizzle-orm';
+import { 
+  Account, 
+  JournalEntry, 
+  JournalEntryLine,
+  ApiResponse,
+  PaginatedResponse,
+  schemas,
+  utils 
+} from '../../shared';
+
+const app = express();
+const PORT = process.env.ACCOUNTING_SERVICE_PORT || 5005;
+
+// Database setup
+const accountsTable = sqliteTable('accounts', {
+  id: text('id').primaryKey(),
+  createdAt: text('createdAt'),
+  shopDomain: text('shopDomain').notNull(),
+  updatedAt: text('updatedAt'),
+  accountCode: text('accountCode').notNull(),
+  accountName: text('accountName').notNull(),
+  accountType: text('accountType').notNull(),
+  accountSubtype: text('accountSubtype'),
+  normalBalance: text('normalBalance').notNull(),
+  parentAccountId: text('parentAccountId'),
+  description: text('description'),
+  isActive: integer('isActive', { mode: 'boolean' }).default(true),
+  createdBy: text('createdBy'),
+});
+
+const journalEntriesTable = sqliteTable('journalEntries', {
+  id: text('id').primaryKey(),
+  createdAt: text('createdAt'),
+  status: text('status').notNull().default('draft'),
+  shopDomain: text('shopDomain').notNull(),
+  updatedAt: text('updatedAt'),
+  description: text('description').notNull(),
+  createdBy: text('createdBy'),
+  journalNumber: text('journalNumber').notNull(),
+  transactionDate: text('transactionDate').notNull(),
+  totalDebit: text('totalDebit').notNull(),
+  totalCredit: text('totalCredit').notNull(),
+  reference: text('reference'),
+  postedBy: text('postedBy'),
+  postedAt: text('postedAt'),
+});
+
+const journalEntryLinesTable = sqliteTable('journalEntryLines', {
+  id: text('id').primaryKey(),
+  createdAt: text('createdAt'),
+  description: text('description'),
+  reference: text('reference'),
+  journalEntryId: text('journalEntryId'),
+  accountId: text('accountId'),
+  debitAmount: text('debitAmount'),
+  creditAmount: text('creditAmount'),
+});
+
+// Initialize database (in-memory for demo)
+const db = drizzle({
+  sqlite: {
+    filename: ':memory:',
+  },
+});
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+  credentials: true,
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000,
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use(limiter);
+
+// Authentication middleware
+async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json(utils.HTTP.createErrorResponse('Access token required', 401));
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    
+    const decoded = utils.JWT.verifyToken(token, jwtSecret);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json(utils.HTTP.createErrorResponse('Invalid token', 401));
+  }
+}
+
+// Initialize sample accounts
+async function initializeSampleAccounts() {
+  try {
+    const existingAccounts = await db.select().from(accountsTable).limit(1);
+    if (existingAccounts.length > 0) return;
+
+    const sampleAccounts = [
+      {
+        id: utils.ID.generateId(),
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+        shopDomain: 'demo-store.myshopify.com',
+        updatedAt: utils.Date.toISOString(utils.Date.now()),
+        accountCode: '1000',
+        accountName: 'Cash',
+        accountType: 'Asset',
+        accountSubtype: 'Current Asset',
+        normalBalance: 'Debit',
+        parentAccountId: null,
+        description: 'Cash on hand and in bank',
+        isActive: true,
+        createdBy: null,
+      },
+      {
+        id: utils.ID.generateId(),
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+        shopDomain: 'demo-store.myshopify.com',
+        updatedAt: utils.Date.toISOString(utils.Date.now()),
+        accountCode: '4000',
+        accountName: 'Sales Revenue',
+        accountType: 'Revenue',
+        accountSubtype: 'Operating Revenue',
+        normalBalance: 'Credit',
+        parentAccountId: null,
+        description: 'Revenue from product sales',
+        isActive: true,
+        createdBy: null,
+      },
+    ];
+
+    for (const account of sampleAccounts) {
+      await db.insert(accountsTable).values(account);
+    }
+
+    utils.Logger.info('Sample accounts initialized');
+  } catch (error) {
+    utils.Logger.error('Failed to initialize sample accounts', error);
+  }
+}
+
+// Routes
+
+// Health check
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'healthy', 
+    service: 'accounting-service',
+    timestamp: utils.Date.now().toISOString(),
+  });
+});
+
+// Get chart of accounts
+app.get('/accounts', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const accounts = await db.select().from(accountsTable).where(eq(accountsTable.isActive, true));
+    res.json(utils.HTTP.createSuccessResponse(accounts));
+  } catch (error) {
+    utils.Logger.error('Get accounts error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get accounts', 500));
+  }
+});
+
+// Create account
+app.post('/accounts', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const accountData = schemas.createAccount.parse(req.body);
+
+    const newAccount = {
+      id: utils.ID.generateId(),
+      ...accountData,
+      createdAt: utils.Date.toISOString(utils.Date.now()),
+      updatedAt: utils.Date.toISOString(utils.Date.now()),
+    };
+
+    await db.insert(accountsTable).values(newAccount);
+
+    utils.Logger.info(`New account created: ${newAccount.accountName}`);
+    res.status(201).json(utils.HTTP.createSuccessResponse(newAccount, 'Account created successfully'));
+  } catch (error) {
+    utils.Logger.error('Create account error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to create account', 500));
+  }
+});
+
+// Get journal entries
+app.get('/journal-entries', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const entries = await db.select().from(journalEntriesTable);
+    res.json(utils.HTTP.createSuccessResponse(entries));
+  } catch (error) {
+    utils.Logger.error('Get journal entries error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get journal entries', 500));
+  }
+});
+
+// Create journal entry
+app.post('/journal-entries', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const entryData = schemas.createJournalEntry.parse(req.body);
+
+    const newEntry = {
+      id: utils.ID.generateId(),
+      ...entryData,
+      createdAt: utils.Date.toISOString(utils.Date.now()),
+      updatedAt: utils.Date.toISOString(utils.Date.now()),
+    };
+
+    await db.insert(journalEntriesTable).values(newEntry);
+
+    utils.Logger.info(`New journal entry created: ${newEntry.journalNumber}`);
+    res.status(201).json(utils.HTTP.createSuccessResponse(newEntry, 'Journal entry created successfully'));
+  } catch (error) {
+    utils.Logger.error('Create journal entry error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to create journal entry', 500));
+  }
+});
+
+// Get financial reports
+app.get('/reports/financial', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const accounts = await db.select().from(accountsTable);
+    
+    const report = {
+      assets: accounts.filter(a => a.accountType === 'Asset'),
+      liabilities: accounts.filter(a => a.accountType === 'Liability'),
+      equity: accounts.filter(a => a.accountType === 'Equity'),
+      revenue: accounts.filter(a => a.accountType === 'Revenue'),
+      expenses: accounts.filter(a => a.accountType === 'Expense'),
+    };
+
+    res.json(utils.HTTP.createSuccessResponse(report));
+  } catch (error) {
+    utils.Logger.error('Get financial report error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get financial report', 500));
+  }
+});
+
+// Error handling middleware
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  utils.Logger.error('Unhandled error', error);
+  res.status(500).json(utils.HTTP.createErrorResponse('Internal server error', 500));
+});
+
+// 404 handler
+app.use('*', (req: Request, res: Response) => {
+  res.status(404).json(utils.HTTP.createErrorResponse('Endpoint not found', 404));
+});
+
+// Start server
+async function startServer() {
+  try {
+    await initializeSampleAccounts();
+    
+    app.listen(PORT, () => {
+      utils.Logger.info(`Accounting Service running on port ${PORT}`);
+      utils.Logger.info(`Health check: http://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    utils.Logger.error('Failed to start Accounting Service', error);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+export default app;

@@ -1,0 +1,213 @@
+// Analytics Service - sales trends, AI forecasting (stubbed for now)
+// Port: 5006
+
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { 
+  SalesTrend,
+  DashboardStats,
+  ApiResponse,
+  schemas,
+  utils 
+} from '../../shared';
+
+const app = express();
+const PORT = process.env.ANALYTICS_SERVICE_PORT || 5006;
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+  credentials: true,
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000,
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use(limiter);
+
+// Authentication middleware
+async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json(utils.HTTP.createErrorResponse('Access token required', 401));
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    
+    const decoded = utils.JWT.verifyToken(token, jwtSecret);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json(utils.HTTP.createErrorResponse('Invalid token', 401));
+  }
+}
+
+// Generate sample analytics data
+function generateSampleData() {
+  const salesTrends: SalesTrend[] = [];
+  const dashboardStats: DashboardStats = {
+    totalProducts: 150,
+    totalCustomers: 1250,
+    totalOrders: 3200,
+    totalRevenue: 125000,
+    lowStockProducts: 12,
+    pendingOrders: 45,
+    activeSubscriptions: 890,
+    loyaltyPointsIssued: 45000,
+  };
+
+  // Generate 30 days of sales trends
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    
+    salesTrends.push({
+      date: utils.Date.formatDate(date),
+      sales: Math.floor(Math.random() * 5000) + 2000,
+      orders: Math.floor(Math.random() * 50) + 20,
+      customers: Math.floor(Math.random() * 20) + 10,
+    });
+  }
+
+  return { salesTrends, dashboardStats };
+}
+
+// Routes
+
+// Health check
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'healthy', 
+    service: 'analytics-service',
+    timestamp: utils.Date.now().toISOString(),
+  });
+});
+
+// Get dashboard stats
+app.get('/dashboard/stats', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { dashboardStats } = generateSampleData();
+    res.json(utils.HTTP.createSuccessResponse(dashboardStats));
+  } catch (error) {
+    utils.Logger.error('Get dashboard stats error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get dashboard stats', 500));
+  }
+});
+
+// Get sales trends
+app.get('/analytics/trends', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { salesTrends } = generateSampleData();
+    res.json(utils.HTTP.createSuccessResponse(salesTrends));
+  } catch (error) {
+    utils.Logger.error('Get sales trends error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get sales trends', 500));
+  }
+});
+
+// Get AI recommendations (stubbed)
+app.get('/analytics/recommendations', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const recommendations = [
+      {
+        id: utils.ID.generateId(),
+        type: 'inventory',
+        title: 'Low Stock Alert',
+        description: 'Consider restocking Wireless Bluetooth Headphones',
+        priority: 'high',
+        action: 'restock_product',
+        data: { productId: 'product_001', currentStock: 5 },
+      },
+      {
+        id: utils.ID.generateId(),
+        type: 'sales',
+        title: 'Sales Opportunity',
+        description: 'Promote Smart Fitness Watch to increase revenue',
+        priority: 'medium',
+        action: 'create_campaign',
+        data: { productId: 'product_002', potentialRevenue: 5000 },
+      },
+      {
+        id: utils.ID.generateId(),
+        type: 'customer',
+        title: 'Customer Retention',
+        description: 'Send loyalty rewards to high-value customers',
+        priority: 'low',
+        action: 'send_rewards',
+        data: { customerSegment: 'high_value', pointsToIssue: 100 },
+      },
+    ];
+
+    res.json(utils.HTTP.createSuccessResponse(recommendations));
+  } catch (error) {
+    utils.Logger.error('Get recommendations error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get recommendations', 500));
+  }
+});
+
+// Get forecasting data (stubbed)
+app.get('/analytics/forecast', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const forecast = {
+      salesForecast: {
+        nextMonth: 15000,
+        nextQuarter: 45000,
+        nextYear: 180000,
+      },
+      inventoryForecast: {
+        lowStockProducts: 8,
+        outOfStockRisk: 3,
+        recommendedReorder: ['product_001', 'product_003'],
+      },
+      customerForecast: {
+        newCustomers: 150,
+        churnRisk: 25,
+        loyaltyGrowth: 12,
+      },
+    };
+
+    res.json(utils.HTTP.createSuccessResponse(forecast));
+  } catch (error) {
+    utils.Logger.error('Get forecast error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get forecast', 500));
+  }
+});
+
+// Error handling middleware
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  utils.Logger.error('Unhandled error', error);
+  res.status(500).json(utils.HTTP.createErrorResponse('Internal server error', 500));
+});
+
+// 404 handler
+app.use('*', (req: Request, res: Response) => {
+  res.status(404).json(utils.HTTP.createErrorResponse('Endpoint not found', 404));
+});
+
+// Start server
+async function startServer() {
+  try {
+    app.listen(PORT, () => {
+      utils.Logger.info(`Analytics Service running on port ${PORT}`);
+      utils.Logger.info(`Health check: http://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    utils.Logger.error('Failed to start Analytics Service', error);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+export default app;

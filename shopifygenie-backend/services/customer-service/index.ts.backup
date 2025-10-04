@@ -1,0 +1,534 @@
+// Customer Service - customer profiles, loyalty, segmentation
+// Port: 5003
+
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { eq, and, like, gte, lte, desc, asc } from 'drizzle-orm';
+import { 
+  Customer, 
+  LoyaltyTransaction,
+  ApiResponse,
+  PaginatedResponse,
+  schemas,
+  utils 
+} from '../../shared';
+import { db, testConnection, closeConnection } from './drizzle/db';
+import { 
+  customers, 
+  loyaltyPoints, 
+  loyaltyTransactions, 
+  customerPreferences, 
+  customerSegments,
+  customerSegmentAssignments,
+  createCustomerSchema,
+  updateCustomerSchema,
+  loyaltyTransactionSchema,
+  createCustomerPreferenceSchema,
+  createCustomerSegmentSchema
+} from './drizzle/schema';
+
+const app = express();
+const PORT = process.env.CUSTOMER_SERVICE_PORT || 5003;
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+  credentials: true,
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use(limiter);
+
+// Authentication middleware
+async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json(utils.HTTP.createErrorResponse('Access token required', 401));
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    
+    const decoded = utils.JWT.verifyToken(token, jwtSecret);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json(utils.HTTP.createErrorResponse('Invalid token', 401));
+  }
+}
+
+// Initialize sample customers
+async function initializeSampleCustomers() {
+  try {
+    // Check if customers already exist
+    const existingCustomers = await db.select().from(customersTable).limit(1);
+    if (existingCustomers.length > 0) return;
+
+    const sampleCustomers = [
+      {
+        id: utils.ID.generateId(),
+        name: 'John Smith',
+        shopifyId: 'shopify_customer_001',
+        email: 'john.smith@example.com',
+        loyaltyPoints: 1250,
+        totalSpent: '1250.00',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+      {
+        id: utils.ID.generateId(),
+        name: 'Sarah Johnson',
+        shopifyId: 'shopify_customer_002',
+        email: 'sarah.johnson@example.com',
+        loyaltyPoints: 850,
+        totalSpent: '850.00',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+      {
+        id: utils.ID.generateId(),
+        name: 'Mike Wilson',
+        shopifyId: 'shopify_customer_003',
+        email: 'mike.wilson@example.com',
+        loyaltyPoints: 2100,
+        totalSpent: '2100.00',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+      {
+        id: utils.ID.generateId(),
+        name: 'Emily Davis',
+        shopifyId: 'shopify_customer_004',
+        email: 'emily.davis@example.com',
+        loyaltyPoints: 450,
+        totalSpent: '450.00',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+      {
+        id: utils.ID.generateId(),
+        name: 'David Brown',
+        shopifyId: 'shopify_customer_005',
+        email: 'david.brown@example.com',
+        loyaltyPoints: 3200,
+        totalSpent: '3200.00',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+    ];
+
+    for (const customer of sampleCustomers) {
+      await db.insert(customersTable).values(customer);
+    }
+
+    // Initialize sample loyalty transactions
+    const sampleTransactions = [
+      {
+        id: utils.ID.generateId(),
+        customerId: sampleCustomers[0].id,
+        points: 100,
+        type: 'earned' as const,
+        description: 'Purchase bonus - Wireless Headphones',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+      {
+        id: utils.ID.generateId(),
+        customerId: sampleCustomers[1].id,
+        points: 50,
+        type: 'earned' as const,
+        description: 'Purchase bonus - Smart Watch',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+      {
+        id: utils.ID.generateId(),
+        customerId: sampleCustomers[2].id,
+        points: 200,
+        type: 'redeemed' as const,
+        description: 'Redeemed for discount',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+      },
+    ];
+
+    for (const transaction of sampleTransactions) {
+      await db.insert(loyaltyTransactionsTable).values(transaction);
+    }
+
+    utils.Logger.info('Sample customers and loyalty transactions initialized');
+  } catch (error) {
+    utils.Logger.error('Failed to initialize sample customers', error);
+  }
+}
+
+// Routes
+
+// Health check
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'healthy', 
+    service: 'customer-service',
+    timestamp: utils.Date.now().toISOString(),
+  });
+});
+
+// Get all customers with pagination and filtering
+app.get('/customers', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const minLoyaltyPoints = parseInt(req.query.minLoyaltyPoints as string);
+
+    let query = db.select().from(customersTable);
+
+    // Apply filters
+    const conditions = [];
+    if (search) {
+      conditions.push(like(customersTable.name, `%${search}%`));
+    }
+    if (minLoyaltyPoints) {
+      conditions.push(gte(customersTable.loyaltyPoints, minLoyaltyPoints));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    // Get total count
+    const allCustomers = await query;
+    const total = allCustomers.length;
+
+    // Apply pagination
+    const offset = (page - 1) * limit;
+    const customers = allCustomers.slice(offset, offset + limit);
+
+    const response: PaginatedResponse<Customer> = {
+      success: true,
+      data: customers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    utils.Logger.error('Get customers error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get customers', 500));
+  }
+});
+
+// Get customer by ID
+app.get('/customers/:id', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const customers = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    const customer = customers[0];
+
+    if (!customer) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Customer not found', 404));
+    }
+
+    res.json(utils.HTTP.createSuccessResponse(customer));
+  } catch (error) {
+    utils.Logger.error('Get customer error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get customer', 500));
+  }
+});
+
+// Create new customer
+app.post('/customers', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const customerData = schemas.createCustomer.parse(req.body);
+
+    const newCustomer = {
+      id: utils.ID.generateId(),
+      ...customerData,
+      createdAt: utils.Date.toISOString(utils.Date.now()),
+    };
+
+    await db.insert(customersTable).values(newCustomer);
+
+    utils.Logger.info(`New customer created: ${newCustomer.name}`);
+    res.status(201).json(utils.HTTP.createSuccessResponse(newCustomer, 'Customer created successfully'));
+  } catch (error) {
+    utils.Logger.error('Create customer error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to create customer', 500));
+  }
+});
+
+// Update customer
+app.put('/customers/:id', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData = schemas.updateCustomer.parse(req.body);
+
+    // Check if customer exists
+    const existingCustomers = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    if (existingCustomers.length === 0) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Customer not found', 404));
+    }
+
+    await db.update(customersTable)
+      .set(updateData)
+      .where(eq(customersTable.id, id));
+
+    const customers = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    const customer = customers[0];
+
+    utils.Logger.info(`Customer updated: ${customer.name}`);
+    res.json(utils.HTTP.createSuccessResponse(customer, 'Customer updated successfully'));
+  } catch (error) {
+    utils.Logger.error('Update customer error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to update customer', 500));
+  }
+});
+
+// Delete customer
+app.delete('/customers/:id', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if customer exists
+    const existingCustomers = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    if (existingCustomers.length === 0) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Customer not found', 404));
+    }
+
+    await db.delete(customersTable).where(eq(customersTable.id, id));
+
+    utils.Logger.info(`Customer deleted: ${id}`);
+    res.json(utils.HTTP.createSuccessResponse(null, 'Customer deleted successfully'));
+  } catch (error) {
+    utils.Logger.error('Delete customer error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to delete customer', 500));
+  }
+});
+
+// Get customer loyalty transactions
+app.get('/customers/:id/loyalty-transactions', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const transactions = await db.select()
+      .from(loyaltyTransactionsTable)
+      .where(eq(loyaltyTransactionsTable.customerId, id))
+      .orderBy(loyaltyTransactionsTable.createdAt);
+
+    res.json(utils.HTTP.createSuccessResponse(transactions));
+  } catch (error) {
+    utils.Logger.error('Get loyalty transactions error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get loyalty transactions', 500));
+  }
+});
+
+// Add loyalty transaction
+app.post('/customers/:id/loyalty-transactions', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const transactionData = schemas.loyaltyTransaction.parse(req.body);
+
+    // Check if customer exists
+    const customers = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    const customer = customers[0];
+
+    if (!customer) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Customer not found', 404));
+    }
+
+    // Create transaction
+    const newTransaction = {
+      id: utils.ID.generateId(),
+      customerId: id,
+      ...transactionData,
+      createdAt: utils.Date.toISOString(utils.Date.now()),
+    };
+
+    await db.insert(loyaltyTransactionsTable).values(newTransaction);
+
+    // Update customer loyalty points
+    const pointsChange = transactionData.type === 'earned' 
+      ? transactionData.points 
+      : -transactionData.points;
+    const newLoyaltyPoints = Math.max(0, customer.loyaltyPoints + pointsChange);
+
+    await db.update(customersTable)
+      .set({ loyaltyPoints: newLoyaltyPoints })
+      .where(eq(customersTable.id, id));
+
+    utils.Logger.info(`Loyalty transaction added for customer ${customer.name}: ${pointsChange} points`);
+    res.status(201).json(utils.HTTP.createSuccessResponse(newTransaction, 'Loyalty transaction added successfully'));
+  } catch (error) {
+    utils.Logger.error('Add loyalty transaction error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to add loyalty transaction', 500));
+  }
+});
+
+// Get customer analytics
+app.get('/customers/:id/analytics', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Get customer
+    const customers = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    const customer = customers[0];
+
+    if (!customer) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Customer not found', 404));
+    }
+
+    // Get loyalty transactions
+    const transactions = await db.select()
+      .from(loyaltyTransactionsTable)
+      .where(eq(loyaltyTransactionsTable.customerId, id));
+
+    // Calculate analytics
+    const earnedPoints = transactions
+      .filter(t => t.type === 'earned')
+      .reduce((sum, t) => sum + t.points, 0);
+    
+    const redeemedPoints = transactions
+      .filter(t => t.type === 'redeemed')
+      .reduce((sum, t) => sum + t.points, 0);
+
+    const analytics = {
+      customerId: id,
+      totalSpent: customer.totalSpent,
+      currentLoyaltyPoints: customer.loyaltyPoints,
+      totalEarnedPoints: earnedPoints,
+      totalRedeemedPoints: redeemedPoints,
+      transactionCount: transactions.length,
+      averageTransactionValue: customer.totalSpent ? 
+        (parseFloat(customer.totalSpent) / transactions.length) : 0,
+      loyaltyTier: customer.loyaltyPoints >= 2000 ? 'Gold' : 
+                   customer.loyaltyPoints >= 1000 ? 'Silver' : 'Bronze',
+    };
+
+    res.json(utils.HTTP.createSuccessResponse(analytics));
+  } catch (error) {
+    utils.Logger.error('Get customer analytics error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get customer analytics', 500));
+  }
+});
+
+// Get top customers by loyalty points
+app.get('/customers/top-loyalty', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const customers = await db.select()
+      .from(customersTable)
+      .orderBy(customersTable.loyaltyPoints)
+      .limit(limit);
+
+    res.json(utils.HTTP.createSuccessResponse(customers));
+  } catch (error) {
+    utils.Logger.error('Get top customers error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get top customers', 500));
+  }
+});
+
+// Get customer segments
+app.get('/segments', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const segments = await db.select().from(customerSegmentsTable);
+
+    res.json(utils.HTTP.createSuccessResponse(segments));
+  } catch (error) {
+    utils.Logger.error('Get customer segments error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get customer segments', 500));
+  }
+});
+
+// Create customer segment
+app.post('/segments', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { name, description, criteria } = req.body;
+
+    const newSegment = {
+      id: utils.ID.generateId(),
+      name,
+      description,
+      criteria: JSON.stringify(criteria),
+      createdAt: utils.Date.toISOString(utils.Date.now()),
+      updatedAt: utils.Date.toISOString(utils.Date.now()),
+    };
+
+    await db.insert(customerSegmentsTable).values(newSegment);
+
+    utils.Logger.info(`New customer segment created: ${name}`);
+    res.status(201).json(utils.HTTP.createSuccessResponse(newSegment, 'Customer segment created successfully'));
+  } catch (error) {
+    utils.Logger.error('Create customer segment error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to create customer segment', 500));
+  }
+});
+
+// Get customers in segment
+app.get('/segments/:id/customers', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const segments = await db.select().from(customerSegmentsTable).where(eq(customerSegmentsTable.id, id));
+    const segment = segments[0];
+
+    if (!segment) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Segment not found', 404));
+    }
+
+    const criteria = JSON.parse(segment.criteria);
+    let customers = await db.select().from(customersTable);
+
+    // Apply segment criteria (simplified)
+    if (criteria.minLoyaltyPoints) {
+      customers = customers.filter(c => c.loyaltyPoints >= criteria.minLoyaltyPoints);
+    }
+    if (criteria.minTotalSpent) {
+      customers = customers.filter(c => c.totalSpent && parseFloat(c.totalSpent) >= criteria.minTotalSpent);
+    }
+
+    res.json(utils.HTTP.createSuccessResponse(customers));
+  } catch (error) {
+    utils.Logger.error('Get segment customers error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get segment customers', 500));
+  }
+});
+
+// Error handling middleware
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  utils.Logger.error('Unhandled error', error);
+  res.status(500).json(utils.HTTP.createErrorResponse('Internal server error', 500));
+});
+
+// 404 handler
+app.use('*', (req: Request, res: Response) => {
+  res.status(404).json(utils.HTTP.createErrorResponse('Endpoint not found', 404));
+});
+
+// Start server
+async function startServer() {
+  try {
+    await initializeSampleCustomers();
+    
+    app.listen(PORT, () => {
+      utils.Logger.info(`Customer Service running on port ${PORT}`);
+      utils.Logger.info(`Health check: http://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    utils.Logger.error('Failed to start Customer Service', error);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+export default app;

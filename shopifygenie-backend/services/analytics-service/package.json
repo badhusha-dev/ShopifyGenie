@@ -1,0 +1,41 @@
+{
+  "name": "analytics-service",
+  "version": "1.0.0",
+  "description": "Analytics and AI microservice for ShopifyGenie",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "tsx index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "jsonwebtoken": "^9.0.2",
+    "drizzle-orm": "^0.39.1",
+    "postgres": "^3.4.4",
+    "dotenv": "^16.4.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.16.11",
+    "typescript": "^5.6.3",
+    "tsx": "^4.20.5"
+  },
+  "keywords": [
+    "microservice",
+    "analytics",
+    "ai",
+    "forecasting",
+    "express",
+    "typescript"
+  ],
+  "author": "ShopifyGenie Team",
+  "license": "MIT"
+}

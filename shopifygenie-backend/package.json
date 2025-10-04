@@ -1,0 +1,53 @@
+{
+  "name": "shopifygenie-backend",
+  "version": "1.0.0",
+  "description": "ShopifyGenie Microservices Backend",
+  "main": "api-gateway/index.ts",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:auth\" \"npm run dev:products\" \"npm run dev:customers\" \"npm run dev:orders\" \"npm run dev:accounting\" \"npm run dev:analytics\" \"npm run dev:gateway\"",
+    "dev:auth": "cd services/auth-service && npm run dev",
+    "dev:products": "cd services/product-service && npm run dev",
+    "dev:customers": "cd services/customer-service && npm run dev",
+    "dev:orders": "cd services/order-service && npm run dev",
+    "dev:accounting": "cd services/accounting-service && npm run dev",
+    "dev:analytics": "cd services/analytics-service && npm run dev",
+    "dev:gateway": "cd api-gateway && npm run dev",
+    "build": "npm run build:shared && npm run build:services && npm run build:gateway",
+    "build:shared": "cd shared && npm run build",
+    "build:services": "npm run build:auth && npm run build:products && npm run build:customers && npm run build:orders && npm run build:accounting && npm run build:analytics",
+    "build:auth": "cd services/auth-service && npm run build",
+    "build:products": "cd services/product-service && npm run build",
+    "build:customers": "cd services/customer-service && npm run build",
+    "build:orders": "cd services/order-service && npm run build",
+    "build:accounting": "cd services/accounting-service && npm run build",
+    "build:analytics": "cd services/analytics-service && npm run build",
+    "build:gateway": "cd api-gateway && npm run build",
+    "start": "cd api-gateway && npm start",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "install:all": "npm install && cd shared && npm install && cd ../services/auth-service && npm install && cd ../product-service && npm install && cd ../customer-service && npm install && cd ../order-service && npm install && cd ../accounting-service && npm install && cd ../analytics-service && npm install && cd ../../api-gateway && npm install"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.11",
+    "typescript": "^5.6.3"
+  },
+  "keywords": [
+    "microservices",
+    "shopify",
+    "ecommerce",
+    "express",
+    "typescript",
+    "docker"
+  ],
+  "author": "ShopifyGenie Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/shopifygenie-backend.git"
+  }
+}

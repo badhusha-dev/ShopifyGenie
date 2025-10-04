@@ -652,12 +652,12 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Global Search Section */}
-        <div className="row g-4 mb-4">
+        {/* Global Search Section - Hidden */}
+        {/* <div className="row g-4 mb-4">
           <div className="col-12">
             <GlobalSearch />
           </div>
-        </div>
+        </div> */}
 
         {/* System Monitoring Section */}
         <div className="row g-4 mb-4">

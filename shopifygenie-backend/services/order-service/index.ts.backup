@@ -1,0 +1,466 @@
+// Order Service - order creation, status tracking, payments
+// Port: 5004
+
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { eq, and, like, gte, lte } from 'drizzle-orm';
+import { 
+  Order, 
+  ApiResponse,
+  PaginatedResponse,
+  schemas,
+  utils 
+} from '../../shared';
+
+const app = express();
+const PORT = process.env.ORDER_SERVICE_PORT || 5004;
+
+// Database setup
+const ordersTable = sqliteTable('orders', {
+  id: text('id').primaryKey(),
+  shopifyId: text('shopifyId'),
+  createdAt: text('createdAt'),
+  customerId: text('customerId'),
+  total: text('total').notNull(),
+  pointsEarned: integer('pointsEarned').notNull().default(0),
+  status: text('status').notNull().default('pending'),
+  shippingAddress: text('shippingAddress'), // JSON string
+  paymentStatus: text('paymentStatus').default('pending'),
+  paymentMethod: text('paymentMethod'),
+  notes: text('notes'),
+});
+
+const orderItemsTable = sqliteTable('orderItems', {
+  id: text('id').primaryKey(),
+  orderId: text('orderId').notNull(),
+  productId: text('productId').notNull(),
+  productName: text('productName').notNull(),
+  quantity: integer('quantity').notNull(),
+  price: text('price').notNull(),
+  total: text('total').notNull(),
+});
+
+const orderStatusHistoryTable = sqliteTable('orderStatusHistory', {
+  id: text('id').primaryKey(),
+  orderId: text('orderId').notNull(),
+  status: text('status').notNull(),
+  timestamp: text('timestamp').notNull(),
+  notes: text('notes'),
+  updatedBy: text('updatedBy'),
+});
+
+// Initialize database (in-memory for demo)
+const db = drizzle({
+  sqlite: {
+    filename: ':memory:',
+  },
+});
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+  credentials: true,
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use(limiter);
+
+// Authentication middleware
+async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json(utils.HTTP.createErrorResponse('Access token required', 401));
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    
+    const decoded = utils.JWT.verifyToken(token, jwtSecret);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json(utils.HTTP.createErrorResponse('Invalid token', 401));
+  }
+}
+
+// Initialize sample orders
+async function initializeSampleOrders() {
+  try {
+    // Check if orders already exist
+    const existingOrders = await db.select().from(ordersTable).limit(1);
+    if (existingOrders.length > 0) return;
+
+    const sampleOrders = [
+      {
+        id: utils.ID.generateId(),
+        shopifyId: 'shopify_order_001',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+        customerId: 'customer_001',
+        total: '199.99',
+        pointsEarned: 200,
+        status: 'delivered',
+        shippingAddress: JSON.stringify({
+          street: '123 Main St',
+          city: 'New York',
+          state: 'NY',
+          zipCode: '10001',
+          country: 'USA',
+        }),
+        paymentStatus: 'paid',
+        paymentMethod: 'credit_card',
+        notes: 'Customer requested express shipping',
+      },
+      {
+        id: utils.ID.generateId(),
+        shopifyId: 'shopify_order_002',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+        customerId: 'customer_002',
+        total: '99.99',
+        pointsEarned: 100,
+        status: 'processing',
+        shippingAddress: JSON.stringify({
+          street: '456 Oak Ave',
+          city: 'Los Angeles',
+          state: 'CA',
+          zipCode: '90210',
+          country: 'USA',
+        }),
+        paymentStatus: 'paid',
+        paymentMethod: 'paypal',
+        notes: null,
+      },
+      {
+        id: utils.ID.generateId(),
+        shopifyId: 'shopify_order_003',
+        createdAt: utils.Date.toISOString(utils.Date.now()),
+        customerId: 'customer_003',
+        total: '299.99',
+        pointsEarned: 300,
+        status: 'shipped',
+        shippingAddress: JSON.stringify({
+          street: '789 Pine Rd',
+          city: 'Chicago',
+          state: 'IL',
+          zipCode: '60601',
+          country: 'USA',
+        }),
+        paymentStatus: 'paid',
+        paymentMethod: 'credit_card',
+        notes: 'Fragile - handle with care',
+      },
+    ];
+
+    for (const order of sampleOrders) {
+      await db.insert(ordersTable).values(order);
+    }
+
+    utils.Logger.info('Sample orders initialized');
+  } catch (error) {
+    utils.Logger.error('Failed to initialize sample orders', error);
+  }
+}
+
+// Routes
+
+// Health check
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'healthy', 
+    service: 'order-service',
+    timestamp: utils.Date.now().toISOString(),
+  });
+});
+
+// Get all orders with pagination and filtering
+app.get('/orders', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const status = req.query.status as string;
+    const customerId = req.query.customerId as string;
+
+    let query = db.select().from(ordersTable);
+
+    // Apply filters
+    const conditions = [];
+    if (status) {
+      conditions.push(eq(ordersTable.status, status));
+    }
+    if (customerId) {
+      conditions.push(eq(ordersTable.customerId, customerId));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    // Get total count
+    const allOrders = await query;
+    const total = allOrders.length;
+
+    // Apply pagination
+    const offset = (page - 1) * limit;
+    const orders = allOrders.slice(offset, offset + limit);
+
+    const response: PaginatedResponse<Order> = {
+      success: true,
+      data: orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    utils.Logger.error('Get orders error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get orders', 500));
+  }
+});
+
+// Get order by ID
+app.get('/orders/:id', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const orders = await db.select().from(ordersTable).where(eq(ordersTable.id, id));
+    const order = orders[0];
+
+    if (!order) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Order not found', 404));
+    }
+
+    // Get order items
+    const items = await db.select()
+      .from(orderItemsTable)
+      .where(eq(orderItemsTable.orderId, id));
+
+    // Get status history
+    const statusHistory = await db.select()
+      .from(orderStatusHistoryTable)
+      .where(eq(orderStatusHistoryTable.orderId, id))
+      .orderBy(orderStatusHistoryTable.timestamp);
+
+    const orderDetails = {
+      ...order,
+      items,
+      statusHistory,
+    };
+
+    res.json(utils.HTTP.createSuccessResponse(orderDetails));
+  } catch (error) {
+    utils.Logger.error('Get order error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get order', 500));
+  }
+});
+
+// Create new order
+app.post('/orders', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const orderData = schemas.createOrder.parse(req.body);
+
+    const newOrder = {
+      id: utils.ID.generateId(),
+      shopifyId: null,
+      createdAt: utils.Date.toISOString(utils.Date.now()),
+      customerId: orderData.customerId,
+      total: orderData.items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0).toFixed(2),
+      pointsEarned: Math.floor(orderData.items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0) / 10), // 1 point per $10
+      status: orderData.status,
+      shippingAddress: JSON.stringify(orderData.shippingAddress),
+      paymentStatus: 'pending',
+      paymentMethod: null,
+      notes: null,
+    };
+
+    await db.insert(ordersTable).values(newOrder);
+
+    // Create order items
+    for (const item of orderData.items) {
+      const orderItem = {
+        id: utils.ID.generateId(),
+        orderId: newOrder.id,
+        productId: item.productId,
+        productName: `Product ${item.productId}`, // In real app, fetch from product service
+        quantity: item.quantity,
+        price: item.price,
+        total: (parseFloat(item.price) * item.quantity).toFixed(2),
+      };
+
+      await db.insert(orderItemsTable).values(orderItem);
+    }
+
+    // Create initial status history entry
+    const statusHistory = {
+      id: utils.ID.generateId(),
+      orderId: newOrder.id,
+      status: orderData.status,
+      timestamp: utils.Date.toISOString(utils.Date.now()),
+      notes: 'Order created',
+      updatedBy: req.user?.userId,
+    };
+
+    await db.insert(orderStatusHistoryTable).values(statusHistory);
+
+    utils.Logger.info(`New order created: ${newOrder.id}`);
+    res.status(201).json(utils.HTTP.createSuccessResponse(newOrder, 'Order created successfully'));
+  } catch (error) {
+    utils.Logger.error('Create order error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to create order', 500));
+  }
+});
+
+// Update order status
+app.patch('/orders/:id/status', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    // Check if order exists
+    const orders = await db.select().from(ordersTable).where(eq(ordersTable.id, id));
+    const order = orders[0];
+
+    if (!order) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Order not found', 404));
+    }
+
+    // Update order status
+    await db.update(ordersTable)
+      .set({ status })
+      .where(eq(ordersTable.id, id));
+
+    // Add status history entry
+    const statusHistory = {
+      id: utils.ID.generateId(),
+      orderId: id,
+      status,
+      timestamp: utils.Date.toISOString(utils.Date.now()),
+      notes: notes || `Status changed to ${status}`,
+      updatedBy: req.user?.userId,
+    };
+
+    await db.insert(orderStatusHistoryTable).values(statusHistory);
+
+    utils.Logger.info(`Order ${id} status updated to ${status}`);
+    res.json(utils.HTTP.createSuccessResponse(null, 'Order status updated successfully'));
+  } catch (error) {
+    utils.Logger.error('Update order status error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to update order status', 500));
+  }
+});
+
+// Process payment
+app.post('/orders/:id/payment', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { paymentMethod, amount } = req.body;
+
+    // Check if order exists
+    const orders = await db.select().from(ordersTable).where(eq(ordersTable.id, id));
+    const order = orders[0];
+
+    if (!order) {
+      return res.status(404).json(utils.HTTP.createErrorResponse('Order not found', 404));
+    }
+
+    // Simulate payment processing
+    const paymentSuccess = Math.random() > 0.1; // 90% success rate for demo
+
+    if (paymentSuccess) {
+      await db.update(ordersTable)
+        .set({ 
+          paymentStatus: 'paid',
+          paymentMethod,
+        })
+        .where(eq(ordersTable.id, id));
+
+      utils.Logger.info(`Payment processed for order ${id}: ${amount}`);
+      res.json(utils.HTTP.createSuccessResponse(null, 'Payment processed successfully'));
+    } else {
+      res.status(400).json(utils.HTTP.createErrorResponse('Payment failed', 400));
+    }
+  } catch (error) {
+    utils.Logger.error('Process payment error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to process payment', 500));
+  }
+});
+
+// Get order analytics
+app.get('/orders/analytics', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+
+    let query = db.select().from(ordersTable);
+
+    if (startDate && endDate) {
+      // In a real app, you'd filter by date range
+      // For demo, we'll just get all orders
+    }
+
+    const orders = await query;
+
+    const analytics = {
+      totalOrders: orders.length,
+      totalRevenue: orders.reduce((sum, order) => sum + parseFloat(order.total), 0),
+      averageOrderValue: orders.length > 0 ? 
+        orders.reduce((sum, order) => sum + parseFloat(order.total), 0) / orders.length : 0,
+      ordersByStatus: orders.reduce((acc, order) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      totalPointsEarned: orders.reduce((sum, order) => sum + order.pointsEarned, 0),
+    };
+
+    res.json(utils.HTTP.createSuccessResponse(analytics));
+  } catch (error) {
+    utils.Logger.error('Get order analytics error', error);
+    res.status(500).json(utils.HTTP.createErrorResponse('Failed to get order analytics', 500));
+  }
+});
+
+// Error handling middleware
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  utils.Logger.error('Unhandled error', error);
+  res.status(500).json(utils.HTTP.createErrorResponse('Internal server error', 500));
+});
+
+// 404 handler
+app.use('*', (req: Request, res: Response) => {
+  res.status(404).json(utils.HTTP.createErrorResponse('Endpoint not found', 404));
+});
+
+// Start server
+async function startServer() {
+  try {
+    await initializeSampleOrders();
+    
+    app.listen(PORT, () => {
+      utils.Logger.info(`Order Service running on port ${PORT}`);
+      utils.Logger.info(`Health check: http://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    utils.Logger.error('Failed to start Order Service', error);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+export default app;
