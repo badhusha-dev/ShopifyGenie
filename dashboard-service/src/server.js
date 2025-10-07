@@ -10,6 +10,7 @@ const setupSwagger = require('./config/swagger');
 const { startConsumer, stopConsumer } = require('./kafka/consumer');
 const { startCronJobs } = require('./utils/cronJobs');
 const { errorHandler, notFoundHandler } = require('./utils/errorHandler');
+const { runMigrations } = require('./config/flyway');
 const logger = require('./config/logger');
 
 const app = express();
@@ -40,8 +41,8 @@ const startServer = async () => {
     const dbConnected = await testConnection();
     
     if (dbConnected) {
-      await sequelize.sync({ alter: false });
-      logger.info('✅ Database tables synchronized');
+      await runMigrations();
+      logger.info('✅ Database migrations completed');
     } else {
       logger.warn('⚠️  Database not connected - running without database');
     }

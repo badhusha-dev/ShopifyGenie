@@ -5,7 +5,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "migrate": "node src/utils/migrate.js",
+    "migrate:info": "node -e \"require('./src/config/flyway').getMigrationInfo().then(r => console.log(r))\"",
+    "migrate:validate": "node -e \"require('./src/config/flyway').validateMigrations().then(r => console.log(r))\""
   },
   "keywords": [
     "dashboard",
