@@ -1,0 +1,18 @@
+{
+  "name": "dashboard-service",
+  "version": "1.0.0",
+  "description": "Dashboard microservice for aggregated business metrics and analytics",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "dashboard",
+    "microservice",
+    "kafka",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "ISC"
+}
