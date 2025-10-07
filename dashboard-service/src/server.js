@@ -6,6 +6,7 @@ require('dotenv').config();
 const { sequelize, testConnection } = require('./config/database');
 const { DashboardMetrics, RealtimeEvents } = require('./models');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const dataRoutes = require('./routes/dataRoutes');
 const setupSwagger = require('./config/swagger');
 const { startConsumer, stopConsumer } = require('./kafka/consumer');
 const { startCronJobs } = require('./utils/cronJobs');
@@ -30,6 +31,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/data', dataRoutes);
 
 setupSwagger(app);
 
@@ -41,10 +43,14 @@ const startServer = async () => {
     const dbConnected = await testConnection();
     
     if (dbConnected) {
-      await runMigrations();
-      logger.info('✅ Database migrations completed');
+      try {
+        await runMigrations();
+        logger.info('✅ Database migrations completed');
+      } catch (migrationError) {
+        logger.warn('⚠️  Database migrations failed, using backend seed data:', migrationError.message);
+      }
     } else {
-      logger.warn('⚠️  Database not connected - running without database');
+      logger.warn('⚠️  Database not connected - using backend seed data');
     }
 
     startCronJobs();

@@ -5,13 +5,19 @@ require('dotenv').config();
 const createFlywayConfig = () => {
   const dbUrl = process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/dashboarddb';
   
-  const urlParts = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+  let user, password, host, port, database;
   
-  if (!urlParts) {
+  try {
+    const url = new URL(dbUrl);
+    user = url.username;
+    password = url.password;
+    host = url.hostname;
+    port = url.port || '5432';
+    database = url.pathname.substring(1);
+  } catch (error) {
+    logger.error('Failed to parse DATABASE_URL:', error);
     throw new Error('Invalid DATABASE_URL format. Expected: postgresql://user:pass@host:port/database');
   }
-
-  const [, user, password, host, port, database] = urlParts;
 
   const config = {
     url: `jdbc:postgresql://${host}:${port}/${database}`,

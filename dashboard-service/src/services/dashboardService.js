@@ -1,6 +1,7 @@
 const { DashboardMetrics, RealtimeEvents } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
+const { historicalMetrics, realtimeEvents } = require('../utils/seedData');
 
 class DashboardService {
   async getSalesSummary() {
@@ -89,25 +90,30 @@ class DashboardService {
   async getTodayMetrics() {
     const today = new Date().toISOString().split('T')[0];
     
-    const [metrics] = await DashboardMetrics.findOrCreate({
-      where: { date: today },
-      defaults: {
-        date: today,
-        totalSales: 125000.00,
-        totalRevenue: 145000.00,
-        totalProfit: 45000.00,
-        lowStockCount: 15,
-        totalItems: 342,
-        newCustomers: 28,
-        activeCustomers: 1547,
-        churnRate: 2.3,
-        cashFlow: 89000.00,
-        accountsReceivable: 67000.00,
-        accountsPayable: 34000.00
-      }
-    });
-
-    return metrics;
+    try {
+      const [metrics] = await DashboardMetrics.findOrCreate({
+        where: { date: today },
+        defaults: {
+          date: today,
+          totalSales: 125000.00,
+          totalRevenue: 145000.00,
+          totalProfit: 45000.00,
+          lowStockCount: 15,
+          totalItems: 342,
+          newCustomers: 28,
+          activeCustomers: 1547,
+          churnRate: 2.3,
+          cashFlow: 89000.00,
+          accountsReceivable: 67000.00,
+          accountsPayable: 34000.00
+        }
+      });
+      return metrics;
+    } catch (error) {
+      logger.warn('Database not available, using backend seed data');
+      const todayData = historicalMetrics.find(m => m.date === today) || historicalMetrics[historicalMetrics.length - 1];
+      return todayData;
+    }
   }
 
   async processEvent(eventType, eventSource, eventData) {
