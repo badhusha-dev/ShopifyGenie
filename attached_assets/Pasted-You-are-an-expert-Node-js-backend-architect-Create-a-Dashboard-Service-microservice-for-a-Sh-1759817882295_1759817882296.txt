@@ -1,0 +1,72 @@
+You are an expert Node.js backend architect.  
+Create a **Dashboard Service** microservice for a Shopify-like business management system.  
+
+### 🎯 Overview
+This service provides aggregated business metrics, analytics, and real-time dashboard data for the platform.
+
+### ⚙️ Tech Stack
+- Node.js (JavaScript, not TypeScript)
+- Express.js for REST API
+- PostgreSQL with pg or Sequelize for ORM
+- Kafka for inter-service event streaming (use kafkajs)
+- Swagger (OpenAPI) for API docs
+- dotenv for environment config
+- Winston or pino for logging
+- CORS + Helmet for security middleware
+
+### 🧩 Functional Scope
+The Dashboard Service should:
+1. Expose REST endpoints to return business KPIs:
+   - `/api/dashboard/sales-summary` → total sales, revenue, profit
+   - `/api/dashboard/inventory-status` → low stock count, total items
+   - `/api/dashboard/customer-metrics` → new customers, active customers, churn rate
+   - `/api/dashboard/financial-overview` → cash flow summary, receivables, payables
+2. Consume Kafka events from other services:
+   - **sales-service** → topic: `sales.completed`
+   - **inventory-service** → topic: `inventory.updated`
+   - **customer-service** → topic: `customer.registered`
+   - **accounting-service** → topic: `transaction.recorded`
+3. Store aggregated metrics in PostgreSQL tables:
+   - `dashboard_metrics` for daily aggregates
+   - `realtime_events` for live updates
+4. Provide a `/api/dashboard/realtime` WebSocket endpoint for pushing live updates (optional stub).
+5. Include a background job (using node-cron or bull) to compute daily summaries.
+6. Include proper modular structure:
+/src
+/config
+/controllers
+/routes
+/services
+/models
+/kafka
+/utils
+server.js
+
+markdown
+Copy code
+7. Include an `.env.example` with:
+PORT=5001
+DATABASE_URL=postgres://user:pass@localhost:5432/dashboarddb
+KAFKA_BROKER=localhost:9092
+KAFKA_CLIENT_ID=dashboard-service
+
+pgsql
+Copy code
+
+### 🧰 Requirements
+- Implement Kafka consumer logic to process and log incoming messages.
+- Implement PostgreSQL connection with auto table creation (via Sequelize sync).
+- Add dummy seed data for `/api/dashboard/sales-summary` endpoint.
+- Include Swagger UI documentation at `/api-docs`.
+- Include basic error handling middleware.
+- Include sample log outputs for received Kafka events.
+
+### ✅ Deliverables
+- Complete folder structure with working Express server.
+- Example endpoint `/api/dashboard/sales-summary` returning mock aggregated data.
+- Kafka consumer listening to multiple topics.
+- PostgreSQL integration setup (with sample table and connection test).
+- Swagger UI ready.
+- Ready-to-run instructions in README.
+
+Generate the entire microservice in one project folder ready to deploy or run in Replit.
