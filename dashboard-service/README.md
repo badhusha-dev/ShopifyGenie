@@ -39,7 +39,7 @@ npm start
 
 Once running, access the Swagger UI documentation at:
 ```
-http://localhost:5001/api-docs
+http://localhost:8000/api-docs
 ```
 
 ## 🔌 API Endpoints
@@ -92,7 +92,7 @@ The service consumes events from:
 Environment variables (.env):
 
 ```
-PORT=5001
+PORT=8000
 DATABASE_URL=postgresql://user:pass@localhost:5432/dashboarddb
 KAFKA_BROKER=localhost:9092
 KAFKA_CLIENT_ID=dashboard-service
@@ -148,7 +148,7 @@ Daily summary computation runs at midnight using node-cron:
 
 Example request:
 ```bash
-curl http://localhost:5001/api/dashboard/sales-summary
+curl http://localhost:8000/api/dashboard/sales-summary
 ```
 
 Expected response:

@@ -13,7 +13,7 @@ const { errorHandler, notFoundHandler } = require('./utils/errorHandler');
 const logger = require('./config/logger');
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 8000;
 
 app.use(helmet());
 app.use(cors());

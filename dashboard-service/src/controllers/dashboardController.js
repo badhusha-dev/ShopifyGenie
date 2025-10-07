@@ -73,7 +73,7 @@ const getRealtimeEndpoint = async (req, res) => {
   res.json({
     success: true,
     message: 'WebSocket endpoint stub - implement WebSocket server for real-time updates',
-    endpoint: 'ws://localhost:5001/realtime'
+    endpoint: 'ws://localhost:8000/realtime'
   });
 };
 
