@@ -70,7 +70,7 @@ const TopNav: React.FC<TopNavProps> = ({
         {/* Left Section - Logo & App Name */}
         <div className="d-flex align-items-center">
           <button
-            className="btn btn-outline-secondary d-lg-none me-3 btn-ripple"
+            className="btn btn-outline-secondary me-3 btn-ripple"
             type="button"
             onClick={onMenuToggle}
             aria-label="Toggle sidebar"

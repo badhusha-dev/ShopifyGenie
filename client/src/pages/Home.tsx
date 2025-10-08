@@ -20,7 +20,7 @@ import SystemMonitoring from '../components/SystemMonitoring';
 import BackupRestore from '../components/BackupRestore';
 import ThemeSettings from '../components/ThemeSettings';
 import MobileOptimization from '../components/MobileOptimization';
-import RealTimeNotifications from '../components/RealTimeNotifications';
+// import RealTimeNotifications from '../components/RealTimeNotifications';
 import QuickActions from '../components/QuickActions';
 import LiveDashboardWidgets from '../components/LiveDashboardWidgets';
 
@@ -694,13 +694,13 @@ const Dashboard = () => {
       <QuickActions />
 
       {/* Real-time Notifications */}
-      <div className="row g-4 mb-4">
+      {/* <div className="row g-4 mb-4">
         <div className="col-12">
           <div className="d-flex justify-content-end">
             <RealTimeNotifications />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* AI Chat and Notifications */}
       <AIChat />
