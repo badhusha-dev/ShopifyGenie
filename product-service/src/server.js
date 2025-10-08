@@ -10,10 +10,11 @@ const swaggerSpec = require('./config/swagger');
 const productRoutes = require('./routes/productRoutes');
 const { initProducer, disconnectProducer } = require('./kafka/producer');
 const { initConsumer, disconnectConsumer } = require('./kafka/consumer');
+const { seedProducts } = require('./utils/seedData');
 const logger = require('./config/logger');
 
 const app = express();
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 8008;
 
 // Middleware
 app.use(helmet());
@@ -68,6 +69,9 @@ const startServer = async () => {
     if (dbConnected) {
       // Sync database models
       await syncDatabase();
+      
+      // Seed initial data
+      await seedProducts();
     } else {
       logger.warn('⚠️  Database not connected - running without persistence');
     }
