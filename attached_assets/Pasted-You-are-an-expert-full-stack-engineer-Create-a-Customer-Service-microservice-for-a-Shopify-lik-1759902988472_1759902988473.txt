@@ -1,0 +1,175 @@
+You are an expert full-stack engineer.
+Create a **Customer Service** microservice for a Shopify-like business management system.
+This service manages customer profiles, loyalty points, and analytics, integrating with React frontend and Kafka-based backend ecosystem.
+
+---
+
+### 🎯 Purpose
+- Manage customer registration, updates, and loyalty programs.
+- Provide customer analytics to the Dashboard Service.
+- Consume sales events to calculate loyalty points.
+- Publish updates when customers reach new loyalty tiers.
+
+---
+
+### ⚙️ Tech Stack
+
+**Backend:**
+- Node.js (JavaScript)
+- Express.js for REST API
+- PostgreSQL (pg or Sequelize)
+- KafkaJS for producer & consumer
+- dotenv for config
+- Helmet + CORS for security
+- Winston or Pino for logging
+- Swagger UI for API documentation
+
+**Frontend (for integration test):**
+- React (Vite)
+- Tailwind CSS + shadcn/ui
+- Axios + React Query
+- Recharts for loyalty & customer growth visualization
+
+---
+
+### 🧩 Backend Functional Scope
+
+#### Endpoints
+POST /api/customers → register new customer
+GET /api/customers → list all customers
+GET /api/customers/:id → view customer profile
+PUT /api/customers/:id → update customer info
+DELETE /api/customers/:id → deactivate customer
+GET /api/customers/loyalty → list loyalty tiers and points
+GET /api/customers/analytics → return total customers, active customers, loyalty distribution
+
+markdown
+Copy code
+
+#### Database (PostgreSQL)
+Tables:
+- `customers (id, name, email, phone, tier, points, is_active, created_at, updated_at)`
+- `loyalty_tiers (id, name, min_points, discount_rate, created_at)`
+- `customer_events (id, event_type, customer_id, payload, created_at)`
+
+#### Loyalty Logic
+- Each sale event adds points:
+  - `1 point per $10 spent`
+- Tier thresholds:
+  - Bronze: 0–99 pts  
+  - Silver: 100–499 pts  
+  - Gold: 500–999 pts  
+  - Platinum: 1000+ pts
+- When a tier is upgraded, publish event to Kafka:
+  - Topic: `customer.tier-upgraded`
+
+#### Kafka Integration
+- **Consume**:  
+  - `sales.completed` (to add loyalty points)
+- **Publish**:  
+  - `customer.registered`
+  - `customer.updated`
+  - `customer.tier-upgraded`
+- **Notify Dashboard Service** via Kafka when:
+  - new customer registered  
+  - tier upgraded
+
+#### Swagger Docs
+- Available at `/api-docs`
+
+#### `.env.example`
+PORT=5004
+DATABASE_URL=postgres://user:pass@localhost:5432/customerdb
+KAFKA_BROKER=localhost:9092
+KAFKA_CLIENT_ID=customer-service
+
+shell
+Copy code
+
+#### Folder Structure
+/src
+/config
+/controllers
+/routes
+/models
+/services
+/kafka
+/utils
+server.js
+
+yaml
+Copy code
+
+---
+
+### 💻 Frontend (Integration Example)
+
+Inside `/frontend`, create a small **Customer Dashboard** that displays:
+
+#### Features
+- Form to register new customers
+- Table showing all customers and their loyalty tiers
+- Summary cards:
+  - Total customers
+  - Active customers
+  - Top tier distribution
+- Chart (Recharts Pie Chart) showing loyalty tier distribution
+- Real-time updates (poll every 10 seconds)
+
+#### Folder
+/frontend
+/src
+/components
+CustomerTable.jsx
+CustomerForm.jsx
+LoyaltyChart.jsx
+CustomerSummaryCards.jsx
+App.jsx
+main.jsx
+
+shell
+Copy code
+
+#### Commands
+backend
+npm install
+npm run dev
+
+frontend
+cd frontend
+npm install
+npm run dev
+
+yaml
+Copy code
+
+---
+
+### ✅ Deliverables
+- Fully functional **Customer Service backend** (Express + PostgreSQL + Kafka)
+- Integrated **React frontend** for customer dashboard
+- Kafka producer + consumer logic
+- Swagger UI ready
+- `.env.example` included
+- Sample seed data for customers and loyalty tiers
+
+---
+
+### 💡 Next Steps (after generation)
+After this service is generated, tell Replit AI:
+
+1. **To integrate with Sales Service for loyalty points**
+   > “Update the Customer Service so that when it consumes `sales.completed`, it increases customer points and upgrades tier if eligible.”
+
+2. **To connect with Dashboard Service**
+   > “Publish a `customer.metrics` Kafka message whenever a new customer is created or tier is upgraded.”
+
+3. **To secure endpoints**
+   > “Add JWT middleware for `/api/customers/*` routes.”
+
+4. **To enhance frontend**
+   > “Add a loyalty tier filter and search bar to the customer table.”
+
+---
+
+Would you like me to prepare the **next service prompt (Accounting Service)** next — which handles double-entry transactions, invoices, and integrates with the Sales and Dashboard services?
