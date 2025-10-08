@@ -1,0 +1,28 @@
+{
+  "individualResults": [
+    {
+      "schemaVersion": null,
+      "schemaName": "",
+      "migrations": [],
+      "flywayVersion": "9.22.3",
+      "database": "heliumdb",
+      "allSchemasEmpty": false,
+      "timestamp": "2025-10-08T03:41:32.173099622",
+      "operation": "info",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "schemaVersion": null,
+      "schemaName": "",
+      "migrations": [],
+      "flywayVersion": "9.22.3",
+      "database": "heliumdb",
+      "allSchemasEmpty": false,
+      "timestamp": "2025-10-08T03:43:54.260914017",
+      "operation": "info",
+      "exception": null,
+      "licenseFailed": false
+    }
+  ]
+}

@@ -33,6 +33,10 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Dashboard Service"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -66,6 +70,18 @@ args = "npm run dev"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd server && npm run dev"
+
+[[workflows.workflow]]
+name = "Dashboard Service"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd dashboard-service && PORT=8000 node src/server.js"
+waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 expertMode = true
