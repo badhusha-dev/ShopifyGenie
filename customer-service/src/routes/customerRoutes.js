@@ -114,28 +114,4 @@ router.put('/:id', customerController.updateCustomer);
  */
 router.delete('/:id', customerController.deactivateCustomer);
 
-/**
- * @swagger
- * /api/customers/loyalty:
- *   get:
- *     summary: Get loyalty tiers
- *     tags: [Loyalty]
- *     responses:
- *       200:
- *         description: List of loyalty tiers
- */
-router.get('/loyalty', customerController.getLoyaltyTiers);
-
-/**
- * @swagger
- * /api/customers/analytics:
- *   get:
- *     summary: Get customer analytics
- *     tags: [Analytics]
- *     responses:
- *       200:
- *         description: Customer analytics data
- */
-router.get('/analytics', customerController.getCustomerAnalytics);
-
 module.exports = router;

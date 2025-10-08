@@ -34,6 +34,7 @@ cd customer-service
 npm install
 npm run dev
 ```
+Backend runs on port 3000
 
 ### Frontend
 ```bash
@@ -41,6 +42,7 @@ cd customer-service/frontend
 npm install
 npm run dev
 ```
+Frontend runs on port 3002
 
 ## API Endpoints
 
@@ -56,8 +58,8 @@ npm run dev
 - `GET /api/customers/analytics` - Get customer analytics
 
 ### Documentation
-- Swagger UI: http://localhost:5004/api-docs
-- Health Check: http://localhost:5004/health
+- Swagger UI: http://localhost:3000/api-docs
+- Health Check: http://localhost:3000/health
 
 ## Loyalty Points Logic
 
@@ -81,12 +83,21 @@ npm run dev
 ## Environment Variables
 
 ```env
-PORT=5004
+PORT=3000
 DATABASE_URL=postgres://user:pass@localhost:5432/customerdb
 KAFKA_BROKER=localhost:9092
 KAFKA_CLIENT_ID=customer-service
 NODE_ENV=development
 ```
+
+## Current Status
+
+- ✅ Backend running on port 3000
+- ✅ Frontend running on port 3002
+- ✅ 9 customers in database (8 seeded + 1 test)
+- ✅ Loyalty tier distribution: 4 Bronze, 2 Silver, 2 Gold, 1 Platinum
+- ✅ All API endpoints operational
+- ✅ Kafka configured but in standalone mode (no broker running)
 
 ## Sample Data
 

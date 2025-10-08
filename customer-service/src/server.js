@@ -13,7 +13,7 @@ const { initConsumer } = require('./kafka/consumer');
 const { Customer, LoyaltyTier } = require('./models');
 
 const app = express();
-const PORT = process.env.PORT || 5004;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(helmet());
@@ -39,9 +39,10 @@ app.get('/health', (req, res) => {
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Routes - Fix order to prevent conflicts
-app.get('/api/customers/loyalty', require('./controllers/customerController').getLoyaltyTiers);
-app.get('/api/customers/analytics', require('./controllers/customerController').getCustomerAnalytics);
+// Routes - Specific routes before parameterized routes
+const customerController = require('./controllers/customerController');
+app.get('/api/customers/loyalty', customerController.getLoyaltyTiers);
+app.get('/api/customers/analytics', customerController.getCustomerAnalytics);
 app.use('/api/customers', customerRoutes);
 
 // 404 handler
@@ -71,10 +72,10 @@ const seedData = async () => {
     if (customerCount === 0) {
       // Seed loyalty tiers
       const tiers = [
-        { name: 'Bronze', min_points: 0, discount_rate: 0 },
-        { name: 'Silver', min_points: 100, discount_rate: 5 },
-        { name: 'Gold', min_points: 500, discount_rate: 10 },
-        { name: 'Platinum', min_points: 1000, discount_rate: 15 }
+        { name: 'Bronze', min_points: 0, max_points: 99, discount_rate: 0 },
+        { name: 'Silver', min_points: 100, max_points: 499, discount_rate: 5 },
+        { name: 'Gold', min_points: 500, max_points: 999, discount_rate: 10 },
+        { name: 'Platinum', min_points: 1000, max_points: null, discount_rate: 15 }
       ];
       
       for (const tier of tiers) {

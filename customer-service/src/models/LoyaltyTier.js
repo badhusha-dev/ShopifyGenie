@@ -16,6 +16,10 @@ const LoyaltyTier = sequelize.define('LoyaltyTier', {
     type: DataTypes.INTEGER,
     allowNull: false
   },
+  max_points: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   discount_rate: {
     type: DataTypes.DECIMAL(5, 2),
     allowNull: false,

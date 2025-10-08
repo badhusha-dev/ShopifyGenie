@@ -11,8 +11,16 @@ run = ["npm", "run", "start"]
 build = ["npm", "run", "build"]
 
 [[ports]]
+localPort = 3000
+externalPort = 3002
+
+[[ports]]
 localPort = 3001
 externalPort = 3000
+
+[[ports]]
+localPort = 3002
+externalPort = 3003
 
 [[ports]]
 localPort = 5000
@@ -33,6 +41,10 @@ externalPort = 6000
 [[ports]]
 localPort = 8008
 externalPort = 8008
+
+[[ports]]
+localPort = 37617
+externalPort = 4200
 
 [env]
 PORT = "5000"
@@ -68,6 +80,14 @@ args = "Sales Service Backend"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Sales Service Frontend"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Customer Service Backend"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Customer Service Frontend"
 
 [[workflows.workflow]]
 name = "Start application"
@@ -162,6 +182,30 @@ outputType = "console"
 task = "shell.exec"
 args = "cd sales-service/frontend && npm run dev"
 waitForPort = 3001
+
+[[workflows.workflow]]
+name = "Customer Service Backend"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd customer-service && PORT=3000 npm run dev"
+waitForPort = 3000
+
+[[workflows.workflow]]
+name = "Customer Service Frontend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd customer-service/frontend && npm run dev"
+waitForPort = 3002
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 expertMode = true
