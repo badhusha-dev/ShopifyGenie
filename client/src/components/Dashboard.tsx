@@ -1,7 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 
-const DASHBOARD_API_URL = import.meta.env.VITE_DASHBOARD_API_URL || 'http://localhost:8000';
-
 interface SalesSummary {
   totalSales: number;
   totalRevenue: number;
@@ -35,19 +33,19 @@ interface FinancialOverview {
 
 const Dashboard = () => {
   const { data: salesData, isLoading: salesLoading } = useQuery<{ success: boolean; data: SalesSummary }>({
-    queryKey: [`${DASHBOARD_API_URL}/api/dashboard/sales-summary`],
+    queryKey: ["/api/dashboard/sales-summary"],
   });
 
   const { data: inventoryData, isLoading: inventoryLoading } = useQuery<{ success: boolean; data: InventoryStatus }>({
-    queryKey: [`${DASHBOARD_API_URL}/api/dashboard/inventory-status`],
+    queryKey: ["/api/dashboard/inventory-status"],
   });
 
   const { data: customerData, isLoading: customerLoading } = useQuery<{ success: boolean; data: CustomerMetrics }>({
-    queryKey: [`${DASHBOARD_API_URL}/api/dashboard/customer-metrics`],
+    queryKey: ["/api/dashboard/customer-metrics"],
   });
 
   const { data: financialData, isLoading: financialLoading } = useQuery<{ success: boolean; data: FinancialOverview }>({
-    queryKey: [`${DASHBOARD_API_URL}/api/dashboard/financial-overview`],
+    queryKey: ["/api/dashboard/financial-overview"],
   });
 
   const isLoading = salesLoading || inventoryLoading || customerLoading || financialLoading;

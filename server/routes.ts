@@ -488,6 +488,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard Service Proxy Endpoints
+  const DASHBOARD_SERVICE_URL = process.env.DASHBOARD_SERVICE_URL || 'http://localhost:8000';
+
+  app.get("/api/dashboard/sales-summary", async (req, res) => {
+    try {
+      const response = await fetch(`${DASHBOARD_SERVICE_URL}/api/dashboard/sales-summary`);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch sales summary from dashboard service" });
+    }
+  });
+
+  app.get("/api/dashboard/inventory-status", async (req, res) => {
+    try {
+      const response = await fetch(`${DASHBOARD_SERVICE_URL}/api/dashboard/inventory-status`);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch inventory status from dashboard service" });
+    }
+  });
+
+  app.get("/api/dashboard/customer-metrics", async (req, res) => {
+    try {
+      const response = await fetch(`${DASHBOARD_SERVICE_URL}/api/dashboard/customer-metrics`);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch customer metrics from dashboard service" });
+    }
+  });
+
+  app.get("/api/dashboard/financial-overview", async (req, res) => {
+    try {
+      const response = await fetch(`${DASHBOARD_SERVICE_URL}/api/dashboard/financial-overview`);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch financial overview from dashboard service" });
+    }
+  });
+
   // Enhanced analytics endpoints
   app.get("/api/analytics/sales-trends", authenticateToken, requireStaffOrAdmin, async (req, res) => {
     try {
