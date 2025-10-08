@@ -43,12 +43,11 @@ const startServer = async () => {
     const dbConnected = await testConnection();
     
     if (dbConnected) {
-      try {
-        await runMigrations();
+      runMigrations().then(() => {
         logger.info('✅ Database migrations completed');
-      } catch (migrationError) {
+      }).catch((migrationError) => {
         logger.warn('⚠️  Database migrations failed, using backend seed data:', migrationError.message);
-      }
+      });
     } else {
       logger.warn('⚠️  Database not connected - using backend seed data');
     }
