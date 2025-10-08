@@ -45,8 +45,20 @@ Created a standalone Dashboard Service microservice for aggregated business metr
 - ✅ Background job scheduler using node-cron for daily summary computations
 - ✅ Security middleware (CORS, Helmet) and Winston logging
 - ✅ Runs on port 8000 (configured for Replit compatibility)
-- ✅ All endpoints tested and verified working with mock data
+- ✅ All endpoints tested and verified working with backend data
 - ✅ Ready for integration with actual microservices via Kafka
+
+**Flyway Database Migrations Implemented (October 8, 2025):**
+Implemented professional database migration system for Dashboard Service:
+- ✅ Flyway migration framework integrated using node-flyway package
+- ✅ V1__initial_schema.sql: Creates dashboard_metrics and realtime_events tables
+- ✅ V2__seed_data.sql: Seeds 30 days of historical metrics and realtime events
+- ✅ Dual-source data strategy: Uses database when available, falls back to backend seed data
+- ✅ Non-blocking server startup: Migrations run asynchronously without blocking service
+- ✅ Source indicators on all responses: "database" or "backend" to show data origin
+- ✅ Backend seed data in seedData.js with 30 days of historical business metrics
+- ✅ New API endpoints: /api/data/historical-metrics and /api/data/realtime-events
+- ✅ Graceful error handling with automatic fallback to backend data when DB unavailable
 
 # User Preferences
 
@@ -61,7 +73,9 @@ The client-side application is built with React and uses a component-based archi
 The server follows a REST API design using Express.js with TypeScript. The architecture is organized into clear separation of concerns with dedicated modules for routing, storage abstraction, and Vite integration for development. The storage layer implements an interface-based approach using in-memory storage for demonstration purposes.
 
 ## Data Storage Solutions
-The application uses Drizzle ORM with PostgreSQL schema definitions for production-ready database structure, while currently implementing an in-memory storage system. The schema supports comprehensive e-commerce data including users, products, customers, orders, subscriptions, and loyalty transactions with proper relationships and constraints.
+The main application uses Drizzle ORM with PostgreSQL schema definitions for production-ready database structure, while currently implementing an in-memory storage system. The schema supports comprehensive e-commerce data including users, products, customers, orders, subscriptions, and loyalty transactions with proper relationships and constraints.
+
+The Dashboard Service microservice uses PostgreSQL with Flyway migrations for database schema management and Sequelize ORM for data operations. It implements a dual-source data strategy, using the database when available and falling back to backend seed data when the database is unavailable.
 
 ## Authentication and Authorization
 The system is designed to integrate with Shopify's OAuth 2.0 authentication system, though the current implementation focuses on the core business logic rather than authentication flows. The architecture accommodates future integration with Shopify's app authentication requirements.
