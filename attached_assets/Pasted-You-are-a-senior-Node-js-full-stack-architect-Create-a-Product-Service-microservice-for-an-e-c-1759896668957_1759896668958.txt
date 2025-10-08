@@ -1,0 +1,147 @@
+You are a senior Node.js full-stack architect.
+Create a **Product Service** microservice for an e-commerce business management platform.
+It must integrate with a React frontend via REST API and Kafka for inter-service events.
+
+---
+
+### 🎯 Purpose
+This service manages all **product and inventory operations** and provides data for the **Dashboard UI** in real time.
+
+---
+
+### ⚙️ Tech Stack
+**Backend:**
+- Node.js (JavaScript, not TypeScript)
+- Express.js for REST API
+- PostgreSQL using Sequelize ORM
+- KafkaJS for event publishing/consuming
+- dotenv for environment management
+- Helmet + CORS for security
+- Swagger UI for API documentation
+
+**Frontend (for integration test):**
+- React (with Vite)
+- Tailwind CSS + shadcn/ui (optional)
+- Axios for API requests
+- React Query for caching/fetching
+- Recharts for data visualization (product stock, category performance)
+- Simple product list and dashboard cards
+
+---
+
+### 🧩 Backend Functional Scope
+
+#### Endpoints
+GET /api/products → list all products
+GET /api/products/:id → get product details
+POST /api/products → add new product
+PUT /api/products/:id → update product info
+DELETE /api/products/:id → delete product (soft delete)
+GET /api/products/low-stock → show products below threshold
+
+markdown
+Copy code
+
+#### Database (PostgreSQL)
+Create tables:
+- `products (id, name, category, sku, price, stock, low_stock_threshold, created_at, updated_at, is_active)`
+- `product_events (id, event_type, product_id, payload, created_at)`
+
+#### Kafka Integration
+- Publish events when product is added/updated/deleted:
+  - Topic: `product.events`
+  - Event Types: `product.created`, `product.updated`, `product.deleted`
+- Consume topic: `inventory.adjusted` (from future Inventory Service)
+- Log received messages to console and `product_events` table
+
+#### Business Logic
+- When stock changes via Kafka `inventory.adjusted`, update stock value in DB
+- When product created/updated/deleted, send Kafka message to `dashboard-service`
+
+#### Swagger Documentation
+Available at `/api-docs`
+
+#### Example `.env`
+PORT=5002
+DATABASE_URL=postgres://user:pass@localhost:5432/productdb
+KAFKA_BROKER=localhost:9092
+KAFKA_CLIENT_ID=product-service
+
+shell
+Copy code
+
+#### Folder Structure
+/src
+/config
+/controllers
+/routes
+/models
+/services
+/kafka
+/utils
+server.js
+
+yaml
+Copy code
+
+---
+
+### 💻 Frontend (Integration Example)
+Create a lightweight React dashboard inside `/frontend` folder with Vite.
+
+#### Features
+- Fetch `/api/products` and display in table
+- Display total product count and low-stock count on cards
+- Include refresh button (React Query refetch)
+- Basic modern UI with Tailwind/shadcn
+- Use Axios for API calls
+
+#### Folder
+/frontend
+/src
+/components
+ProductTable.jsx
+DashboardCards.jsx
+App.jsx
+main.jsx
+
+shell
+Copy code
+
+#### Commands
+backend
+npm install
+npm run dev
+
+frontend
+cd frontend
+npm install
+npm run dev
+
+yaml
+Copy code
+
+---
+
+### ✅ Deliverables
+- Working **Product Service backend** with REST + Kafka + PostgreSQL.
+- Integrated **React frontend** consuming backend APIs.
+- Real-time Kafka simulation (mock publisher).
+- Swagger UI docs.
+- Environment-ready `.env.example`.
+
+Generate everything in one project folder (backend + frontend) ready to run in Replit.
+💡 Next Options
+Once this is done, you can tell Replit AI:
+
+To add real Kafka connection with the Dashboard Service
+
+“Make the Product Service publish a Kafka message to topic dashboard.metrics whenever stock or price changes.”
+
+To extend frontend with charts
+
+“Add a bar chart showing product stock distribution using Recharts in the frontend dashboard.”
+
+To add Auth integration
+
+“Secure all /api/products/* endpoints using JWT token from Auth Service.”
