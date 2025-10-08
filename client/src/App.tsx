@@ -64,7 +64,7 @@ import { useAppSelector } from './store/hooks';
 const AppContent = () => {
   const { user, isLoading } = useAppSelector((state) => state.auth); // Use Redux state
   const [showRegister, setShowRegister] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   if (isLoading) {
     return (
@@ -107,9 +107,9 @@ const AppContent = () => {
 
   return (
     <div className="d-flex" style={{minHeight: '100vh'}}>
-      {/* Mobile Overlay */}
+      {/* Sidebar Overlay - Shows when sidebar is open */}
       <div 
-        className={`sidebar-overlay ${sidebarCollapsed ? '' : 'show'} d-lg-none`}
+        className={`sidebar-overlay ${!sidebarCollapsed ? 'show' : ''}`}
         onClick={() => setSidebarCollapsed(true)}
       ></div>
 
@@ -186,14 +186,6 @@ const AppContent = () => {
         </Route>
       </div>
 
-      {/* Mobile overlay */}
-      {!sidebarCollapsed && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none"
-          style={{zIndex: 1035}}
-          onClick={() => setSidebarCollapsed(true)}
-        />
-      )}
       
       {/* AI Chat Assistant */}
       <AIChatAssistant />

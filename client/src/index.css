@@ -2703,43 +2703,56 @@ html {
   visibility: visible;
 }
 
+/* Enhanced Slide-Out Menu for All Screen Sizes */
+.modern-sidebar {
+  transform: translateX(-100%);
+  z-index: 1040;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.modern-sidebar.expanded {
+  transform: translateX(0);
+}
+
+.modern-sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+.modern-sidebar-3d {
+  transform: translateX(-100%);
+  z-index: 1040;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.modern-sidebar-3d.expanded {
+  transform: translateX(0);
+  box-shadow: 
+    10px 0 30px rgba(0, 0, 0, 0.5),
+    inset -2px 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.modern-sidebar-3d.collapsed {
+  transform: translateX(-100%);
+}
+
+/* Main content always takes full width with slide-out menu */
+.main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.main-content.sidebar-collapsed {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
-  .modern-sidebar {
-    transform: translateX(-100%);
-    z-index: 1001;
-  }
-
-  .modern-sidebar.show {
-    transform: translateX(0);
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
-  }
-
-  /* 3D Sidebar Mobile Responsive */
+  .modern-sidebar,
   .modern-sidebar-3d {
     transform: translateX(-100%);
-    z-index: 1001;
-  }
-
-  .modern-sidebar-3d.expanded {
-    transform: translateX(0);
-    box-shadow: 
-      10px 0 30px rgba(0, 0, 0, 0.5),
-      inset -2px 0 10px rgba(255, 255, 255, 0.1);
-  }
-
-  .modern-sidebar-3d.collapsed {
-    transform: translateX(-100%);
-  }
-
-  .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-
-  .main-content.sidebar-collapsed {
-    margin-left: 0 !important;
-    width: 100% !important;
   }
 
   .kpi-card {

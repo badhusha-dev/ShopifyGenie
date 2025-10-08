@@ -27,6 +27,15 @@ The main application uses Drizzle ORM with PostgreSQL schema definitions (curren
 ## UI/UX Decisions
 The application primarily uses shadcn/ui components and Tailwind CSS for a modern, responsive design. Radix UI provides headless components, and Lucide React along with Font Awesome are used for iconography.
 
+### Navigation System
+- **Slide-Out Menu**: Streamlined navigation with a collapsible sidebar that slides out from the left
+  - Hidden by default to maximize screen real estate
+  - Smooth slide animation with cubic-bezier easing for professional feel
+  - Overlay darkens the content when menu is open
+  - Works consistently across all screen sizes (mobile, tablet, desktop)
+  - Hamburger menu button in top navigation bar triggers the slide-out
+  - Click outside or press overlay to close the menu
+
 # External Dependencies
 
 ## Core Frameworks

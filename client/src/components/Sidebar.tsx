@@ -226,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   })).filter(section => section.items.length > 0);
 
   return (
-    <div className={`modern-sidebar ${collapsed ? 'collapsed' : 'expanded'}`}>
+    <div className={`modern-sidebar ${!collapsed ? 'expanded' : 'collapsed'}`}>
       {/* Brand Section */}
       <div className="sidebar-brand">
         <div className="d-flex align-items-center">
