@@ -49,6 +49,7 @@ const GlobalSearch: React.FC = () => {
   const [bookmarkedSearches, setBookmarkedSearches] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const searchRef = React.useRef<HTMLDivElement>(null);
 
   const { data: searchResults = [], isLoading, refetch } = useQuery<SearchResult[]>({
     queryKey: ['/search', searchQuery, searchType, sortBy],
@@ -80,12 +81,25 @@ const GlobalSearch: React.FC = () => {
         { type: 'insight', text: `AI Insight: ${searchQuery} analysis`, confidence: 0.5 }
       ];
       setAiSuggestions(suggestions);
-      setShowSuggestions(true);
     } else {
       setAiSuggestions([]);
       setShowSuggestions(false);
     }
   }, [searchQuery]);
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +179,7 @@ const GlobalSearch: React.FC = () => {
       </div>
       <div className="card-body">
         {/* Enhanced Search Input */}
-        <div className="position-relative mb-3">
+        <div className="position-relative mb-3" ref={searchRef}>
           <form onSubmit={handleSearch} className="input-group">
             <input
               type="text"
@@ -173,15 +187,27 @@ const GlobalSearch: React.FC = () => {
               placeholder="Search products, customers, orders, reports..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowSuggestions(true)}
             />
             {searchQuery && (
               <button 
                 type="button" 
                 className="btn btn-outline-secondary" 
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowSuggestions(false);
+                }}
               >
                 <FaTimes />
+              </button>
+            )}
+            {aiSuggestions.length > 0 && (
+              <button 
+                type="button" 
+                className={`btn ${showSuggestions ? 'btn-primary' : 'btn-outline-primary'}`}
+                onClick={() => setShowSuggestions(!showSuggestions)}
+                title="Toggle AI Suggestions"
+              >
+                <FaBrain />
               </button>
             )}
             <button type="submit" className="btn btn-primary" disabled={isSearching}>
