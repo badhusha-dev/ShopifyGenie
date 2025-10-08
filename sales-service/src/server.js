@@ -14,7 +14,7 @@ const { initProducer, disconnectProducer } = require('./kafka/producer');
 const { initConsumer, disconnectConsumer } = require('./kafka/consumer');
 
 const app = express();
-const PORT = process.env.PORT || 5003;
+const PORT = process.env.PORT || 6000;
 
 // Middleware
 app.use(helmet());
