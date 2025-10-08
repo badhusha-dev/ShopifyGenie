@@ -1,0 +1,176 @@
+You are a senior backend and frontend architect.
+Create a **Sales Service** microservice for a Shopify-like business management platform.  
+It must handle sales transactions, communicate via Kafka, and provide real-time sales data to the Dashboard frontend.
+
+---
+
+### 🎯 Purpose
+The **Sales Service** manages all sales-related data:
+- Create and manage sales orders
+- Update product stock via Kafka
+- Provide revenue metrics for dashboards
+- Broadcast events to other services
+
+---
+
+### ⚙️ Tech Stack
+
+**Backend:**
+- Node.js (JavaScript, not TypeScript)
+- Express.js for REST API
+- PostgreSQL (pg or Sequelize)
+- KafkaJS for producer & consumer
+- dotenv for config
+- Helmet + CORS for security
+- Winston or pino for logging
+- Swagger UI for API docs
+
+**Frontend (for integration test):**
+- React (Vite)
+- Axios + React Query for data fetching
+- Tailwind CSS + shadcn/ui for UI
+- Recharts for sales visualization
+- Simple form to create new sales
+
+---
+
+### 🧩 Backend Functional Scope
+
+#### Endpoints
+POST /api/sales → create new sale (productId, quantity, price)
+GET /api/sales → list all sales
+GET /api/sales/:id → view single sale
+GET /api/sales/summary → total sales, revenue, profit (aggregated)
+GET /api/sales/today → today’s sales summary
+
+markdown
+Copy code
+
+#### Database (PostgreSQL)
+Tables:
+- `sales (id, product_id, quantity, price, total, date, created_at)`
+- `sales_metrics (id, date, total_sales, total_revenue, profit, created_at)`
+
+#### Kafka Topics
+- Publish:
+  - `sales.completed` when a new sale is created  
+    (payload includes product_id, quantity, total, timestamp)
+- Consume:
+  - `product.updated` (for product info sync)
+  - `inventory.updated` (optional future topic)
+
+#### Kafka Integration Logic
+- On `sales.completed`, send event to:
+  - **dashboard-service** (for metrics)
+  - **accounting-service** (for ledger updates)
+  - **inventory-service** (to reduce stock)
+
+#### Business Logic
+- When a sale is created:
+  - Validate product via REST call or Kafka cache
+  - Deduct stock quantity
+  - Record sale in DB
+  - Publish `sales.completed` event
+- Daily metrics summary saved to `sales_metrics`
+
+#### Swagger Documentation
+- Available at `/api-docs`
+
+#### `.env.example`
+PORT=5003
+DATABASE_URL=postgres://user:pass@localhost:5432/salesdb
+KAFKA_BROKER=localhost:9092
+KAFKA_CLIENT_ID=sales-service
+
+shell
+Copy code
+
+#### Folder Structure
+/src
+/config
+/controllers
+/routes
+/models
+/services
+/kafka
+/utils
+server.js
+
+markdown
+Copy code
+
+---
+
+### 💻 Frontend (Integration Example)
+
+Inside `/frontend` folder, create a small dashboard for sales tracking.
+
+#### Features
+- Form to create a new sale (`productId`, `quantity`, `price`)
+- Table showing recent sales from `/api/sales`
+- Cards showing:
+  - Total Revenue
+  - Total Sales
+  - Today’s Sales
+- Chart (Recharts) to visualize last 7 days of sales
+- Auto-refresh every 10 seconds (React Query refetch)
+
+#### Folder
+/frontend
+/src
+/components
+SalesTable.jsx
+SalesForm.jsx
+SalesDashboardCards.jsx
+SalesChart.jsx
+App.jsx
+main.jsx
+
+shell
+Copy code
+
+#### Commands
+backend
+npm install
+npm run dev
+
+frontend
+cd frontend
+npm install
+npm run dev
+
+yaml
+Copy code
+
+---
+
+### ✅ Deliverables
+- Fully working **Sales Service backend** (Express + PostgreSQL + Kafka)
+- Integrated **React frontend** showing live sales dashboard
+- Kafka producer publishing `sales.completed`
+- Swagger docs
+- Sample seed data for demo
+- `.env.example` for easy setup
+
+Generate everything in one project folder (backend + frontend) ready to deploy in Replit.
+
+---
+
+### 💡 Next Steps (after generation)
+After the service is generated, ask Replit AI:
+
+1. **To connect Sales → Dashboard Service via Kafka**
+   > “Connect the `sales.completed` Kafka topic to update daily metrics in the Dashboard Service database.”
+
+2. **To add accounting integration**
+   > “Publish an additional Kafka message to `accounting.transactions` when a sale completes.”
+
+3. **To secure the endpoints**
+   > “Add JWT authentication middleware to protect `/api/sales/*` routes.”
+
+4. **To improve frontend UI**
+   > “Add filters to view sales by date range and top-selling products.”
+
+---
+
+Would you like me to generate the **next service prompt (Customer Service)** — which handles loyalty points, customer profiles, and integrates sales + dashboard next?
