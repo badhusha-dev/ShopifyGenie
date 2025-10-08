@@ -111,7 +111,7 @@ const MobileOptimization: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('resize', detectDevice);
     };
-  }, [deviceInfo]);
+  }, []);
 
   const handleInstall = async () => {
     if (installPrompt) {
